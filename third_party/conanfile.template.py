@@ -13,7 +13,7 @@ cc_library(
 
 class BazelRecipe(ConanFile):
   settings = "os", "compiler", "build_type", "arch"
-  requires = "zlib/1.2.11@conan/stable"
+  requires = "<REQUIREMENT>"
 
   def imports(self):
     # Symlink all of the static library files.
