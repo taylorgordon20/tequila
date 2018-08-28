@@ -11,6 +11,12 @@ cc_library(
       "-DEFAULTLIB:gdi32",
       "-DEFAULTLIB:shell32",
     ],
+    "@bazel_tools//src/conditions:darwin": [
+      "-framework OpenGL",
+      "-framework Cocoa",
+      "-framework IOKit",
+      "-framework CoreVideo",
+    ],
     "//conditions:default": [],
   })
 )

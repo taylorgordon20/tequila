@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 from conans import ConanFile
 
@@ -7,7 +9,8 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
   name = "lib",
   srcs = [{libs}],
-  includes = [{includes}],
+  hdrs = glob([{includes}]),
+  strip_include_prefix = "include_0",
 )"""
 
 
@@ -36,7 +39,7 @@ class BazelRecipe(ConanFile):
           BUILD_TEMPLATE.format(
               libs=", ".join("'{}'".format(lib) for lib in libs),
               includes=", ".join(
-                  "'{}'".format(include) for include in includes
+                  "'{}/**'".format(include) for include in includes
               ),
           )
       )
