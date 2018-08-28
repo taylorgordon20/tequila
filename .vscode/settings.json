@@ -5,7 +5,7 @@
   "python.formatting.provider": "yapf",
   "python.formatting.yapfArgs": [
     "--style",
-    "{based_on_style: facebook, indent_width: 2}"
+    "{based_on_style: facebook, indent_width: 2, spaces_around_default_or_named_assign: true}"
   ],
   "python.pythonPath": "C:\\Python37\\python.exe",
 }
