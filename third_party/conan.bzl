@@ -8,7 +8,9 @@ def _impl(repository_ctx):
   )
 
   # Install the conanfile. This will create the necessary BUILD file.
+  print(repository_ctx.path(""))
   result = repository_ctx.execute(["conan", "install", "."])
+  print(result.stderr)
   if result.stderr:
     print("Failed to install conan dependency: ", repository_ctx.name)
     print(result.stderr)

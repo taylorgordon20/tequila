@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/format.hpp>
 #include <functional>
 #include <memory>
 #include <typeindex>
@@ -55,9 +56,9 @@ class Registry {
       auto provider = providers_.at(instanceKey<InstanceType>()).get();
       return static_cast<Provider<InstanceType>*>(provider)->get(*this);
     } catch (const std::exception& e) {
-      std::string what = "Unbound registry key: ";
-      what += typeid(InstanceType).name();
-      throw std::exception(what.c_str());
+      boost::format error("Unbound registry key: %1%");
+      error % typeid(InstanceType).name();
+      throw std::exception(error.str().c_str());
     }
   }
 

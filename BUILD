@@ -26,6 +26,8 @@ cc_library(
 cc_library(
   name = "third_party",
   deps = [
+    "@boost//:lib",
+    "@glew//:lib",
     "@glfw//:lib",
     "@eigen//:lib",
     "@zlib//:lib",
