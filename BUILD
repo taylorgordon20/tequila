@@ -1,8 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-  name = "window_system",
-  srcs = [],
+  name = "system_lib",
   linkopts = select({
     "@bazel_tools//src/conditions:windows": [
       "-DEFAULTLIB:opengl32",
@@ -18,7 +17,10 @@ cc_library(
       "-framework CoreVideo",
     ],
     "//conditions:default": [],
-  })
+  }),
+  deps = [
+    ":third_party",
+  ]
 )
 
 cc_library(
