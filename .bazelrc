@@ -1,2 +1,3 @@
 BAZEL_SH=C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
 BAZEL_PYTHON=C:\Python37\python.exe
+build --cxxopt='-std=c++14'

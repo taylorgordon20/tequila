@@ -32,9 +32,15 @@ cc_import(
   name = "glbinding",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/glbinding.lib",
+    "//conditions:default": None,
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/glbinding.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libglbinding.a",
+    "//conditions:default": None,
   }),
 )
 
@@ -42,9 +48,15 @@ cc_import(
   name = "glfw3",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/glfw3dll.lib",
+    "//conditions:default": None,
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/glfw3.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libglfw3.a",
+    "//conditions:default": None,
   }),
 )
 
@@ -52,9 +64,15 @@ cc_import(
   name = "sqlite3",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/sqlite3.lib",
+    "//conditions:default": None,
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/sqlite3.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libsqlite3.a",
+    "//conditions:default": None,
   }),
 )
 
@@ -62,9 +80,15 @@ cc_import(
   name = "zlib",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/zlib.lib",
+    "//conditions:default": None,
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/zlib1.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libz.a",
+    "//conditions:default": None,
   }),
 )
 
@@ -72,8 +96,14 @@ cc_import(
   name = "zstd",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/zstd.lib",
+    "//conditions:default": None,
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/zstd.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libzstd.a",
+    "//conditions:default": None,
   }),
 )

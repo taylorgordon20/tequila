@@ -7,13 +7,13 @@ void run() {
   GLFWwindow* window;
 
   if (!glfwInit()) {
-    throw std::exception("Unable to initialize GLFW");
+    throw std::runtime_error("Unable to initialize GLFW");
   }
 
   window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
   if (!window) {
     glfwTerminate();
-    throw std::exception("Unable to initialize GLFW window");
+    throw std::runtime_error("Unable to initialize GLFW window");
   }
 
   glfwMakeContextCurrent(window);

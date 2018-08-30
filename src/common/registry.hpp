@@ -3,6 +3,7 @@
 #include <boost/format.hpp>
 #include <functional>
 #include <memory>
+#include <stdexcept>
 #include <typeindex>
 #include <typeinfo>
 #include <unordered_map>
@@ -58,7 +59,7 @@ class Registry {
     } catch (const std::exception& e) {
       boost::format error("Unbound registry key: %1%");
       error % typeid(InstanceType).name();
-      throw std::exception(error.str().c_str());
+      throw std::runtime_error(error.str().c_str());
     }
   }
 
