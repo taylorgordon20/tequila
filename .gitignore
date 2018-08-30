@@ -2,3 +2,4 @@ conanbuildinfo.*
 conaninfo.txt
 *.exe
 bazel-*
+*.pdb

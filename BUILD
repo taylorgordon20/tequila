@@ -18,18 +18,4 @@ cc_library(
     ],
     "//conditions:default": [],
   }),
-  deps = [
-    ":third_party",
-  ]
-)
-
-cc_library(
-  name = "third_party",
-  deps = [
-    "@boost//:lib",
-    "@glew//:lib",
-    "@glfw//:lib",
-    "@eigen//:lib",
-    "@zlib//:lib",
-  ],
 )

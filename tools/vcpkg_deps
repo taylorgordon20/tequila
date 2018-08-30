@@ -1,0 +1,6 @@
+boost-format
+eigen3
+glfw3
+sqlite-modern-cpp
+zlib
+zstd
