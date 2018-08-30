@@ -1,8 +1,9 @@
 import argparse
+import glob
 import os
 import shutil
-import sys
 import subprocess
+import sys
 
 # Figure out what dire
 VCPKG_DIR = os.path.abspath(os.path.expanduser("~") + "/.vcpkg/")
@@ -54,10 +55,26 @@ def run_vcpkg(*args):
     )
 
 
+def mirror_tree(src, dst, pattern):
+  if not os.path.exists(dst):
+    os.mkdir(dst)
+  abs_pattern = os.path.abspath(os.path.join(src, pattern))
+  print("Copying", abs_pattern, "to", dst)
+  for src_filename in glob.iglob(abs_pattern, recursive = True):
+    if os.path.isdir(src_filename):
+      continue
+    dst_filename = os.path.join(dst, os.path.relpath(src_filename, src))
+    dst_dir = os.path.dirname(dst_filename)
+    if not os.path.exists(dst_dir):
+      os.makedirs(dst_dir)
+    shutil.copy(src_filename, dst_filename)
+
+
 def main():
   # Parse the command-line flags.
   parser = argparse.ArgumentParser()
   parser.add_argument("triplet", type = str)
+  parser.add_argument("--skip_install", default = False, action = 'store_true')
   flags = parser.parse_args()
 
   print("Using vcpkg directory: ", VCPKG_DIR)
@@ -65,29 +82,27 @@ def main():
 
   tools_dir = os.path.dirname(os.path.realpath(__file__))
 
-  with open(os.path.join(tools_dir, "vcpkg_deps")) as deps:
-    for line in deps.readlines():
-      pkg = f"{line.strip()}:{flags.triplet}"
-      run_vcpkg("install", pkg)
+  if not flags.skip_install:
+    with open(os.path.join(tools_dir, "vcpkg_deps")) as deps:
+      for line in deps.readlines():
+        pkg = f"{line.strip()}:{flags.triplet}"
+        run_vcpkg("install", pkg)
 
   dst_dir = os.path.abspath(
       os.path.join(tools_dir, os.pardir, "third_party", flags.triplet)
   )
   src_dir = os.path.join(VCPKG_DIR, "installed", flags.triplet)
 
-  # Copy the libs into the third_party directory.
-  dst_lib_dir = os.path.join(dst_dir, "lib")
-  if os.path.exists(dst_lib_dir):
-    shutil.rmtree(dst_lib_dir)
-  print("Copying library files into: ", dst_lib_dir)
-  shutil.copytree(os.path.join(src_dir, "lib"), dst_lib_dir)
+  # Copy the static libs into the third_party directory.
+  mirror_tree(src_dir, dst_dir, "lib/**/*.lib")
+  mirror_tree(src_dir, dst_dir, "lib/**/*.a")
 
-  # Copy the libs into the third_party directory.
-  dst_include_dir = os.path.join(dst_dir, "include")
-  if os.path.exists(dst_include_dir):
-    shutil.rmtree(dst_include_dir)
-  print("Copying include files into: ", dst_include_dir)
-  shutil.copytree(os.path.join(src_dir, "include"), dst_include_dir)
+  # Copy the shared libs into the third_party directory.
+  mirror_tree(src_dir, dst_dir, "bin/**/*.dll")
+  mirror_tree(src_dir, dst_dir, "bin/**/*.so")
+
+  # Copy the includes into the third_party directory.
+  mirror_tree(src_dir, dst_dir, "include/**")
 
 
 if __name__ == "__main__":

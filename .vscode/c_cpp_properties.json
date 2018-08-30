@@ -6,7 +6,7 @@
             "includePath": [
                 "${workspaceRoot}",
                 "${workspaceRoot}\\bazel-tequila",
-                "${workspaceRoot}\\bazel-tequila\\third_party\\x64-windows-static\\include",
+                "${workspaceRoot}\\bazel-tequila\\third_party\\x64-windows\\include",
                 "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\INCLUDE",
                 "C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.10240.0\\ucrt",
                 "C:\\Program Files (x86)\\Windows Kits\\8.1\\include\\shared",
@@ -18,7 +18,7 @@
                 "path": [
                     "${workspaceRoot}",
                     "${workspaceRoot}\\bazel-tequila",
-                    "${workspaceRoot}\\bazel-tequila\\third_party\\x64-windows-static\\include",
+                    "${workspaceRoot}\\bazel-tequila\\third_party\\x64-windows\\include",
                     "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\INCLUDE",
                     "C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.10240.0\\ucrt",
                     "C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.6.1\\include\\um",

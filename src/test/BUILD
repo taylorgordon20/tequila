@@ -4,6 +4,7 @@ cc_binary(
   name = "glfw_test",
   srcs = ["glfw_test.cpp"],
   deps = [
+    "//src/common:lib",
     "//third_party:lib",
   ],
 )

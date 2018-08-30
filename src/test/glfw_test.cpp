@@ -1,23 +1,30 @@
-#include <GLFW/glfw3.h>
+#include <stdexcept>
+#include "src/common/opengl.hpp"
 
-int main(void) {
+namespace tequila {
+
+void run() {
   GLFWwindow* window;
 
-  /* Initialize the library */
-  if (!glfwInit()) return -1;
+  if (!glfwInit()) {
+    throw std::exception("Unable to initialize GLFW");
+  }
 
-  /* Create a windowed mode window and its OpenGL context */
   window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
   if (!window) {
     glfwTerminate();
-    return -1;
+    throw std::exception("Unable to initialize GLFW window");
   }
 
-  /* Make the window's context current */
   glfwMakeContextCurrent(window);
 
-  /* Loop until the user closes the window */
+  // Initialize OpenGL context.
+  initialize_bindings();
+  print_opengl_information();
+
   while (!glfwWindowShouldClose(window)) {
+    using namespace gl;
+
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
 
@@ -30,13 +37,17 @@ int main(void) {
     glVertex3f(0.0f, 0.5f, 0.0f);
     glEnd();
 
-    /* Swap front and back buffers */
     glfwSwapBuffers(window);
 
-    /* Poll for and process events */
     glfwPollEvents();
   }
 
   glfwTerminate();
+}
+
+}  // namespace tequila
+
+int main() {
+  tequila::run();
   return 0;
 }

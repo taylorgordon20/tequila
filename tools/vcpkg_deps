@@ -1,5 +1,6 @@
 boost-format
 eigen3
+glbinding
 glfw3
 sqlite-modern-cpp
 zlib
