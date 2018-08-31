@@ -1,7 +1,9 @@
+boost-filesystem
 boost-format
 eigen3
 glbinding
 glfw3
+glm
 sqlite-modern-cpp
 zlib
 zstd

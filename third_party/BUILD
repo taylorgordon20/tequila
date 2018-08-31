@@ -19,6 +19,9 @@ cc_library(
     k: [v] for k, v in INCLUDE_MAP.items()
   }),
   deps = [
+    ":boost_filesystem",
+    ":boost_regex",
+    ":boost_system",
     ":glbinding",
     ":glfw3",
     ":sqlite3",
@@ -26,6 +29,42 @@ cc_library(
     ":zstd",
     "//:system_lib",
   ],
+)
+
+cc_import(
+  name = "boost_filesytem",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_filesystem-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_filesystem-vc140-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_regex",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_regex-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_regex-vc140-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_system",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_system-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_system-vc140-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(

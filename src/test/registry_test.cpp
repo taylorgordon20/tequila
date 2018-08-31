@@ -23,8 +23,18 @@ struct Jimmy {
       : foo(std::move(foo)), bar(std::move(bar)) {}
 };
 
+struct Jones {
+  std::shared_ptr<Jimmy> jimmy;
+  Jones(std::shared_ptr<Jimmy> jimmy) : jimmy(std::move(jimmy)) {}
+};
+
 auto jimmyFactory(const Registry& registry) {
   return std::make_shared<Jimmy>(registry.get<Foo>(), registry.get<Bar>());
+}
+
+template <>
+std::shared_ptr<Jones> gen(const Registry& registry) {
+  return std::make_shared<Jones>(registry.get<Jimmy>());
 }
 
 void run() {
@@ -40,6 +50,7 @@ void run() {
                       .bind<Foo>(std::move(foo))
                       .bind<Bar>(std::move(bar_provider))
                       .bind<Jimmy>(jimmyFactory)
+                      .bindToDefaultFactory<Jones>()
                       .build();
 
   std::cout << "Foo.x=" << registry.get<Foo>()->x << std::endl;
@@ -52,6 +63,10 @@ void run() {
             << std::endl;
   std::cout << "Jimmy.bar.foo.y=" << registry.get<Jimmy>()->bar->foo->y
             << std::endl;
+  std::cout << "Jones.Jimmy.bar.foo.x="
+            << registry.get<Jones>()->jimmy->bar->foo->x << std::endl;
+  std::cout << "Jones.Jimmy.bar.foo.y="
+            << registry.get<Jones>()->jimmy->bar->foo->y << std::endl;
 }
 
 }  // namespace tequila
