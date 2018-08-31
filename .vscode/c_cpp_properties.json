@@ -1,38 +1,21 @@
 {
-    "configurations": [
-        {
-            "name": "Win32",
-            "intelliSenseMode": "msvc-x64",
-            "includePath": [
-                "${workspaceRoot}",
-                "${workspaceRoot}\\bazel-tequila",
-                "${workspaceRoot}\\bazel-tequila\\third_party\\x64-windows\\include",
-                "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\INCLUDE",
-                "C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.10240.0\\ucrt",
-                "C:\\Program Files (x86)\\Windows Kits\\8.1\\include\\shared",
-                "C:\\Program Files (x86)\\Windows Kits\\8.1\\include\\um",
-                "C:\\Program Files (x86)\\Windows Kits\\8.1\\include\\winrt",
-                "C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.6.1\\include\\um"
-            ],
-            "browse": {
-                "path": [
-                    "${workspaceRoot}",
-                    "${workspaceRoot}\\bazel-tequila",
-                    "${workspaceRoot}\\bazel-tequila\\third_party\\x64-windows\\include",
-                    "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\INCLUDE",
-                    "C:\\Program Files (x86)\\Windows Kits\\10\\include\\10.0.10240.0\\ucrt",
-                    "C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.6.1\\include\\um",
-                    "C:\\Program Files (x86)\\Windows Kits\\8.1\\include\\shared",
-                    "C:\\Program Files (x86)\\Windows Kits\\8.1\\include\\um",
-                    "C:\\Program Files (x86)\\Windows Kits\\8.1\\include\\winrt"
-                ],
-                "limitSymbolsToIncludedHeaders": true,
-                "databaseFilename": ""
-            },
-            "compilerPath": "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\bin\\amd64\\cl.exe",
-            "cStandard": "c11",
-            "cppStandard": "c++17"
-        }
-    ],
-    "version": 4
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "${workspaceFolder}/**"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE",
+        "GLBINDING_API="
+      ],
+      "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/bin/amd64/cl.exe",
+      "cStandard": "c11",
+      "cppStandard": "c++14",
+      "intelliSenseMode": "clang-x64"
+    }
+  ],
+  "version": 4
 }
