@@ -11,7 +11,8 @@ VCPKG_DIR = os.path.abspath(os.path.expanduser("~") + "/.vcpkg/")
 
 def install_vcpkg():
   print("Installing vcpkg at directory: ", VCPKG_DIR)
-  os.mkdir(VCPKG_DIR)
+  if not os.path.exists(VCPKG_DIR):
+    os.mkdir(VCPKG_DIR)
   subprocess.call(
       ["git", "clone", "https://github.com/Microsoft/vcpkg.git", "."],
       cwd = VCPKG_DIR,
@@ -25,7 +26,7 @@ def install_vcpkg():
     )
   else:
     subprocess.call(
-        ["bootstrap-vcpkg.sh"],
+        ["./bootstrap-vcpkg.sh"],
         cwd = VCPKG_DIR,
         shell = True,
     )
@@ -49,9 +50,8 @@ def run_vcpkg(*args):
     )
   else:
     subprocess.call(
-        ["vcpkg"] + list(args),
+        ["./vcpkg"] + list(args),
         cwd = VCPKG_DIR,
-        shell = True,
     )
 
 
