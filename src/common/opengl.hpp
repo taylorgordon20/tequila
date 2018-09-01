@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/format.hpp>
+#include <cassert>
 #include <iostream>
 
 // Include GLFW which provided OpenGL context creation and window management.

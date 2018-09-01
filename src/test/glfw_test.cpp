@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include "src/common/opengl.hpp"
+#include "src/common/window.hpp"
 
 namespace tequila {
 
@@ -98,10 +98,6 @@ auto buildShader() {
   return shader;
 }
 
-void errorCallback(int error, const char* cause) {
-  std::cout << "Error: " << error << " Cause: " << cause << std::endl;
-}
-
 void keyCallback(
     GLFWwindow* window, int key, int scancode, int action, int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -138,49 +134,18 @@ class Scene {
 };
 
 void run() {
-  // Initialize GLFW.
-  glfwSetErrorCallback(errorCallback);
-  if (!glfwInit()) {
-    exit(EXIT_FAILURE);
-  }
+  Application app;
 
-  // Force OpenGL version to 4.1 core profile.
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-  // Create a window with an OpenGL context. This will fail if the requested
-  // OpenGL profile version is not supported/available on this system.
-  GLFWwindow* window = glfwCreateWindow(640, 480, "HelloTriangle", NULL, NULL);
-  if (!window) {
-    glfwTerminate();
-    exit(EXIT_FAILURE);
-  }
-
-  // Initialize the OpenGL window.
-  glfwMakeContextCurrent(window);
-  glfwSwapInterval(1);
+  auto window = app.makeWindow(640, 480, "HelloTriangle", nullptr, nullptr);
 
   // Set window event callbacks.
-  glfwSetKeyCallback(window, keyCallback);
-  glfwSetWindowSizeCallback(window, sizeCallback);
+  window->onKey([&] { std::cout << "A key was pressed!" << std::endl; });
+  // window->on(glfwSetKeyCallback, keyCallback);
+  // window->on(glfwSetWindowSizeCallback, sizeCallback);
 
-  // Initialize OpenGL function bindings.
-  initializeBindingsForOpenGL();
-  logInfoAboutOpenGL();
-
-  // Handle window events and draw our scene.
+  // Begin scene.
   Scene scene(buildShader(), getGeometryBuffer());
-  while (!glfwWindowShouldClose(window)) {
-    scene.draw();
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  }
-
-  // Kill the window and shutdown GLFW.
-  glfwDestroyWindow(window);
-  glfwTerminate();
+  window->loop([&] { scene.draw(); });
 }
 
 }  // namespace tequila

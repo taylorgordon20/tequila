@@ -32,7 +32,7 @@ cc_library(
 )
 
 cc_import(
-  name = "boost_filesytem",
+  name = "boost_filesystem",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_filesystem-vc140-mt.lib",
     "//conditions:default": None,
