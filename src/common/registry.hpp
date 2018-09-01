@@ -36,6 +36,7 @@ inline std::shared_ptr<InstanceType> gen(const Registry&) {
 class ProviderBase {
  public:
   virtual void prepare(const Registry&) = 0;
+  virtual std::unique_ptr<ProviderBase> clone() const = 0;
 };
 
 // Providers wrap factory functions with memoization.
@@ -55,6 +56,11 @@ class Provider : public ProviderBase {
       instance_ = provider_fn_(registry);
     }
     return instance_;
+  }
+
+  std::unique_ptr<ProviderBase> clone() const override {
+    return std::make_unique<ProviderBase>(
+        [instance = instance_](const Registry&) { return instance; });
   }
 
  private:
@@ -100,6 +106,14 @@ class RegistryBuilder {
   template <typename InstanceType>
   RegistryBuilder& bindToDefaultFactory() {
     return bind<InstanceType>(gen<InstanceType>);
+  }
+
+  template <typename InstanceType>
+  RegistryBuilder& bindAll(const Registry& other) {
+    for (const auto& pair : other.providers_) {
+      registry_.providers[pair.first] = pair.second->clone();
+    }
+    return *this;
   }
 
   Registry build() {

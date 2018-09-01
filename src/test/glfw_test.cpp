@@ -124,6 +124,7 @@ void run() {
 
   auto window = app.makeWindow(640, 480, "HelloTriangle", nullptr, nullptr);
 
+#ifndef __INTELLISENSE__  // Don't report vscode intellisense bug
   // Set window event callbacks.
   window->on<glfwSetKeyCallback>(
       [&](int key, int scancode, int action, int mods) {
@@ -133,6 +134,7 @@ void run() {
       });
   window->on<glfwSetWindowSizeCallback>(
       [&](int width, int height) { glViewport(0, 0, width, height); });
+#endif
 
   // Begin scene.
   Scene scene(buildShader(), getGeometryBuffer());
