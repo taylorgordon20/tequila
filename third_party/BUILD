@@ -38,7 +38,7 @@ cc_import(
     "//conditions:default": None,
   }),
   shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_filesystem-vc140-mt-x64-1_68.dll",
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_filesystem-vc141-mt-x64-1_68.dll",
     "//conditions:default": None,
   }),
 )
@@ -50,7 +50,7 @@ cc_import(
     "//conditions:default": None,
   }),
   shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_regex-vc140-mt-x64-1_68.dll",
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_regex-vc141-mt-x64-1_68.dll",
     "//conditions:default": None,
   }),
 )
@@ -62,7 +62,7 @@ cc_import(
     "//conditions:default": None,
   }),
   shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_system-vc140-mt-x64-1_68.dll",
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_system-vc141-mt-x64-1_68.dll",
     "//conditions:default": None,
   }),
 )

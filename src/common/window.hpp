@@ -16,16 +16,15 @@ class Window {
   ~Window() { glfwDestroyWindow(window_); }
 
 #define ON_IMPL(cb) on<decltype(cb), cb>(std::move(fn));
-
   // Keyboard input event.
-  template <typename FunctionType>
-  void onKey(FunctionType fn) {
+  template <typename Fn>
+  void onKey(Fn fn) {
     ON_IMPL(glfwSetKeyCallback);
   }
 
   // Window-resize input event.
-  template <typename FunctionType>
-  void onWindowSize(FunctionType fn) {
+  template <typename Fn>
+  void onWindowSize(Fn fn) {
     ON_IMPL(glfwSetWindowSizeCallback);
   }
 

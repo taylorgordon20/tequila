@@ -4,7 +4,8 @@ Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 choco install colortool
 choco install vscode
 choco install python3
-choco install vcbuildtools
+choco install visualstudio2017buildtools
+choco install visualcpp-build-tools
 choco install vswhere
 choco install cmake --installargs '"ADD_CMAKE_TO_PATH=System"'
 choco install bazel

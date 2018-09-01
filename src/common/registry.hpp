@@ -72,6 +72,7 @@ class Registry {
       return static_cast<Provider<InstanceType>*>(provider)->get(*this);
     } catch (const std::exception& e) {
       throwInstanceError<InstanceType>("Unbound registry key");
+      return nullptr;
     }
   }
 
