@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/any.hpp>
+
 #include <cassert>
 #include <unordered_map>
 
@@ -15,20 +17,16 @@ class Window {
   }
   ~Window() { glfwDestroyWindow(window_); }
 
-#define ON_IMPL(cb) on<decltype(cb), cb>(std::move(fn));
   // Keyboard input event.
-  template <typename Fn>
-  void onKey(Fn fn) {
-    ON_IMPL(glfwSetKeyCallback);
+  template <auto callback, typename FunctionType>
+  void on(FunctionType fn) {
+    callbacks_[(intptr_t)callback] = std::move(fn);
+    callback(window_, [](GLFWwindow * w, auto... args) -> auto {
+      auto window = static_cast<Window*>(glfwGetWindowUserPointer(w));
+      auto& cb = window->callbacks_[(intptr_t)callback];
+      boost::any_cast<FunctionType>(cb)(args...);
+    });
   }
-
-  // Window-resize input event.
-  template <typename Fn>
-  void onWindowSize(Fn fn) {
-    ON_IMPL(glfwSetWindowSizeCallback);
-  }
-
-#undef ON_CB
 
   template <typename FunctionType>
   void loop(FunctionType fn) {
@@ -39,19 +37,11 @@ class Window {
     }
   }
 
- protected:
-  template <typename CallbackType, CallbackType cb, typename FunctionType>
-  void on(FunctionType fn) {
-    callbacks_[(intptr_t)cb] = std::move(fn);
-    cb(window_, [](GLFWwindow * w, auto... args) -> auto {
-      auto window = static_cast<Window*>(glfwGetWindowUserPointer(w));
-      window->callbacks_[(intptr_t)cb]();
-    });
-  }
+  void close() { glfwSetWindowShouldClose(window_, true); }
 
  private:
   GLFWwindow* window_;
-  std::unordered_map<intptr_t, std::function<void()>> callbacks_;
+  std::unordered_map<intptr_t, boost::any> callbacks_;
 };
 
 class Application {

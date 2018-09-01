@@ -98,20 +98,6 @@ auto buildShader() {
   return shader;
 }
 
-void keyCallback(
-    GLFWwindow* window, int key, int scancode, int action, int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, true);
-  }
-}
-
-void sizeCallback(GLFWwindow* window, int width, int height) {
-  // Get the size of the windows frame.
-  int w, h;
-  glfwGetFramebufferSize(window, &w, &h);
-  glViewport(0, 0, w, h);
-}
-
 class Scene {
  public:
   Scene(GLuint shader, GLuint vao) : shader_(shader), vao_(vao) {}
@@ -139,9 +125,14 @@ void run() {
   auto window = app.makeWindow(640, 480, "HelloTriangle", nullptr, nullptr);
 
   // Set window event callbacks.
-  window->onKey([&] { std::cout << "A key was pressed!" << std::endl; });
-  // window->on(glfwSetKeyCallback, keyCallback);
-  // window->on(glfwSetWindowSizeCallback, sizeCallback);
+  window->on<glfwSetKeyCallback>(
+      [&](int key, int scancode, int action, int mods) {
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+          window->close();
+        }
+      });
+  window->on<glfwSetWindowSizeCallback>(
+      [&](int width, int height) { glViewport(0, 0, width, height); });
 
   // Begin scene.
   Scene scene(buildShader(), getGeometryBuffer());
