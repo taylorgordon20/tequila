@@ -10,7 +10,7 @@ namespace tequila {
 using namespace gl;
 
 auto kVertexShader = R"(
-  #version 450
+  #version 410
   in vec3 vp;
   void main() {
     gl_Position = vec4(vp, 1.0);
@@ -18,7 +18,7 @@ auto kVertexShader = R"(
 )";
 
 auto kFragmentShader = R"(
-  #version 450
+  #version 410
   out vec4 frag_color;
   void main() {
     frag_color = vec4(1.0, 0.0, 1.0, 1.0);

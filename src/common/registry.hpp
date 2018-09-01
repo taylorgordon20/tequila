@@ -102,14 +102,6 @@ class RegistryBuilder {
     return bind<InstanceType>(gen<InstanceType>);
   }
 
-  template <typename InstanceType>
-  RegistryBuilder& bindAll(const Registry& other) {
-    for (const auto& pair : other.providers_) {
-      registry_.providers[pair.first] = std::move(pair.second.get());
-    }
-    return *this;
-  }
-
   Registry build() {
     // Eagerly prepare each dependency.
     Registry ret;

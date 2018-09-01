@@ -58,7 +58,7 @@ class Application {
   std::shared_ptr<Window> makeWindow(GlfwArgs&&... args) {
     // Create a GLFW window.
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     auto glfw_window = glfwCreateWindow(std::forward<GlfwArgs>(args)...);
