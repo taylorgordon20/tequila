@@ -17,7 +17,6 @@ class Window {
   }
   ~Window() { glfwDestroyWindow(window_); }
 
-  // Keyboard input event.
   template <auto callback, typename FunctionType>
   void on(FunctionType fn) {
     callbacks_[(intptr_t)callback] = std::move(fn);

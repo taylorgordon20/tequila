@@ -26,7 +26,7 @@ renderer: %3%
 ====================
 )";
 
-void logInfoAboutOpenGL() {
+inline void logInfoAboutOpenGL() {
   boost::format fmt(kOpenGLInfoTemplate);
   fmt % glbinding::ContextInfo::version().toString();
   fmt % glbinding::ContextInfo::vendor();
@@ -34,7 +34,7 @@ void logInfoAboutOpenGL() {
   std::cout << fmt;
 }
 
-void initializeBindingsForOpenGL() {
+inline void initializeBindingsForOpenGL() {
   // Bindings are lazily initialized.
   glbinding::Binding::initialize(false);
 }

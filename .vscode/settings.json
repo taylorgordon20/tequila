@@ -62,6 +62,11 @@
     "xutility": "cpp",
     "atomic": "cpp",
     "cinttypes": "cpp",
-    "fstream": "cpp"
+    "fstream": "cpp",
+    "deque": "cpp",
+    "queue": "cpp",
+    "string_view": "cpp",
+    "rope": "cpp",
+    "core": "cpp"
   },
 }

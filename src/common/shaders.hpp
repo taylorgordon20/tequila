@@ -5,18 +5,27 @@
 #include <string>
 #include <unordered_map>
 
+#include "src/common/opengl.hpp"
 #include "src/common/registry.hpp"
 
 namespace tequila {
 
 class ShaderProgram {
  public:
-  ShaderProgram(
-      const std::string& vert_shader_source,
-      const std::string& frag_shader_source);
+  using ShaderSource = std::pair<gl::GLenum, const char*>;
+  ShaderProgram(const std::vector<ShaderSource>& sources);
+  ~ShaderProgram();
+
+  // Add explicit move constructor and assignment operator
+  ShaderProgram(ShaderProgram&& other);
+  ShaderProgram& operator=(ShaderProgram&& other);
+
+  // Delete copy constructor and assignment operator
+  ShaderProgram(const ShaderProgram&) = delete;
+  ShaderProgram& operator=(const ShaderProgram&) = delete;
 
   // Executes the provide function in a scope with the shader bound.
-  void run(std::function<void(ShaderProgram&)> fn);
+  void run(std::function<void()> fn);
 
   // Methods to specify uniform variables in shader.
   void uniform(const std::string& name, int value);
@@ -26,6 +35,9 @@ class ShaderProgram {
 
   // Methods to access attribute locations.
   int attribute(const std::string& name);
+
+ private:
+  gl::GLint program_;
 };
 
 class ShaderManager {

@@ -1,5 +1,6 @@
 BasedOnStyle: Google
-ColumnLimit: 80
 AlignAfterOpenBracket: AlwaysBreak
+AllowShortFunctionsOnASingleLine: Empty
 BinPackArguments: false
 BinPackParameters: false
+ColumnLimit: 80

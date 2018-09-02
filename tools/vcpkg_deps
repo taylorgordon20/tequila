@@ -1,6 +1,7 @@
 boost-any
 boost-filesystem
 boost-format
+boost-scope-exit
 eigen3
 glbinding
 glfw3
