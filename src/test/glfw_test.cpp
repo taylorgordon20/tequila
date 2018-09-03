@@ -48,22 +48,42 @@ auto getCamera() {
 
 auto getMesh() {
   // Set vertex position.
-  Eigen::Matrix<float, 3, Eigen::Dynamic> positions(3, 3);
+  Eigen::Matrix<float, 3, Eigen::Dynamic> positions(3, 9);
   positions.col(0) << 0.0f, 0.5f, 0.0f;
-  positions.col(1) << 0.5f, -0.5f, 0.0f;
-  positions.col(2) << -0.5f, -0.5f, 0.0f;
+  positions.col(1) << -0.5f, -0.5f, 0.5f;
+  positions.col(2) << 0.5f, -0.5f, 0.5f;
+  positions.col(3) << 0.0f, 0.5f, 0.0f;
+  positions.col(4) << 0.5f, -0.5f, 0.5f;
+  positions.col(5) << 0.0f, -0.5f, -0.5f;
+  positions.col(6) << 0.0f, 0.5f, 0.0f;
+  positions.col(7) << 0.0f, -0.5f, -0.5f;
+  positions.col(8) << -0.5f, -0.5f, 0.5f;
 
   // Set vertex normals.
-  Eigen::Matrix<float, 3, Eigen::Dynamic> normals(3, 3);
-  normals.col(0) << 0.0f, 0.0f, 1.0f;
-  normals.col(1) << 0.0f, 0.0f, 1.0f;
-  normals.col(2) << 0.0f, 0.0f, 1.0f;
+  constexpr auto sqrt2i = 0.70710678118f;
+  constexpr auto sqrt3i = 0.57735026919f;
+  Eigen::Matrix<float, 3, Eigen::Dynamic> normals(3, 9);
+  normals.col(0) << 0.0f, sqrt2i, sqrt2i;
+  normals.col(1) << 0.0f, sqrt2i, sqrt2i;
+  normals.col(2) << 0.0f, sqrt2i, sqrt2i;
+  normals.col(3) << sqrt3i, sqrt3i, -sqrt3i;
+  normals.col(4) << sqrt3i, sqrt3i, -sqrt3i;
+  normals.col(5) << sqrt3i, sqrt3i, -sqrt3i;
+  normals.col(6) << -sqrt3i, sqrt3i, -sqrt3i;
+  normals.col(7) << -sqrt3i, sqrt3i, -sqrt3i;
+  normals.col(8) << -sqrt3i, sqrt3i, -sqrt3i;
 
   // Set vertex colors.
-  Eigen::Matrix<float, 3, Eigen::Dynamic> colors(3, 3);
+  Eigen::Matrix<float, 3, Eigen::Dynamic> colors(3, 9);
   colors.col(0) << 1.0f, 0.0f, 0.0f;
   colors.col(1) << 0.0f, 1.0f, 0.0f;
   colors.col(2) << 0.0f, 0.0f, 1.0f;
+  colors.col(3) << 1.0f, 0.0f, 0.0f;
+  colors.col(4) << 0.0f, 0.0f, 1.0f;
+  colors.col(5) << 1.0f, 1.0f, 1.0f;
+  colors.col(6) << 1.0f, 0.0f, 0.0f;
+  colors.col(7) << 1.0f, 1.0f, 1.0f;
+  colors.col(8) << 0.0f, 1.0f, 0.0f;
 
   return MeshBuilder()
       .setPositions(std::move(positions))
@@ -87,6 +107,7 @@ void run() {
   auto camera = getCamera();
   auto shader = getShader();
   auto mesh = getMesh();
+  std::cout << "4" << std::endl;
 
   // Set window event callbacks.
   window->on<glfwSetKeyCallback>(

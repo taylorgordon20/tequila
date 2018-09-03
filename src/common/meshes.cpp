@@ -48,6 +48,7 @@ Mesh& Mesh::operator=(Mesh&& other) {
 }
 
 void Mesh::draw(ShaderProgram& shader) const {
+  glEnable(GL_DEPTH_TEST);
   glBindVertexArray(vao_);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_);
 
@@ -129,19 +130,19 @@ Mesh MeshBuilder::build() {
   Eigen::MatrixXf mesh_data(rows, cols);
   size_t offset = 0;
   if (positions_.cols()) {
-    mesh_data.block(offset, 0, cols, positions_.rows()) = positions_;
+    mesh_data.block(offset, 0, positions_.rows(), cols) = positions_;
     offset += positions_.rows();
   }
   if (normals_.cols()) {
-    mesh_data.block(offset, 0, cols, normals_.rows()) = normals_;
+    mesh_data.block(offset, 0, normals_.rows(), cols) = normals_;
     offset += normals_.rows();
   }
   if (colors_.cols()) {
-    mesh_data.block(offset, 0, cols, colors_.rows()) = colors_;
+    mesh_data.block(offset, 0, colors_.rows(), cols) = colors_;
     offset += colors_.rows();
   }
   if (tex_coords_.cols()) {
-    mesh_data.block(offset, 0, cols, tex_coords_.rows()) = tex_coords_;
+    mesh_data.block(offset, 0, tex_coords_.rows(), cols) = tex_coords_;
     offset += tex_coords_.rows();
   }
   return Mesh(std::move(mesh_data), std::move(attributes));
