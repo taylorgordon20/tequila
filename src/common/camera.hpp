@@ -22,7 +22,13 @@ struct Camera {
     return glm::lookAt(position, position + view, up);
   }
 
-  auto projectionMatrix() { return glm::perspective(fov, aspect, near, far); }
+  auto normalMatrix() {
+    return glm::inverse(glm::transpose(glm::mat3(viewMatrix())));
+  }
+
+  auto projectionMatrix() {
+    return glm::perspective(fov, aspect, near, far);
+  }
 };
 
 template <>

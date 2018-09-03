@@ -49,7 +49,9 @@ class Provider : public ProviderBase {
   Provider(ProviderFn provider_fn)
       : provider_fn_(std::move(provider_fn)), instance_(nullptr) {}
 
-  void prepare(const Registry& registry) override { get(registry); }
+  void prepare(const Registry& registry) override {
+    get(registry);
+  }
 
   InstancePtr get(const Registry& registry) const {
     if (!instance_) {
@@ -59,7 +61,7 @@ class Provider : public ProviderBase {
   }
 
   std::unique_ptr<ProviderBase> clone() const override {
-    return std::make_unique<ProviderBase>(
+    return std::make_unique<Provider<InstanceType>>(
         [instance = instance_](const Registry&) { return instance; });
   }
 
