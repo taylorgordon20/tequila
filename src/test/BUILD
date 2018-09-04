@@ -3,15 +3,16 @@ load("//:data.bzl", "static_files")
 
 static_files(
   name = "test_data",
-  srcs = ["//shaders:glsl_files"],
+  srcs = [
+    "//shaders:glsl_files",
+    "//images:image_files",
+  ],
 )
 
 cc_binary(
   name = "glfw_test",
   srcs = ["glfw_test.cpp"],
-  data = [
-    ":test_data",
-  ],
+  data = [":test_data"],
   deps = [
     "//src/common:lib",
     "//third_party:lib",
@@ -27,9 +28,29 @@ cc_binary(
 )
 
 cc_binary(
+  name = "images_test",
+  srcs = ["images_test.cpp"],
+  data = [":test_data"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+  ],
+)
+
+cc_binary(
   name = "registry_test",
   srcs = ["registry_test.cpp"],
   deps = [
     "//src/common:lib"
+  ],
+)
+
+cc_binary(
+  name = "spatial_test",
+  srcs = ["spatial_test.cpp"],
+  data = [":test_data"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
   ],
 )

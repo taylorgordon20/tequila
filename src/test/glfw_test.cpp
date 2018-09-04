@@ -7,15 +7,14 @@
 
 #include <stdlib.h>
 #include <ctime>
-#include <fstream>
 #include <iostream>
-#include <streambuf>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "src/common/camera.hpp"
 #include "src/common/errors.hpp"
+#include "src/common/files.hpp"
 #include "src/common/meshes.hpp"
 #include "src/common/shaders.hpp"
 #include "src/common/window.hpp"
@@ -23,17 +22,6 @@
 namespace tequila {
 
 using namespace gl;
-
-auto loadFile(std::string relative_path) {
-  auto path = boost::filesystem::system_complete(relative_path);
-  if (!boost::filesystem::exists(path)) {
-    path = boost::filesystem::system_complete(relative_path.insert(0, "../"));
-  }
-  assert(boost::filesystem::exists(path));
-  boost::filesystem::ifstream ifs(path);
-  return std::string(
-      (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-}
 
 auto getCamera() {
   Camera camera;

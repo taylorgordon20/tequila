@@ -32,7 +32,7 @@ struct Camera {
 };
 
 template <>
-std::shared_ptr<Camera> gen(const Registry&) {
+inline std::shared_ptr<Camera> gen(const Registry&) {
   auto camera = std::make_shared<Camera>();
   camera->position[2] = 1.0f;
   camera->view[2] = -1.0f;

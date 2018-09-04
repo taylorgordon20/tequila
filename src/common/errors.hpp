@@ -6,7 +6,7 @@
 namespace tequila {
 
 template <typename StringType, typename... Args>
-void throwError(StringType fmt, Args&&... args) {
+inline void throwError(StringType fmt, Args&&... args) {
   auto error = (boost::format(fmt) % ... % std::forward<Args>(args)).str();
   throw std::runtime_error(error.c_str());
 }

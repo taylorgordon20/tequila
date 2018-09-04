@@ -8,6 +8,8 @@
 #include <typeinfo>
 #include <unordered_map>
 
+#include "src/common/errors.hpp"
+
 namespace tequila {
 
 class Registry;
@@ -19,10 +21,8 @@ inline constexpr auto instanceKey() {
 
 template <typename InstanceType, typename StringType>
 inline auto throwInstanceError(const StringType& msg) {
-  boost::format error("Registry error for type %1%: %2%");
-  error % typeid(InstanceType).name();
-  error % msg;
-  throw std::runtime_error(error.str().c_str());
+  throwError(
+      "Registry error for type %1%: %2%", typeid(InstanceType).name(), msg);
 }
 
 template <typename InstanceType>

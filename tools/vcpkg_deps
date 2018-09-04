@@ -1,11 +1,13 @@
 boost-any
 boost-filesystem
 boost-format
+boost-gil
 boost-scope-exit
 eigen3
 glbinding
 glfw3
 glm
+libpng
 sqlite-modern-cpp
 zlib
 zstd

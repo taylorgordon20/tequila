@@ -19,16 +19,30 @@ cc_library(
     k: [v] for k, v in INCLUDE_MAP.items()
   }),
   deps = [
+    ":boost_container",
     ":boost_filesystem",
     ":boost_regex",
     ":boost_system",
     ":glbinding",
     ":glfw3",
+    ":libpng",
     ":sqlite3",
     ":zlib",
     ":zstd",
     "//:system_lib",
   ],
+)
+
+cc_import(
+  name = "boost_container",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_container-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_container-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(
@@ -95,6 +109,18 @@ cc_import(
   }),
   static_library = select({
     CONDITION_MAP["x64-osx"]: "x64-osx/lib/libglfw3.a",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "libpng",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/libpng16.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/libpng16.dll",
     "//conditions:default": None,
   }),
 )
