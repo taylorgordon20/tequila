@@ -11,6 +11,12 @@ inline void throwError(StringType fmt, Args&&... args) {
   throw std::runtime_error(error.c_str());
 }
 
+#define ENFORCE(cond)                                                    \
+  if (!(cond)) {                                                         \
+    throwError(                                                          \
+        "Failed condition '%1%' at %2%:%3%", #cond, __FILE__, __LINE__); \
+  }
+
 class ThrottledFn {
  public:
   ThrottledFn(float duration_s)

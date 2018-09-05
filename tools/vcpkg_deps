@@ -3,6 +3,7 @@ boost-filesystem
 boost-format
 boost-gil
 boost-scope-exit
+catch
 eigen3
 glbinding
 glfw3
