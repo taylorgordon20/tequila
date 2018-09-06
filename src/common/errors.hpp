@@ -1,6 +1,9 @@
 #pragma once
 
+#include <boost/chrono.hpp>
 #include <boost/format.hpp>
+#include <boost/timer/timer.hpp>
+#include <chrono>
 #include <ctime>
 
 namespace tequila {
@@ -11,11 +14,32 @@ inline void throwError(StringType fmt, Args&&... args) {
   throw std::runtime_error(error.c_str());
 }
 
-#define ENFORCE(cond)                                                    \
+#define __ENFORCE_1(cond)                                                \
   if (!(cond)) {                                                         \
     throwError(                                                          \
         "Failed condition '%1%' at %2%:%3%", #cond, __FILE__, __LINE__); \
   }
+
+#define __ENFORCE_2(cond, msg)                                   \
+  if (!(cond)) {                                                 \
+    throwError(                                                  \
+        "Failed condition '%1%' at %2%:%3%. Description: '%4%'", \
+        #cond,                                                   \
+        __FILE__,                                                \
+        __LINE__,                                                \
+        msg);                                                    \
+  }
+
+#define __WHICH_ENFORCE(_1, _2, NAME, ...) NAME
+#define __MSVC_EXPAND(x) x
+#define ENFORCE(...) \
+  __MSVC_EXPAND(     \
+      __WHICH_ENFORCE(__VA_ARGS__, __ENFORCE_2, __ENFORCE_1)(__VA_ARGS__))
+
+#define __TIMER_DECL1(a, b) boost::timer::auto_cpu_timer a##b
+#define __TIMER_DECL2(a, b) __TIMER_DECL1(a, b)
+#define TIMER_GUARD(msg) \
+  __TIMER_DECL2(__tg, __LINE__)("timer(" msg "): %ws wall time\n");
 
 class ThrottledFn {
  public:

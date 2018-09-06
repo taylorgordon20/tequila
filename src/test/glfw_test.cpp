@@ -17,6 +17,7 @@
 #include "src/common/files.hpp"
 #include "src/common/meshes.hpp"
 #include "src/common/shaders.hpp"
+#include "src/common/voxels.hpp"
 #include "src/common/window.hpp"
 
 namespace tequila {
@@ -34,50 +35,16 @@ auto getCamera() {
   return camera;
 }
 
-auto getMesh() {
-  // Set vertex position.
-  Eigen::Matrix<float, 3, Eigen::Dynamic> positions(3, 9);
-  positions.col(0) << 0.0f, 0.5f, 0.0f;
-  positions.col(1) << -0.5f, -0.5f, 0.5f;
-  positions.col(2) << 0.5f, -0.5f, 0.5f;
-  positions.col(3) << 0.0f, 0.5f, 0.0f;
-  positions.col(4) << 0.5f, -0.5f, 0.5f;
-  positions.col(5) << 0.0f, -0.5f, -0.5f;
-  positions.col(6) << 0.0f, 0.5f, 0.0f;
-  positions.col(7) << 0.0f, -0.5f, -0.5f;
-  positions.col(8) << -0.5f, -0.5f, 0.5f;
+auto getVoxelMesh() {
+  TIMER_GUARD("getVoxelMesh()");
 
-  // Set vertex normals.
-  constexpr auto sqrt2i = 0.70710678118f;
-  constexpr auto sqrt3i = 0.57735026919f;
-  Eigen::Matrix<float, 3, Eigen::Dynamic> normals(3, 9);
-  normals.col(0) << 0.0f, sqrt2i, sqrt2i;
-  normals.col(1) << 0.0f, sqrt2i, sqrt2i;
-  normals.col(2) << 0.0f, sqrt2i, sqrt2i;
-  normals.col(3) << sqrt3i, sqrt3i, -sqrt3i;
-  normals.col(4) << sqrt3i, sqrt3i, -sqrt3i;
-  normals.col(5) << sqrt3i, sqrt3i, -sqrt3i;
-  normals.col(6) << -sqrt3i, sqrt3i, -sqrt3i;
-  normals.col(7) << -sqrt3i, sqrt3i, -sqrt3i;
-  normals.col(8) << -sqrt3i, sqrt3i, -sqrt3i;
-
-  // Set vertex colors.
-  Eigen::Matrix<float, 3, Eigen::Dynamic> colors(3, 9);
-  colors.col(0) << 1.0f, 0.0f, 0.0f;
-  colors.col(1) << 0.0f, 1.0f, 0.0f;
-  colors.col(2) << 0.0f, 0.0f, 1.0f;
-  colors.col(3) << 1.0f, 0.0f, 0.0f;
-  colors.col(4) << 0.0f, 0.0f, 1.0f;
-  colors.col(5) << 1.0f, 1.0f, 1.0f;
-  colors.col(6) << 1.0f, 0.0f, 0.0f;
-  colors.col(7) << 1.0f, 1.0f, 1.0f;
-  colors.col(8) << 0.0f, 1.0f, 0.0f;
-
-  return MeshBuilder()
-      .setPositions(std::move(positions))
-      .setNormals(std::move(normals))
-      .setColors(std::move(colors))
-      .build();
+  VoxelArray voxels;
+  for (int x = 0; x < 100; x += 1) {
+    for (int y = 0; y < 100; y += 1) {
+      voxels.setVoxel(x, y, 0, {0, 255, 255});
+    }
+  }
+  return voxels.toMesh();
 }
 
 auto getShader() {
@@ -94,8 +61,7 @@ void run() {
   // Build globals.
   auto camera = getCamera();
   auto shader = getShader();
-  auto mesh = getMesh();
-  std::cout << "4" << std::endl;
+  auto mesh = getVoxelMesh();
 
   // Set window event callbacks.
   window->on<glfwSetKeyCallback>(
@@ -110,6 +76,14 @@ void run() {
           camera.view = glm::rotateY(camera.view, 0.1f);
         } else if (key == GLFW_KEY_RIGHT) {
           camera.view = glm::rotateY(camera.view, -0.1f);
+        } else if (key == GLFW_KEY_PAGE_UP) {
+          camera.position += 0.1f * glm::vec3(0.0f, 1.0f, 0.0f);
+        } else if (key == GLFW_KEY_PAGE_DOWN) {
+          camera.position -= 0.1f * glm::vec3(0.0f, 1.0f, 0.0f);
+        } else if (key == GLFW_KEY_F) {
+          glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        } else if (key == GLFW_KEY_G) {
+          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
       });
   window->on<glfwSetWindowSizeCallback>(
@@ -119,7 +93,7 @@ void run() {
   window->loop([&]() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     shader.run([&] {
-      shader.uniform("light", glm::normalize(glm::vec3(-1.0f, 1.0f, 1.0f)));
+      shader.uniform("light", glm::normalize(glm::vec3(-2.0f, 4.0f, 1.0f)));
       shader.uniform("view_matrix", camera.viewMatrix());
       shader.uniform("normal_matrix", camera.normalMatrix());
       shader.uniform("projection_matrix", camera.projectionMatrix());

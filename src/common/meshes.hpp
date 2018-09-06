@@ -38,10 +38,10 @@ class Mesh {
 };
 
 class MeshBuilder {
+ public:
   using VertexArray2f = Eigen::Matrix<float, 2, Eigen::Dynamic>;
   using VertexArray3f = Eigen::Matrix<float, 3, Eigen::Dynamic>;
 
- public:
   MeshBuilder() = default;
   MeshBuilder& setPositions(VertexArray3f data);
   MeshBuilder& setNormals(VertexArray3f data);

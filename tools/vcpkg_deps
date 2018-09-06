@@ -1,8 +1,10 @@
 boost-any
+boost-chrono
 boost-filesystem
 boost-format
 boost-gil
 boost-scope-exit
+boost-timer
 catch
 eigen3
 glbinding

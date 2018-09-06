@@ -2,7 +2,6 @@
 
 #include <boost/any.hpp>
 
-#include <cassert>
 #include <unordered_map>
 
 #include "src/common/opengl.hpp"
@@ -15,7 +14,9 @@ class Window {
     // Register callback function wrappers.
     glfwSetWindowUserPointer(window_, static_cast<void*>(this));
   }
-  ~Window() { glfwDestroyWindow(window_); }
+  ~Window() {
+    glfwDestroyWindow(window_);
+  }
 
   template <auto callback, typename FunctionType>
   void on(FunctionType fn) {
@@ -36,7 +37,9 @@ class Window {
     }
   }
 
-  void close() { glfwSetWindowShouldClose(window_, true); }
+  void close() {
+    glfwSetWindowShouldClose(window_, true);
+  }
 
  private:
   GLFWwindow* window_;
@@ -46,12 +49,14 @@ class Window {
 class Application {
  public:
   Application() {
-    assert(glfwInit());
+    ENFORCE(glfwInit());
     glfwSetErrorCallback([](int error, const char* cause) {
       std::cout << "error: " << error << " cause: " << cause << std::endl;
     });
   }
-  ~Application() { glfwTerminate(); }
+  ~Application() {
+    glfwTerminate();
+  }
 
   template <typename... GlfwArgs>
   std::shared_ptr<Window> makeWindow(GlfwArgs&&... args) {

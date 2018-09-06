@@ -24,7 +24,7 @@ class CompactVector {
     ranges_.push_back(std::make_pair(0, std::move(initial_value)));
   }
 
-  ValueType get(int index) {
+  ValueType get(int index) const {
     auto buffer_index = bisect(buffer_, index);
     if (buffer_index && buffer_.at(buffer_index - 1).first == index) {
       return buffer_.at(buffer_index - 1).second;
@@ -117,7 +117,7 @@ class CompactVector {
     buffer_.clear();
   }
 
-  auto bisect(const std::vector<std::pair<int, ValueType>>& v, int i) {
+  auto bisect(const std::vector<std::pair<int, ValueType>>& v, int i) const {
     size_t lo = 0, hi = v.size();
     while (lo < hi) {
       auto mid = (lo + hi) / 2;
@@ -148,18 +148,17 @@ class SquareStore {
     cv_.set(toIndex(x, y), std::move(value));
   }
 
-  ValueType get(int x, int y) {
+  ValueType get(int x, int y) const {
     ENFORCE(0 <= x && x < size_);
     ENFORCE(0 <= y && y < size_);
     return cv_.get(toIndex(x, y));
   }
 
  private:
-  int toIndex(int x, int y) {
+  int toIndex(int x, int y) const {
     return x + y * size_;
   }
 
- public:
   size_t size_;
   CompactVector<ValueType> cv_;
 };
@@ -175,17 +174,21 @@ class CubeStore {
     ENFORCE(0 <= x && x < size_);
     ENFORCE(0 <= y && y < size_);
     ENFORCE(0 <= z && z < size_);
-    cv_.set(x + y * size_ + z * size_ * size_, std::move(value));
+    cv_.set(toIndex(x, y, z), std::move(value));
   }
 
-  ValueType get(int x, int y) {
+  ValueType get(int x, int y, int z) const {
     ENFORCE(0 <= x && x < size_);
     ENFORCE(0 <= y && y < size_);
     ENFORCE(0 <= z && z < size_);
-    return cv_.get(x + y * size_ + z * size_ * size_);
+    return cv_.get(toIndex(x, y, z));
   }
 
  private:
+  int toIndex(int x, int y, int z) const {
+    return x + y * size_ + z * size_ * size_;
+  }
+
   size_t size_;
   CompactVector<ValueType> cv_;
 };

@@ -14,9 +14,9 @@ inline auto resolvePathOrThrow(std::string relative_path) {
   if (!boost::filesystem::exists(path)) {
     path = boost::filesystem::system_complete(relative_path.insert(0, "../"));
   }
-  if (!boost::filesystem::exists(path)) {
-    throwError("Unable to resolve path: %1%", relative_path);
-  }
+  ENFORCE(
+      boost::filesystem::exists(path),
+      boost::format("Unable to resolve path: %1%") % relative_path);
   return path;
 }
 
@@ -28,4 +28,4 @@ inline auto loadFile(StringType&& path) {
       (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 }
 
-};  // namespace tequila
+}  // namespace tequila
