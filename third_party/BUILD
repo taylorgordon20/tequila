@@ -152,6 +152,18 @@ cc_import(
 )
 
 cc_import(
+  name = "msgpack",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/msgpackc_import.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/msgpackc.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
   name = "sqlite3",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/sqlite3.lib",

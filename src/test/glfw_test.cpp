@@ -39,9 +39,11 @@ auto getVoxelMesh() {
   TIMER_GUARD("getVoxelMesh()");
 
   VoxelArray voxels;
-  for (int x = 0; x < 100; x += 1) {
-    for (int y = 0; y < 100; y += 1) {
-      voxels.setVoxel(x, y, 0, {0, 255, 255});
+  for (int x = 0; x < 128; x += 1) {
+    for (int y = 0; y < x; y += 1) {
+      for (int z = 0; z < 128; z += 1) {
+        voxels.set(x, y, z, {0, 255, 255});
+      }
     }
   }
   return voxels.toMesh();
@@ -86,8 +88,12 @@ void run() {
           glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
       });
-  window->on<glfwSetWindowSizeCallback>(
-      [&](int width, int height) { glViewport(0, 0, width, height); });
+  window->on<glfwSetWindowSizeCallback>([&](int width, int height) {
+    glViewport(0, 0, width, height);
+    if (height) {
+      camera.aspect = static_cast<float>(width) / height;
+    }
+  });
 
   // Begin scene.
   window->loop([&]() {

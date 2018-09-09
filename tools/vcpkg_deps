@@ -6,11 +6,13 @@ boost-gil
 boost-scope-exit
 boost-timer
 catch
+cereal
 eigen3
 glbinding
 glfw3
 glm
 libpng
+pybind11
 sqlite-modern-cpp
 zlib
 zstd

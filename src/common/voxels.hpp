@@ -10,17 +10,18 @@ class VoxelArray {
  public:
   using RgbTuple = std::tuple<uint8_t, uint8_t, uint8_t>;
   VoxelArray();
-
-  void delVoxel(int x, int y, int z);
-  void setVoxel(int x, int y, int z, RgbTuple color);
-  size_t width() const;
-  size_t height() const;
-  size_t depth() const;
-
+  void del(int x, int y, int z);
+  void set(int x, int y, int z, RgbTuple color);
+  RgbTuple get(int x, int y, int z) const;
   Mesh toMesh() const;
 
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(voxels_);
+  }
+
  private:
-  CubeStore<uint32_t> voxels_;
+  CubeStore<128, uint32_t> voxels_;
 };
 
 }  // namespace tequila

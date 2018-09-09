@@ -8,8 +8,6 @@
 
 namespace tequila {
 
-static constexpr size_t kVoxelDimSize = 1024;
-
 namespace {
 template <int cols>
 auto positionMat(const std::vector<int>& indices) {
@@ -47,13 +45,13 @@ auto normalMat(std::tuple<float, float, float> normal) {
 }
 }  // anonymous namespace
 
-VoxelArray::VoxelArray() : voxels_(kVoxelDimSize, 0) {}
+VoxelArray::VoxelArray() : voxels_(0) {}
 
-void VoxelArray::delVoxel(int x, int y, int z) {
+void VoxelArray::del(int x, int y, int z) {
   voxels_.set(x, y, z, 0);
 }
 
-void VoxelArray::setVoxel(int x, int y, int z, RgbTuple color) {
+void VoxelArray::set(int x, int y, int z, RgbTuple color) {
   uint32_t rgba = 255;
   rgba |= std::get<0>(color) << 24;
   rgba |= std::get<1>(color) << 16;
@@ -61,16 +59,10 @@ void VoxelArray::setVoxel(int x, int y, int z, RgbTuple color) {
   voxels_.set(x, y, z, rgba);
 }
 
-size_t VoxelArray::width() const {
-  return kVoxelDimSize;
-}
-
-size_t VoxelArray::height() const {
-  return kVoxelDimSize;
-}
-
-size_t VoxelArray::depth() const {
-  return kVoxelDimSize;
+VoxelArray::RgbTuple VoxelArray::get(int x, int y, int z) const {
+  uint32_t rgba = voxels_.get(x, y, z);
+  return std::make_tuple(
+      255 & (rgba >> 24), 255 & (rgba >> 16), 255 & (rgba >> 8));
 }
 
 Mesh VoxelArray::toMesh() const {
@@ -102,17 +94,18 @@ Mesh VoxelArray::toMesh() const {
 
   // Generate a vector with every face.
   std::vector<std::tuple<float, float, float, Dir, int32_t>> faces;
-  for (int z = 0; z < kVoxelDimSize; z += 1) {
-    for (int y = 0; y < kVoxelDimSize; y += 1) {
-      for (int x = 0; x < kVoxelDimSize; x += 1) {
+  for (int z = 0; z < voxels_.depth(); z += 1) {
+    for (int y = 0; y < voxels_.height(); y += 1) {
+      for (int x = 0; x < voxels_.width(); x += 1) {
         if (auto color = voxels_.get(x, y, z)) {
           for (int i = 0; i < kOffsets.size(); i += 1) {
             int ox = x + std::get<0>(kOffsets.at(i));
             int oy = y + std::get<1>(kOffsets.at(i));
             int oz = z + std::get<2>(kOffsets.at(i));
-            if (std::min({ox, oy, oz}) < 0 ||
-                std::max({ox, oy, oz}) >= kVoxelDimSize ||
-                !voxels_.get(ox, oy, oz)) {
+            bool a = ox < 0 || ox >= voxels_.width();
+            bool b = oy < 0 || oy >= voxels_.height();
+            bool c = oz < 0 || oz >= voxels_.depth();
+            if (a || b || c || !voxels_.get(ox, oy, oz)) {
               faces.emplace_back(
                   static_cast<float>(x),
                   static_cast<float>(y),
@@ -124,39 +117,40 @@ Mesh VoxelArray::toMesh() const {
         }
       }
     }
-
-    Eigen::Matrix<float, 3, Eigen::Dynamic> positions(3, 6 * faces.size());
-    Eigen::Matrix<float, 3, Eigen::Dynamic> normals(3, 6 * faces.size());
-    Eigen::Matrix<float, 3, Eigen::Dynamic> colors(3, 6 * faces.size());
-    for (int i = 0; i < faces.size(); i += 1) {
-      static auto ones_row = Eigen::Matrix<float, 1, 6>::Ones();
-
-      const auto& face = faces.at(i);
-      auto fx = std::get<0>(face);
-      auto fy = std::get<1>(face);
-      auto fz = std::get<2>(face);
-      auto dir = static_cast<int>(std::get<3>(face));
-      auto color = std::get<4>(face);
-
-      // Set the positions.
-      positions.block(0, 6 * i, 3, 6) =
-          kPositions.at(dir) + Eigen::Vector3f(fx, fy, fz) * ones_row;
-
-      // Set the normals.
-      normals.block(0, 6 * i, 3, 6) = kNormals.at(dir);
-
-      // Set the colors.
-      float r = ((color >> 24) & 255) / 255.0f;
-      float g = ((color >> 16) & 255) / 255.0f;
-      float b = ((color >> 8) & 255) / 255.0f;
-      colors.block(0, 6 * i, 3, 6) = Eigen::Vector3f(r, g, b) * ones_row;
-    }
-
-    return MeshBuilder()
-        .setPositions(std::move(positions))
-        .setNormals(std::move(normals))
-        .setColors(std::move(colors))
-        .build();
   }
+
+  Eigen::Matrix<float, 3, Eigen::Dynamic> positions(3, 6 * faces.size());
+  Eigen::Matrix<float, 3, Eigen::Dynamic> normals(3, 6 * faces.size());
+  Eigen::Matrix<float, 3, Eigen::Dynamic> colors(3, 6 * faces.size());
+  for (int i = 0; i < faces.size(); i += 1) {
+    static auto ones_row = Eigen::Matrix<float, 1, 6>::Ones();
+
+    const auto& face = faces.at(i);
+    auto fx = std::get<0>(face);
+    auto fy = std::get<1>(face);
+    auto fz = std::get<2>(face);
+    auto dir = static_cast<int>(std::get<3>(face));
+    auto color = std::get<4>(face);
+
+    // Set the positions.
+    positions.block(0, 6 * i, 3, 6) =
+        kPositions.at(dir) + Eigen::Vector3f(fx, fy, fz) * ones_row;
+
+    // Set the normals.
+    normals.block(0, 6 * i, 3, 6) = kNormals.at(dir);
+
+    // Set the colors.
+    float r = ((color >> 24) & 255) / 255.0f;
+    float g = ((color >> 16) & 255) / 255.0f;
+    float b = ((color >> 8) & 255) / 255.0f;
+    colors.block(0, 6 * i, 3, 6) = Eigen::Vector3f(r, g, b) * ones_row;
+  }
+
+  return MeshBuilder()
+      .setPositions(std::move(positions))
+      .setNormals(std::move(normals))
+      .setColors(std::move(colors))
+      .build();
 }
+
 }  // namespace tequila

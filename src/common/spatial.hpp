@@ -1,6 +1,8 @@
 #pragma once
 
 #include <boost/format.hpp>
+#include <cereal/types/utility.hpp>
+#include <cereal/types/vector.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -56,20 +58,14 @@ class CompactVector {
     }
   }
 
-  size_t sizeEstimate() const {
-    auto ranges_size = (sizeof(int) + sizeof(ValueType)) * ranges_.size();
-    auto buffer_size = (sizeof(int) + sizeof(ValueType)) * buffer_.size();
-    return ranges_size + buffer_size;
+  template <typename Archive>
+  void save(Archive& archive) const {
+    archive(ranges_, buffer_);
   }
 
-  explicit operator std::string() {
-    flush();
-    std::stringstream ss;
-    ss << boost::format("%1%->%2%") % 0 % get(0);
-    for (auto iter = ++ranges_.begin(); iter != ranges_.end(); ++iter) {
-      ss << boost::format(", %1%->%2%") % iter->first % get(iter->first);
-    }
-    return ss.str();
+  template <typename Archive>
+  void load(Archive& archive) {
+    archive(ranges_, buffer_);
   }
 
  protected:
@@ -135,61 +131,89 @@ class CompactVector {
   std::vector<std::pair<int, ValueType>> buffer_;
 };
 
-template <typename ValueType>
+template <size_t size, typename ValueType>
 class SquareStore {
+  static_assert(size <= 1 << 16, "Too big SquareStore size.");
+
  public:
-  SquareStore(size_t size, ValueType init) : size_(size), cv_(std::move(init)) {
-    ENFORCE(size <= 1 << 16);
-  }
+  SquareStore(ValueType init) : cv_(std::move(init)) {}
 
   void set(int x, int y, ValueType value) {
-    ENFORCE(0 <= x && x < size_);
-    ENFORCE(0 <= y && y < size_);
+    ENFORCE(0 <= x && x < size);
+    ENFORCE(0 <= y && y < size);
     cv_.set(toIndex(x, y), std::move(value));
   }
 
   ValueType get(int x, int y) const {
-    ENFORCE(0 <= x && x < size_);
-    ENFORCE(0 <= y && y < size_);
+    ENFORCE(0 <= x && x < size);
+    ENFORCE(0 <= y && y < size);
     return cv_.get(toIndex(x, y));
+  }
+
+  size_t width() const {
+    return size;
+  }
+
+  size_t height() const {
+    return size;
+  }
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cv_);
   }
 
  private:
   int toIndex(int x, int y) const {
-    return x + y * size_;
+    return x + y * size;
   }
 
-  size_t size_;
   CompactVector<ValueType> cv_;
 };
 
-template <typename ValueType>
+template <size_t size, typename ValueType>
 class CubeStore {
+  static_assert(size <= 1 << 10, "Too big CubeStore size.");
+
  public:
-  CubeStore(size_t size, ValueType init) : size_(size), cv_(std::move(init)) {
-    ENFORCE(size <= 1 << 10);
-  }
+  CubeStore(ValueType init) : cv_(std::move(init)) {}
 
   void set(int x, int y, int z, ValueType value) {
-    ENFORCE(0 <= x && x < size_);
-    ENFORCE(0 <= y && y < size_);
-    ENFORCE(0 <= z && z < size_);
+    ENFORCE(0 <= x && x < size);
+    ENFORCE(0 <= y && y < size);
+    ENFORCE(0 <= z && z < size);
     cv_.set(toIndex(x, y, z), std::move(value));
   }
 
   ValueType get(int x, int y, int z) const {
-    ENFORCE(0 <= x && x < size_);
-    ENFORCE(0 <= y && y < size_);
-    ENFORCE(0 <= z && z < size_);
+    ENFORCE(0 <= x && x < size);
+    ENFORCE(0 <= y && y < size);
+    ENFORCE(0 <= z && z < size);
     return cv_.get(toIndex(x, y, z));
+  }
+
+  size_t width() const {
+    return size;
+  }
+
+  size_t height() const {
+    return size;
+  }
+
+  size_t depth() const {
+    return size;
+  }
+
+  template <typename Archive>
+  void serialize(Archive& archive) {
+    archive(cv_);
   }
 
  private:
   int toIndex(int x, int y, int z) const {
-    return x + y * size_ + z * size_ * size_;
+    return x + y * size + z * size * size;
   }
 
-  size_t size_;
   CompactVector<ValueType> cv_;
 };
 
