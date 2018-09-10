@@ -87,6 +87,13 @@ def py_cpp_module(name, srcs=[], deps=[]):
       deps = deps,
     )
 
+    native.cc_binary(
+      name = "{}.so".format(name),
+      srcs = srcs,
+      linkshared = True,
+      deps = deps,
+    )
+
     native.alias(
       name = name,
       actual = select({
