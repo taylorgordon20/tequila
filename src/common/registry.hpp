@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/format.hpp>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -113,7 +112,7 @@ class RegistryBuilder {
   template <typename InstanceType>
   RegistryBuilder& bindAll(const Registry& other) {
     for (const auto& pair : other.providers_) {
-      registry_.providers[pair.first] = pair.second->clone();
+      registry_.providers_[pair.first] = pair.second->clone();
     }
     return *this;
   }

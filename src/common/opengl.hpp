@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/format.hpp>
 #include <iostream>
 
 // Include GLFW which provided OpenGL context creation and window management.
@@ -14,6 +13,8 @@
 #include <glbinding/Version.h>
 #include <glbinding/gl/gl.h>
 
+#include "src/common/errors.hpp"
+
 namespace tequila {
 
 constexpr auto kOpenGLInfoTemplate = R"(
@@ -26,11 +27,11 @@ renderer: %3%
 )";
 
 inline void logInfoAboutOpenGL() {
-  boost::format fmt(kOpenGLInfoTemplate);
-  fmt % glbinding::ContextInfo::version().toString();
-  fmt % glbinding::ContextInfo::vendor();
-  fmt % glbinding::ContextInfo::renderer();
-  std::cout << fmt;
+  std::cout << format(
+      kOpenGLInfoTemplate,
+      glbinding::ContextInfo::version().toString(),
+      glbinding::ContextInfo::vendor(),
+      glbinding::ContextInfo::renderer());
 }
 
 inline void initializeBindingsForOpenGL() {

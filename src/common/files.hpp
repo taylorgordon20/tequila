@@ -1,29 +1,36 @@
 #pragma once
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-
+#include <unistd.h>
+#include <fstream>
 #include <streambuf>
 
 #include "src/common/errors.hpp"
 
 namespace tequila {
 
-inline auto resolvePathOrThrow(std::string relative_path) {
-  auto path = boost::filesystem::system_complete(relative_path);
-  if (!boost::filesystem::exists(path)) {
-    path = boost::filesystem::system_complete(relative_path.insert(0, "../"));
+inline auto pathExists(const char* path) {
+  std::ifstream ifs(path);
+  return ifs.good();
+}
+
+inline auto resolvePathOrThrow(const char* relative_path) {
+  // HACK: As a temporary hack to deal with the bazel run CWD override,
+  // we also search the parent directory when resolving relative paths.
+  std::string path(relative_path);
+  if (!pathExists(path.c_str())) {
+    path.insert(0, "../");
+  }
+  if (!pathExists(path.c_str())) {
+    path.insert(0, "../");
   }
   ENFORCE(
-      boost::filesystem::exists(path),
-      boost::format("Unable to resolve path: %1%") % relative_path);
+      pathExists(path.c_str()),
+      format("Unable to resolve path: %1%", relative_path));
   return path;
 }
 
-template <typename StringType>
-inline auto loadFile(StringType&& path) {
-  auto resolved_path = resolvePathOrThrow(std::forward<StringType>(path));
-  boost::filesystem::ifstream ifs(resolved_path);
+inline auto loadFile(const char* path) {
+  std::ifstream ifs(resolvePathOrThrow(path).c_str());
   return std::string(
       (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 }

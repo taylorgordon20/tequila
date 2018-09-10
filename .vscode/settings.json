@@ -100,6 +100,7 @@
     "slist": "cpp",
     "future": "cpp",
     "mutex": "cpp",
-    "scoped_allocator": "cpp"
+    "scoped_allocator": "cpp",
+    "filesystem": "cpp"
   },
 }

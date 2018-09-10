@@ -19,12 +19,6 @@ cc_library(
     k: [v] for k, v in INCLUDE_MAP.items()
   }),
   deps = [
-    ":boost_chrono",
-    ":boost_container",
-    ":boost_filesystem",
-    ":boost_regex",
-    ":boost_system",
-    ":boost_timer",
     ":glbinding",
     ":glfw3",
     ":libpng",
@@ -33,78 +27,6 @@ cc_library(
     ":zstd",
     "//:system_lib",
   ],
-)
-
-cc_import(
-  name = "boost_chrono",
-  interface_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_chrono-vc140-mt.lib",
-    "//conditions:default": None,
-  }),
-  shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_chrono-vc141-mt-x64-1_68.dll",
-    "//conditions:default": None,
-  }),
-)
-
-cc_import(
-  name = "boost_container",
-  interface_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_container-vc140-mt.lib",
-    "//conditions:default": None,
-  }),
-  shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_container-vc141-mt-x64-1_68.dll",
-    "//conditions:default": None,
-  }),
-)
-
-cc_import(
-  name = "boost_filesystem",
-  interface_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_filesystem-vc140-mt.lib",
-    "//conditions:default": None,
-  }),
-  shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_filesystem-vc141-mt-x64-1_68.dll",
-    "//conditions:default": None,
-  }),
-)
-
-cc_import(
-  name = "boost_regex",
-  interface_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_regex-vc140-mt.lib",
-    "//conditions:default": None,
-  }),
-  shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_regex-vc141-mt-x64-1_68.dll",
-    "//conditions:default": None,
-  }),
-)
-
-cc_import(
-  name = "boost_system",
-  interface_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_system-vc140-mt.lib",
-    "//conditions:default": None,
-  }),
-  shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_system-vc141-mt-x64-1_68.dll",
-    "//conditions:default": None,
-  }),
-)
-
-cc_import(
-  name = "boost_timer",
-  interface_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_timer-vc140-mt.lib",
-    "//conditions:default": None,
-  }),
-  shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_timer-vc141-mt-x64-1_68.dll",
-    "//conditions:default": None,
-  }),
 )
 
 cc_import(
@@ -149,16 +71,8 @@ cc_import(
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/libpng16.dll",
     "//conditions:default": None,
   }),
-)
-
-cc_import(
-  name = "msgpack",
-  interface_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/lib/msgpackc_import.lib",
-    "//conditions:default": None,
-  }),
-  shared_library = select({
-    CONDITION_MAP["x64-windows"]: "x64-windows/bin/msgpackc.dll",
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libpng16.a",
     "//conditions:default": None,
   }),
 )

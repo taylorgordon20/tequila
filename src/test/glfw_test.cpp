@@ -1,6 +1,4 @@
 #include <Eigen/Dense>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
@@ -36,8 +34,6 @@ auto getCamera() {
 }
 
 auto getVoxelMesh() {
-  TIMER_GUARD("getVoxelMesh()");
-
   VoxelArray voxels;
   for (int x = 0; x < 128; x += 1) {
     for (int y = 0; y < x; y += 1) {
@@ -89,7 +85,9 @@ void run() {
         }
       });
   window->on<glfwSetWindowSizeCallback>([&](int width, int height) {
-    glViewport(0, 0, width, height);
+    int w, h;
+    window->call<glfwGetFramebufferSize>(&w, &h);
+    glViewport(0, 0, w, h);
     if (height) {
       camera.aspect = static_cast<float>(width) / height;
     }
@@ -104,12 +102,6 @@ void run() {
       shader.uniform("normal_matrix", camera.normalMatrix());
       shader.uniform("projection_matrix", camera.projectionMatrix());
       mesh.draw(shader);
-    });
-
-    // Poor-man's frame counter.
-    THROTTLED_FN(1.0, [&](int64_t calls, int64_t ticks) {
-      std::string indicator(1 + calls % 3, '.');
-      std::cout << "\rFPS: " << ticks << indicator << "  ";
     });
   });
 }

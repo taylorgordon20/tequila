@@ -1,6 +1,7 @@
 #include <boost/scope_exit.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include <memory>
 #include <string>
 #include <unordered_map>

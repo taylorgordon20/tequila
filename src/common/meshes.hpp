@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <optional>
 
 #include "src/common/opengl.hpp"
 #include "src/common/shaders.hpp"

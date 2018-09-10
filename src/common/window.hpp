@@ -38,6 +38,11 @@ class Window {
     }
   }
 
+  template <auto glfw_fn, typename... Args>
+  void call(Args&&... args) {
+    glfw_fn(window_, std::forward<Args>(args)...);
+  }
+
   void close() {
     glfwSetWindowShouldClose(window_, true);
   }
