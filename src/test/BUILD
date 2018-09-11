@@ -4,8 +4,9 @@ load("//:data.bzl", "static_files")
 static_files(
   name = "test_data",
   srcs = [
-    "//shaders:glsl_files",
-    "//images:image_files",
+    "//data:files",
+    "//shaders:files",
+    "//images:files",
   ],
 )
 

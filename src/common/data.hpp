@@ -28,7 +28,7 @@ inline auto deserialize(const StringType& data) {
   std::stringstream ss;
   ss << data;
   cereal::BinaryInputArchive archive(ss);
-  archive(value);
+  archive(ret);
   return ret;
 }
 
@@ -48,7 +48,7 @@ class Table {
 
   template <typename T>
   T getObject(const std::string& key) {
-    return deserialize(get<std::string>(key));
+    return deserialize<T>(get(key));
   }
 
  private:

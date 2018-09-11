@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "src/common/camera.hpp"
+#include "src/common/data.hpp"
 #include "src/common/errors.hpp"
 #include "src/common/files.hpp"
 #include "src/common/meshes.hpp"
@@ -34,15 +35,7 @@ auto getCamera() {
 }
 
 auto getVoxelMesh() {
-  VoxelArray voxels;
-  for (int x = 0; x < 128; x += 1) {
-    for (int y = 0; y < x; y += 1) {
-      for (int z = 0; z < 128; z += 1) {
-        voxels.set(x, y, z, {0, 255, 255});
-      }
-    }
-  }
-  return voxels.toMesh();
+  return Table("test_world").getObject<VoxelArray>("voxels").toMesh();
 }
 
 auto getShader() {
