@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sys/stat.h>
 #include <fstream>
 #include <streambuf>
 
@@ -8,8 +9,8 @@
 namespace tequila {
 
 inline auto pathExists(const char* path) {
-  std::ifstream ifs(path);
-  return ifs.good();
+  struct stat info;
+  return !stat(path, &info);
 }
 
 inline auto resolvePathOrThrow(const char* relative_path) {

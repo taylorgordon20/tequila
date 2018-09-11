@@ -11,6 +11,16 @@ py_cpp_module(
   ],
 )
 
+py_cpp_module(
+  name = "data",
+  srcs = ["data_ext.cpp"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+    "@python//:include",
+  ],
+)
+
 # To use, you'll need to add "blaze-bin/src/py" to your python path:
 # import sys; sys.path.append("blaze-bin/src/py")
 py_extension(
@@ -18,6 +28,7 @@ py_extension(
   version="0.0",
   module_base="src/py",
   modules=[
+    ":data",
     ":voxels",
   ],
 )
