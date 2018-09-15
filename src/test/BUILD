@@ -21,6 +21,14 @@ cc_binary(
 )
 
 cc_binary(
+  name = "caches_test",
+  srcs = ["caches_test.cpp"],
+  deps = [
+    "//src/common:lib",
+  ],
+)
+
+cc_binary(
   name = "hello_world",
   srcs = ["hello_world.cpp"],
   deps = [
@@ -43,6 +51,15 @@ cc_binary(
   srcs = ["registry_test.cpp"],
   deps = [
     "//src/common:lib"
+  ],
+)
+
+cc_binary(
+  name = "resources_test",
+  srcs = ["resources_test.cpp"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
   ],
 )
 

@@ -61,19 +61,4 @@ class ShaderProgram {
   gl::GLint program_;
 };
 
-class ShaderManager {
- public:
-  void loadSources(
-      const std::string& name, const std::vector<ShaderSource>& sources);
-  std::shared_ptr<ShaderProgram> get(const std::string& name) const;
-
- private:
-  std::unordered_map<std::string, std::shared_ptr<ShaderProgram>> shaders_;
-};
-
-template <>
-inline std::shared_ptr<ShaderManager> gen(const Registry& registry) {
-  return std::make_shared<ShaderManager>();
-}
-
 }  // namespace tequila

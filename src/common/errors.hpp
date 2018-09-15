@@ -1,16 +1,11 @@
 #pragma once
 
-#include <boost/format.hpp>
+#include "src/common/strings.hpp"
 
 namespace tequila {
 
 template <typename StringType, typename... Args>
-inline auto format(StringType fmt, Args&&... args) {
-  return (boost::format(fmt) % ... % std::forward<Args>(args)).str();
-}
-
-template <typename StringType, typename... Args>
-inline void throwError(StringType fmt, Args&&... args) {
+[[noreturn]] inline void throwError(StringType fmt, Args&&... args) {
   throw std::runtime_error(format(fmt, std::forward<Args>(args)...).c_str());
 }
 

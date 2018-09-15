@@ -118,20 +118,8 @@ void ShaderProgram::printDebugInfo() const {
   for (GLint i = 0; i < count; i += 1) {
     glGetActiveUniform(
         program_, i, kBufferSize, &name_size, &size, &type, name);
-    boost::format fmt("uniform(location=%1%) = %2%[%3%]");
-    fmt % i % type % size;
-    std::cout << fmt << std::endl;
+    std::cout << format("uniform(%1%) = %2%[%3%]", i, type, size) << std::endl;
   }
-}
-
-void ShaderManager::loadSources(
-    const std::string& name, const std::vector<ShaderSource>& sources) {
-  shaders_.emplace(name, std::make_shared<ShaderProgram>(sources));
-}
-
-std::shared_ptr<ShaderProgram> ShaderManager::get(
-    const std::string& name) const {
-  return shaders_.at(name);
 }
 
 }  // namespace tequila

@@ -5,6 +5,7 @@
 #include <streambuf>
 
 #include "src/common/errors.hpp"
+#include "src/common/strings.hpp"
 
 namespace tequila {
 

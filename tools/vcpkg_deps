@@ -1,4 +1,5 @@
 boost-any
+boost-container-hash
 boost-format
 boost-gil
 boost-scope-exit

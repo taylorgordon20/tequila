@@ -31,16 +31,4 @@ struct Camera {
   }
 };
 
-template <>
-inline std::shared_ptr<Camera> gen(const Registry&) {
-  auto camera = std::make_shared<Camera>();
-  camera->position[2] = 1.0f;
-  camera->view[2] = -1.0f;
-  camera->fov = glm::radians(45.0f);
-  camera->aspect = 4.0f / 3.0f;
-  camera->near = 0.1f;
-  camera->far = 100.0f;
-  return camera;
-}
-
 }  // namespace tequila

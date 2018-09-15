@@ -1,6 +1,5 @@
 #include <unordered_map>
 
-#include "src/common/errors.hpp"
 #include "src/common/meshes.hpp"
 #include "src/common/spatial.hpp"
 

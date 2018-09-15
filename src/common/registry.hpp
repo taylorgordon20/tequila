@@ -27,7 +27,6 @@ inline auto throwInstanceError(const StringType& msg) {
 template <typename InstanceType>
 inline std::shared_ptr<InstanceType> gen(const Registry&) {
   throwInstanceError<InstanceType>("No default factory for type");
-  return nullptr;
 }
 
 // Abstact base class for all providers. Exposes virtual methods for operations
