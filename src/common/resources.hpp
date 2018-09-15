@@ -1,10 +1,10 @@
 #pragma once
 
+#include <boost/any.hpp>
 #include <boost/container_hash/extensions.hpp>
+#include <boost/optional.hpp>
 
-#include <any>
 #include <functional>
-#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <typeindex>
@@ -16,6 +16,8 @@
 #include "src/common/functions.hpp"
 
 namespace tequila {
+
+class Resources;
 
 // TODO: Implement eviction.
 // TODO: Implement hash collision fallback.
@@ -40,7 +42,7 @@ class ResourceCache {
       cache_.insertion_stack_.pop_back();
     }
 
-    void set(std::any value) {
+    void set(boost::any value) {
       val_ = std::move(value);
     }
 
@@ -51,17 +53,17 @@ class ResourceCache {
    private:
     ResourceCache& cache_;
     uint64_t key_;
-    std::any val_;
+    boost::any val_;
     std::unordered_set<uint64_t> deps_;
   };
 
   template <typename Resource, typename... Keys>
   auto get(const Keys&... keys) {
-    using Value = decltype(Resource()(Resources(), keys...));
-    std::optional<Value> ret;
+    using Value = decltype(Resource()(std::declval<Resources>(), keys...));
+    boost::optional<Value> ret;
     auto key = getKey<Resource>(keys...);
     if (vals_.count(key)) {
-      ret = std::any_cast<Value>(vals_.at(key));
+      ret = boost::any_cast<Value>(vals_.at(key));
     }
     if (insertion_stack_.size()) {
       insertion_stack_.back()->addDep(key);
@@ -104,11 +106,11 @@ class ResourceCache {
     auto ti = std::type_index(typeid(Resource));
     uint64_t lo = boost::hash_value(std::make_tuple(s1, ti, keys...));
     uint64_t hi = boost::hash_value(std::make_tuple(s2, ti, keys...));
-    return hi << 32 + lo;
+    return (hi << 32) + lo;
   }
 
   std::unordered_set<uint64_t> keys_;
-  std::unordered_map<uint64_t, std::any> vals_;
+  std::unordered_map<uint64_t, boost::any> vals_;
   std::unordered_map<uint64_t, std::unordered_set<uint64_t>> deps_;
   std::unordered_map<uint64_t, std::unordered_set<uint64_t>> subs_;
   std::vector<Insertion*> insertion_stack_;
@@ -117,7 +119,7 @@ class ResourceCache {
 class Resources {
  public:
   Resources() = default;
-  Resources(std::unordered_map<std::type_index, std::any> overrides)
+  Resources(std::unordered_map<std::type_index, boost::any> overrides)
       : overrides_(std::move(overrides)) {}
 
   template <typename Resource, typename... Keys>
@@ -149,13 +151,13 @@ class Resources {
     if (overrides_.count(resource_key)) {
       using Fun = decltype(make_function(&Resource::operator()));
       const auto& any_fn = overrides_.at(resource_key);
-      return std::any_cast<Fun>(any_fn)(*this, keys...);
+      return boost::any_cast<Fun>(any_fn)(*this, keys...);
     } else {
       return Resource()(*this, keys...);
     }
   }
 
-  std::unordered_map<std::type_index, std::any> overrides_;
+  std::unordered_map<std::type_index, boost::any> overrides_;
   mutable ResourceCache cache_;
 };
 
@@ -189,7 +191,7 @@ class ResourcesBuilder {
   }
 
  private:
-  std::unordered_map<std::type_index, std::any> overrides_;
+  std::unordered_map<std::type_index, boost::any> overrides_;
 };
 
 template <typename Resource, typename Value>

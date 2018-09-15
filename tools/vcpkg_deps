@@ -2,6 +2,7 @@ boost-any
 boost-container-hash
 boost-format
 boost-gil
+boost-optional
 catch
 cereal
 eigen3

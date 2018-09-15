@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/format.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
 

@@ -43,7 +43,7 @@ class Table {
 
   template <typename T>
   void setObject(const std::string& key, const T& data) {
-    set<std::string>(key, serialize(data));
+    set(key, serialize(data));
   }
 
   template <typename T>
