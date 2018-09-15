@@ -25,8 +25,8 @@ using namespace gl;
 
 auto getCamera() {
   Camera camera;
-  camera.position[2] = 2.0f;
-  camera.view[2] = -1.0f;
+  camera.position = glm::vec3(0.0f, 0.0f, 2.0f);
+  camera.view = glm::vec3(0.0f, 0.0f, -1.0f);
   camera.fov = glm::radians(45.0f);
   camera.aspect = 4.0f / 3.0f;
   camera.near = 0.1f;

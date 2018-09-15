@@ -51,13 +51,12 @@ ShaderProgram::~ShaderProgram() {
   glDeleteProgram(program_);
 }
 
-ShaderProgram::ShaderProgram(ShaderProgram&& other) {
+ShaderProgram::ShaderProgram(ShaderProgram&& other) : program_(0) {
   *this = std::move(other);
 }
 
 ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) {
-  program_ = other.program_;
-  other.program_ = 0;
+  std::swap(program_, other.program_);
   return *this;
 }
 
@@ -67,6 +66,7 @@ void ShaderProgram::run(std::function<void()> fn) {
     fn();
   } catch (...) {
     glUseProgram(0);
+    throw;
   }
 }
 

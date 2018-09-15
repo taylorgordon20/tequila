@@ -33,17 +33,15 @@ Mesh::~Mesh() {
   }
 }
 
-Mesh::Mesh(Mesh&& other) {
+Mesh::Mesh(Mesh&& other) : vao_(0), vbo_(0) {
   *this = std::move(other);
 }
 
 Mesh& Mesh::operator=(Mesh&& other) {
-  vao_ = other.vao_;
-  vbo_ = other.vbo_;
+  std::swap(vao_, other.vao_);
+  std::swap(vbo_, other.vbo_);
   vertices_ = std::move(other.vertices_);
   attributes_ = std::move(other.attributes_);
-  other.vao_ = 0;
-  other.vbo_ = 0;
   return *this;
 }
 

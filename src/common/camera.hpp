@@ -10,12 +10,12 @@
 namespace tequila {
 
 struct Camera {
-  glm::vec3 position;
-  glm::vec3 view;
-  float fov;
-  float aspect;
-  float near;
-  float far;
+  glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 view = glm::vec3(0.0f, 0.0f, -1.0f);
+  float fov = glm::radians(45.0f);
+  float aspect = 1.0f;
+  float near = 0.1f;
+  float far = 100.0f;
 
   auto viewMatrix() {
     constexpr glm::vec3 up(0.0f, 1.0f, 0.0f);
