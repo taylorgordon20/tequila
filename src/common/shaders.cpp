@@ -1,4 +1,3 @@
-#include <boost/scope_exit.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -63,11 +62,12 @@ ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) {
 }
 
 void ShaderProgram::run(std::function<void()> fn) {
-  BOOST_SCOPE_EXIT_ALL(&) {
+  try {
+    glUseProgram(program_);
+    fn();
+  } catch (...) {
     glUseProgram(0);
-  };
-  glUseProgram(program_);
-  fn();
+  }
 }
 
 void ShaderProgram::uniform(const std::string& name, int value) {

@@ -50,4 +50,6 @@ void main() {
 
   // Compute the pixel color.
   color = vec4(_color * (A + D) + S, 1.0);
+  color.x = 1.0;
+  color.z = 1.0;
 }     
