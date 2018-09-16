@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/integer/integer_log2.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
 
@@ -130,31 +132,31 @@ class CompactVector {
   std::vector<std::pair<int, ValueType>> buffer_;
 };
 
-template <size_t size, typename ValueType>
+template <typename ValueType>
 class SquareStore {
-  static_assert(size <= 1 << 16, "Too big SquareStore size.");
-
  public:
-  SquareStore(ValueType init) : cv_(std::move(init)) {}
+  SquareStore(size_t size, ValueType init) : size_(size), cv_(std::move(init)) {
+    ENFORCE(size <= 1 << 16, "Too big SquareStore size.");
+  }
 
   void set(int x, int y, ValueType value) {
-    ENFORCE(0 <= x && x < size);
-    ENFORCE(0 <= y && y < size);
+    ENFORCE(0 <= x && x < size_);
+    ENFORCE(0 <= y && y < size_);
     cv_.set(toIndex(x, y), std::move(value));
   }
 
   ValueType get(int x, int y) const {
-    ENFORCE(0 <= x && x < size);
-    ENFORCE(0 <= y && y < size);
+    ENFORCE(0 <= x && x < size_);
+    ENFORCE(0 <= y && y < size_);
     return cv_.get(toIndex(x, y));
   }
 
   size_t width() const {
-    return size;
+    return size_;
   }
 
   size_t height() const {
-    return size;
+    return size_;
   }
 
   template <typename Archive>
@@ -164,43 +166,44 @@ class SquareStore {
 
  private:
   int toIndex(int x, int y) const {
-    return x + y * size;
+    return x + y * size_;
   }
 
+  size_t size_;
   CompactVector<ValueType> cv_;
 };
 
-template <size_t size, typename ValueType>
+template <typename ValueType>
 class CubeStore {
-  static_assert(size <= 1 << 10, "Too big CubeStore size.");
-
  public:
-  CubeStore(ValueType init) : cv_(std::move(init)) {}
+  CubeStore(size_t size, ValueType init) : size_(size), cv_(std::move(init)) {
+    ENFORCE(size <= 1 << 10, "Too big CubeStore size.");
+  }
 
   void set(int x, int y, int z, ValueType value) {
-    ENFORCE(0 <= x && x < size);
-    ENFORCE(0 <= y && y < size);
-    ENFORCE(0 <= z && z < size);
+    ENFORCE(0 <= x && x < size_);
+    ENFORCE(0 <= y && y < size_);
+    ENFORCE(0 <= z && z < size_);
     cv_.set(toIndex(x, y, z), std::move(value));
   }
 
   ValueType get(int x, int y, int z) const {
-    ENFORCE(0 <= x && x < size);
-    ENFORCE(0 <= y && y < size);
-    ENFORCE(0 <= z && z < size);
+    ENFORCE(0 <= x && x < size_);
+    ENFORCE(0 <= y && y < size_);
+    ENFORCE(0 <= z && z < size_);
     return cv_.get(toIndex(x, y, z));
   }
 
   size_t width() const {
-    return size;
+    return size_;
   }
 
   size_t height() const {
-    return size;
+    return size_;
   }
 
   size_t depth() const {
-    return size;
+    return size_;
   }
 
   template <typename Archive>
@@ -210,10 +213,96 @@ class CubeStore {
 
  private:
   int toIndex(int x, int y, int z) const {
-    return x + y * size + z * size * size;
+    return x + y * size_ + z * size_ * size_;
   }
 
+  size_t size_;
   CompactVector<ValueType> cv_;
+};
+
+class Octree {
+ public:
+  using BoxTuple = std::tuple<int, int, int, int, int, int>;
+
+  Octree(size_t leaf_size, size_t grid_size)
+      : leaf_size_(leaf_size), grid_size_(grid_size) {
+    ENFORCE(leaf_size);
+    ENFORCE(grid_size);
+    ENFORCE(grid_size < 1 << 20, "grid_size cannot exceed 2**21.")
+    ENFORCE(!(grid_size & (grid_size - 1)), "grid_size must be power of 2.");
+    cell_count_ = (grid_size_ * grid_size * grid_size_ * 8 - 1) / 7;
+    tree_depth_ = boost::integer_log2(7 * cell_count_ + 1) / 3;
+  }
+
+  auto cellCount() const {
+    return cell_count_;
+  };
+
+  auto treeDepth() const {
+    return tree_depth_;
+  };
+
+  template <typename CellFunction>
+  auto search(CellFunction cell_fn, int64_t root_cell = 0) const {
+    ENFORCE(0 <= root_cell && root_cell < cellCount());
+    std::vector<int64_t> stack{root_cell};
+    while (stack.size()) {
+      auto cell = stack.back();
+      stack.pop_back();
+      if (cell_fn(cell) && 8 * cell + 1 < cellCount()) {
+        for (int i = 0; i < 8; i += 1) {
+          stack.push_back(8 * cell + 1 + i);
+        }
+      }
+    }
+  }
+
+  // Returns the octree cell IDs intersecting the given bounding box.
+  auto intersectBox(const BoxTuple& box) const {
+    std::vector<int64_t> ret;
+    search([&](int64_t cell) {
+      auto tbox = cellBox(cell);
+      auto xq = std::get<3>(box) - std::get<0>(tbox) - 1;
+      auto xt = std::get<3>(tbox) - std::get<0>(box) - 1;
+      auto yq = std::get<4>(box) - std::get<1>(tbox) - 1;
+      auto yt = std::get<4>(tbox) - std::get<1>(box) - 1;
+      auto zq = std::get<5>(box) - std::get<2>(tbox) - 1;
+      auto zt = std::get<5>(tbox) - std::get<2>(box) - 1;
+      if ((xq ^ xt) >= 0 && (yq ^ yt) >= 0 && (zq ^ zt) >= 0) {
+        ret.push_back(cell);
+        return true;
+      }
+      return false;
+    });
+    return ret;
+  }
+
+  // Returns a bounding box (in coordinate-pair format) for the given cell.
+  BoxTuple cellBox(int64_t cell) const {
+    int level = boost::integer_log2(7 * cell + 1) / 3;
+    int64_t ic = cell - ((1 << 3 * level) - 1) / 7;
+    int ix = 0, iy = 0, iz = 0;
+    for (int shift = 0; shift < level; shift += 1) {
+      ix += (0b1 & ic) << shift;
+      iy += (0b1 & (ic >> 1)) << shift;
+      iz += (0b1 & (ic >> 2)) << shift;
+      ic >>= 3;
+    }
+    int cell_size = (grid_size_ * leaf_size_) >> level;
+    return std::make_tuple(
+        ix * cell_size,
+        iy * cell_size,
+        iz * cell_size,
+        (ix + 1) * cell_size,
+        (iy + 1) * cell_size,
+        (iz + 1) * cell_size);
+  }
+
+ private:
+  size_t leaf_size_;
+  size_t grid_size_;
+  size_t tree_depth_;
+  size_t cell_count_;
 };
 
 }  // namespace tequila

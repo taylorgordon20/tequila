@@ -20,7 +20,7 @@ class VoxelArray {
   }
 
  private:
-  CubeStore<128, uint32_t> voxels_;
+  CubeStore<uint32_t> voxels_;
 };
 
 }  // namespace tequila

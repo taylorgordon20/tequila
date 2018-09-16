@@ -82,4 +82,22 @@ TEST_CASE("Test image RLE encoding", "[compact_vector]") {
   saveTensorToPng("spatial_test.png", pixels);
 }
 
+TEST_CASE("Test basic usage", "[octree]") {
+  using namespace Catch::Matchers;
+
+  Octree octree(1, 4);
+  REQUIRE(73 == octree.cellCount());
+  REQUIRE(3 == octree.treeDepth());
+
+  REQUIRE_THAT(
+      octree.intersectBox(std::make_tuple(0, 0, 0, 1, 1, 1)),
+      UnorderedEquals<int64_t>({0, 1, 9}));
+  REQUIRE_THAT(
+      octree.intersectBox(std::make_tuple(0, 3, 1, 1, 4, 2)),
+      UnorderedEquals<int64_t>({0, 3, 31}));
+  REQUIRE_THAT(
+      octree.intersectBox(std::make_tuple(2, 0, 3, 3, 1, 4)),
+      UnorderedEquals<int64_t>({0, 6, 53}));
+}
+
 }  // namespace tequila

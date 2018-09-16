@@ -28,7 +28,7 @@ auto loads(const std::string& data) {
 
 PYBIND11_MODULE(voxels, m) {
   using namespace tequila;
-  m.doc() = "Routines for operating on spatial data structures";
+  m.doc() = "Routines for operating on voxels";
   py::class_<VoxelArray>(m, "VoxelArray")
       .def(py::init<>())
       .def("del", &VoxelArray::del)

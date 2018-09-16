@@ -8,6 +8,8 @@
 
 namespace tequila {
 
+constexpr auto kVoxelArraySize = 64;
+
 namespace {
 template <int cols>
 auto positionMat(const std::vector<int>& indices) {
@@ -45,7 +47,7 @@ auto normalMat(std::tuple<float, float, float> normal) {
 }
 }  // anonymous namespace
 
-VoxelArray::VoxelArray() : voxels_(0) {}
+VoxelArray::VoxelArray() : voxels_(kVoxelArraySize, 0) {}
 
 void VoxelArray::del(int x, int y, int z) {
   voxels_.set(x, y, z, 0);

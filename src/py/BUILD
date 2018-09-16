@@ -2,8 +2,8 @@ package(default_visibility = ["//visibility:public"])
 load("//src/py:extensions.bzl", "py_cpp_module", "py_extension")
 
 py_cpp_module(
-  name = "voxels",
-  srcs = ["voxels_ext.cpp"],
+  name = "data",
+  srcs = ["data_ext.cpp"],
   deps = [
     "//src/common:lib",
     "//third_party:lib",
@@ -12,8 +12,18 @@ py_cpp_module(
 )
 
 py_cpp_module(
-  name = "data",
-  srcs = ["data_ext.cpp"],
+  name = "spatial",
+  srcs = ["spatial_ext.cpp"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+    "@python//:include",
+  ],
+)
+
+py_cpp_module(
+  name = "voxels",
+  srcs = ["voxels_ext.cpp"],
   deps = [
     "//src/common:lib",
     "//third_party:lib",
@@ -29,6 +39,7 @@ py_extension(
   module_base="src/py",
   modules=[
     ":data",
+    ":spatial",
     ":voxels",
   ],
 )
