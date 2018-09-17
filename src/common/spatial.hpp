@@ -242,6 +242,15 @@ class Octree {
     return tree_depth_;
   };
 
+  auto cellLevel(int64_t cell) const {
+    return boost::integer_log2(7 * cell + 1) / 3;
+  }
+
+  auto cellParent(int64_t cell) const {
+    ENFORCE(cell > 0);
+    return (cell - 1) / 8;
+  }
+
   template <typename CellFunction>
   auto search(CellFunction cell_fn, int64_t root_cell = 0) const {
     ENFORCE(0 <= root_cell && root_cell < cellCount());
@@ -279,7 +288,7 @@ class Octree {
 
   // Returns a bounding box (in coordinate-pair format) for the given cell.
   BoxTuple cellBox(int64_t cell) const {
-    int level = boost::integer_log2(7 * cell + 1) / 3;
+    int level = cellLevel(cell);
     int64_t ic = cell - ((1 << 3 * level) - 1) / 7;
     int ix = 0, iy = 0, iz = 0;
     for (int shift = 0; shift < level; shift += 1) {

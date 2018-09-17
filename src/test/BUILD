@@ -29,6 +29,15 @@ cc_binary(
 )
 
 cc_binary(
+  name = "camera_test",
+  srcs = ["camera_test.cpp"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+  ],
+)
+
+cc_binary(
   name = "hello_world",
   srcs = ["hello_world.cpp"],
   deps = [

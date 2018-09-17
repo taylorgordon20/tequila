@@ -25,17 +25,17 @@ using namespace gl;
 
 auto getCamera() {
   Camera camera;
-  camera.position = glm::vec3(0.0f, 0.0f, 2.0f);
-  camera.view = glm::vec3(0.0f, 0.0f, -1.0f);
+  camera.position = glm::vec3(32.0f, 20.0f, -10.0f);
+  camera.view = glm::vec3(0.0f, 0.0f, 1.0f);
   camera.fov = glm::radians(45.0f);
   camera.aspect = 4.0f / 3.0f;
-  camera.near = 0.1f;
-  camera.far = 100.0f;
+  camera.near_distance = 0.1f;
+  camera.far_distance = 100.0f;
   return camera;
 }
 
 auto getVoxelMesh() {
-  return Table("test_world").getObject<VoxelArray>("voxels").toMesh();
+  return Table("octree_world").getObject<VoxelArray>("voxels/0").toMesh();
 }
 
 auto getShader() {
