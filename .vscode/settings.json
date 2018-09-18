@@ -101,6 +101,7 @@
     "future": "cpp",
     "mutex": "cpp",
     "scoped_allocator": "cpp",
-    "filesystem": "cpp"
+    "filesystem": "cpp",
+    "regex": "cpp"
   },
 }

@@ -33,7 +33,10 @@ PYBIND11_MODULE(voxels, m) {
       .def(py::init<>())
       .def("del", &VoxelArray::del)
       .def("get", &VoxelArray::get)
-      .def("set", &VoxelArray::set);
+      .def("set", &VoxelArray::set)
+      .def("translate", &VoxelArray::translate)
+      .def("rotate", &VoxelArray::rotate)
+      .def("scale", &VoxelArray::scale);
   m.def("dumps", &dumps);
   m.def("loads", &loads);
 }

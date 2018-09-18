@@ -1,6 +1,7 @@
 #include "src/common/meshes.hpp"
 
 #include <Eigen/Dense>
+#include <glm/glm.hpp>
 
 #include "src/common/opengl.hpp"
 #include "src/common/shaders.hpp"
@@ -9,8 +10,13 @@ namespace tequila {
 
 using namespace gl;
 
-Mesh::Mesh(Eigen::MatrixXf vertices, std::vector<VertexAttribute> attributes)
-    : vertices_(std::move(vertices)), attributes_(std::move(attributes)) {
+Mesh::Mesh(
+    Eigen::MatrixXf vertices,
+    std::vector<VertexAttribute> attributes,
+    glm::mat4x4 transform)
+    : vertices_(std::move(vertices)),
+      attributes_(std::move(attributes)),
+      transform_(std::move(transform)) {
   glGenVertexArrays(1, &vao_);
 
   // Create and populate the mesh's vertex buffer.
@@ -42,7 +48,12 @@ Mesh& Mesh::operator=(Mesh&& other) {
   std::swap(vbo_, other.vbo_);
   vertices_ = std::move(other.vertices_);
   attributes_ = std::move(other.attributes_);
+  transform_ = std::move(other.transform_);
   return *this;
+}
+
+const glm::mat4x4& Mesh::transform() const {
+  return transform_;
 }
 
 void Mesh::draw(ShaderProgram& shader) const {
@@ -78,6 +89,8 @@ void Mesh::draw(ShaderProgram& shader) const {
   glBindVertexArray(0);
 }
 
+MeshBuilder::MeshBuilder() : transform_(glm::mat4(1.0f)) {}
+
 MeshBuilder& MeshBuilder::setPositions(VertexArray3f data) {
   positions_.swap(data);
   return *this;
@@ -95,6 +108,11 @@ MeshBuilder& MeshBuilder::setColors(VertexArray3f data) {
 
 MeshBuilder& MeshBuilder::setTexCoords(VertexArray2f data) {
   tex_coords_.swap(data);
+  return *this;
+}
+
+MeshBuilder& MeshBuilder::setTransform(glm::mat4x4 transform) {
+  transform_ = std::move(transform);
   return *this;
 }
 
@@ -143,7 +161,8 @@ Mesh MeshBuilder::build() {
     mesh_data.block(offset, 0, tex_coords_.rows(), cols) = tex_coords_;
     offset += tex_coords_.rows();
   }
-  return Mesh(std::move(mesh_data), std::move(attributes));
+  return Mesh(
+      std::move(mesh_data), std::move(attributes), std::move(transform_));
 }
 
 }  // namespace tequila

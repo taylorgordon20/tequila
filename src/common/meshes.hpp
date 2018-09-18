@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <glm/glm.hpp>
 
 #include "src/common/opengl.hpp"
 #include "src/common/shaders.hpp"
@@ -16,7 +17,10 @@ struct VertexAttribute {
 
 class Mesh {
  public:
-  Mesh(Eigen::MatrixXf vertices, std::vector<VertexAttribute> attributes);
+  Mesh(
+      Eigen::MatrixXf vertices,
+      std::vector<VertexAttribute> attributes,
+      glm::mat4x4 transform);
   ~Mesh();
 
   // Add explicit move constructor and assignment operator
@@ -27,6 +31,7 @@ class Mesh {
   Mesh(const Mesh&) = delete;
   Mesh& operator=(const Mesh&) = delete;
 
+  const glm::mat4x4& transform() const;
   void draw(ShaderProgram& shader) const;
 
  private:
@@ -34,6 +39,7 @@ class Mesh {
   gl::GLuint vbo_;
   Eigen::MatrixXf vertices_;
   std::vector<VertexAttribute> attributes_;
+  glm::mat4x4 transform_;
 };
 
 class MeshBuilder {
@@ -41,11 +47,12 @@ class MeshBuilder {
   using VertexArray2f = Eigen::Matrix<float, 2, Eigen::Dynamic>;
   using VertexArray3f = Eigen::Matrix<float, 3, Eigen::Dynamic>;
 
-  MeshBuilder() = default;
+  MeshBuilder();
   MeshBuilder& setPositions(VertexArray3f data);
   MeshBuilder& setNormals(VertexArray3f data);
   MeshBuilder& setColors(VertexArray3f data);
   MeshBuilder& setTexCoords(VertexArray2f data);
+  MeshBuilder& setTransform(glm::mat4x4 transform);
   Mesh build();
 
  private:
@@ -53,6 +60,7 @@ class MeshBuilder {
   VertexArray3f normals_;
   VertexArray3f colors_;
   VertexArray2f tex_coords_;
+  glm::mat4x4 transform_;
 };
 
 }  // namespace tequila

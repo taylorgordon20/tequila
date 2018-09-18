@@ -2,6 +2,7 @@
 
 #include <sqlite_modern_cpp.h>
 #include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/utility.hpp>
 #include <cereal/types/vector.hpp>
@@ -32,6 +33,30 @@ inline auto deserialize(const StringType& data) {
   return ret;
 }
 
+class JsonParser {
+ public:
+  JsonParser(const std::string& json) {
+    std::stringstream ss;
+    ss << json;
+    archive_ = std::make_unique<cereal::JSONInputArchive>(ss);
+  }
+
+  template <typename FieldType, typename StringType>
+  FieldType get(StringType&& name) {
+    FieldType field;
+    (*archive_)(cereal::make_nvp(std::forward<StringType>(name), field));
+    return field;
+  }
+
+  template <typename FieldType, typename StringType>
+  void set(StringType&& name, FieldType& field) {
+    (*archive_)(cereal::make_nvp(std::forward<StringType>(name), field));
+  }
+
+ private:
+  std::unique_ptr<cereal::JSONInputArchive> archive_;
+};
+
 class Table {
  public:
   Table(const std::string& name);
@@ -49,6 +74,10 @@ class Table {
   template <typename T>
   T getObject(const std::string& key) {
     return deserialize<T>(get(key));
+  }
+
+  JsonParser getJson(const std::string& key) {
+    return JsonParser(get(key));
   }
 
  private:

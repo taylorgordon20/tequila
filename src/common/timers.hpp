@@ -15,7 +15,7 @@ class Timer {
     using namespace std::chrono;
     auto end = high_resolution_clock::now();
     auto dur = duration_cast<duration<double>>(end - start_).count();
-    std::cout << format("Timer[%1%]=%2%", message_, dur) << std::endl;
+    std::cout << format("wall_time[%1%]=%2%", message_, dur) << std::endl;
   }
 
  private:

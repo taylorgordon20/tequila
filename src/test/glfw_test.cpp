@@ -91,7 +91,7 @@ void run() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     shader.run([&] {
       shader.uniform("light", glm::normalize(glm::vec3(-2.0f, 4.0f, 1.0f)));
-      shader.uniform("view_matrix", camera.viewMatrix());
+      shader.uniform("modelview_matrix", camera.viewMatrix());
       shader.uniform("normal_matrix", camera.normalMatrix());
       shader.uniform("projection_matrix", camera.projectionMatrix());
       mesh.draw(shader);

@@ -2,7 +2,7 @@
 
 // Uniforms.
 uniform vec3 light;
-uniform mat4 view_matrix;
+uniform mat4 modelview_matrix;
 uniform mat3 normal_matrix;
 uniform mat4 projection_matrix;
 
@@ -21,7 +21,7 @@ out vec3 _color;
 out vec2 _tex_coord;
 
 void main() {
-  vec4 view_position = view_matrix * vec4(position, 1.0);
+  vec4 view_position = modelview_matrix * vec4(position, 1.0);
 
   // Set the vertex position on the screen.
   gl_Position = projection_matrix * view_position;

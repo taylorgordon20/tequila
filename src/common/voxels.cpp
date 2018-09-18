@@ -1,5 +1,7 @@
 #include "src/common/voxels.hpp"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <unordered_map>
 
 #include "src/common/errors.hpp"
@@ -47,7 +49,8 @@ auto normalMat(std::tuple<float, float, float> normal) {
 }
 }  // anonymous namespace
 
-VoxelArray::VoxelArray() : voxels_(kVoxelArraySize, 0) {}
+VoxelArray::VoxelArray()
+    : voxels_(kVoxelArraySize, 0), transform_(glm::mat4(1.0f)) {}
 
 void VoxelArray::del(int x, int y, int z) {
   voxels_.set(x, y, z, 0);
@@ -65,6 +68,18 @@ VoxelArray::RgbTuple VoxelArray::get(int x, int y, int z) const {
   uint32_t rgba = voxels_.get(x, y, z);
   return std::make_tuple(
       255 & (rgba >> 24), 255 & (rgba >> 16), 255 & (rgba >> 8));
+}
+
+void VoxelArray::translate(float x, float y, float z) {
+  transform_ = glm::translate(transform_, glm::vec3(x, y, z));
+}
+
+void VoxelArray::rotate(float x, float y, float z, float angle) {
+  transform_ = glm::rotate(transform_, angle, glm::vec3(x, y, z));
+}
+
+void VoxelArray::scale(float x, float y, float z) {
+  transform_ = glm::scale(transform_, glm::vec3(x, y, z));
 }
 
 Mesh VoxelArray::toMesh() const {
@@ -152,6 +167,7 @@ Mesh VoxelArray::toMesh() const {
       .setPositions(std::move(positions))
       .setNormals(std::move(normals))
       .setColors(std::move(colors))
+      .setTransform(transform_)
       .build();
 }
 

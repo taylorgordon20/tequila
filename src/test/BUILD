@@ -1,19 +1,9 @@
 package(default_visibility = ["//visibility:public"])
-load("//:data.bzl", "static_files")
-
-static_files(
-  name = "test_data",
-  srcs = [
-    "//data:files",
-    "//shaders:files",
-    "//images:files",
-  ],
-)
 
 cc_binary(
   name = "glfw_test",
   srcs = ["glfw_test.cpp"],
-  data = [":test_data"],
+  data = ["//src:static_files"],
   deps = [
     "//src/common:lib",
     "//third_party:lib",
@@ -48,7 +38,7 @@ cc_binary(
 cc_binary(
   name = "images_test",
   srcs = ["images_test.cpp"],
-  data = [":test_data"],
+  data = ["//src:static_files"],
   deps = [
     "//src/common:lib",
     "//third_party:lib",
@@ -75,7 +65,7 @@ cc_binary(
 cc_binary(
   name = "spatial_test",
   srcs = ["spatial_test.cpp"],
-  data = [":test_data"],
+  data = ["//src:static_files"],
   deps = [
     "//src/common:lib",
     "//third_party:lib",
