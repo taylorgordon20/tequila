@@ -19,7 +19,7 @@ def mirror_tree(src, dst, pattern):
     if not os.path.exists(dst_dir):
       os.makedirs(dst_dir)
     shutil.copy(src_filename, dst_filename)
-    os.chmod(dst_filename, stat.S_IWUSR)
+    os.chmod(dst_filename, os.stat(dst_filename).st_mode | stat.S_IWUSR)
 
 
 def main():
@@ -39,6 +39,7 @@ def main():
 
   # Copy the files into the bin directory.
   mirror_tree("bazel-bin/src/", "bin/", "*.exe")
+  mirror_tree("bazel-bin/src/", "bin/", "game")
   mirror_tree("bazel-bin/src/", "bin/", "*.dll")
   mirror_tree("bazel-bin/src/", "bin/", "shaders/*.glsl")
   mirror_tree("bazel-bin/src/", "bin/", "images/*.png")

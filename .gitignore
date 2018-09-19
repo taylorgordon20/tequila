@@ -4,3 +4,4 @@ conaninfo.txt
 bazel-*
 *.pdb
 bin*
+.DS_Store
