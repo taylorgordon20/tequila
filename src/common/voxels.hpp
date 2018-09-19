@@ -20,6 +20,7 @@ class VoxelArray {
   // Methods to set voxels in local coordinates.
   void del(int x, int y, int z);
   void set(int x, int y, int z, RgbTuple color);
+  bool has(int x, int y, int z) const;
   RgbTuple get(int x, int y, int z) const;
 
   // Methods to transform the voxels in world coordinates.
@@ -27,6 +28,7 @@ class VoxelArray {
   void rotate(float x, float y, float z, float angle);
   void scale(float x, float y, float z);
 
+  const glm::mat4& transform() const;
   Mesh toMesh() const;
 
   template <typename Archive>

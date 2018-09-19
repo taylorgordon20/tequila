@@ -34,7 +34,11 @@ void run() {
   // Figure out what world to load.
   std::string world_name;
   std::cout << "Enter world name (e.g. octree_world): ";
-  std::cin >> world_name;
+  std::getline(std::cin, world_name);
+  if (world_name.empty()) {
+    std::cout << "Defaulting to world 'octree_world'." << std::endl;
+    world_name = "octree_world";
+  }
 
   // Initialize game singletons (e.g. camera, window)
   Application app;
@@ -51,17 +55,23 @@ void run() {
                        .build();
 
   // Play the game.
+  // clang-format off
   std::cout << "Entering game loop." << std::endl;
-  window->loop([&resources,
-                world_handler = WorldHandler(window, resources),
-                terrain_renderer = TerrainRenderer(resources)](float dt) {
+  window->loop([
+    &resources,
+    world_handler = WorldHandler(window, resources),
+    terrain_renderer = TerrainRenderer(resources),
+    terrain_handler = TerrainHandler(window, resources)
+  ](float dt) mutable {
     // Update game state by processing any event changes.
     world_handler.update(dt);
+    terrain_handler.update(dt);
 
     // Render the scene to a new frame.
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
     terrain_renderer.draw();
   });
+  // clang-format on
 }
 
 }  // namespace tequila

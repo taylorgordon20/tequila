@@ -57,7 +57,7 @@ class WorldHandler {
     window_->clear<glfwSetWindowSizeCallback>();
   }
 
-  void update(float dt) const {
+  void update(float dt) {
     // Adjust the camera based on keyboard input.
     {
       auto key_press = [&](auto key) {

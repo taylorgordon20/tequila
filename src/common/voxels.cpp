@@ -52,6 +52,10 @@ auto normalMat(std::tuple<float, float, float> normal) {
 VoxelArray::VoxelArray()
     : voxels_(kVoxelArraySize, 0), transform_(glm::mat4(1.0f)) {}
 
+bool VoxelArray::has(int x, int y, int z) const {
+  return voxels_.get(x, y, z);
+}
+
 void VoxelArray::del(int x, int y, int z) {
   voxels_.set(x, y, z, 0);
 }
@@ -80,6 +84,10 @@ void VoxelArray::rotate(float x, float y, float z, float angle) {
 
 void VoxelArray::scale(float x, float y, float z) {
   transform_ = glm::scale(transform_, glm::vec3(x, y, z));
+}
+
+const glm::mat4& VoxelArray::transform() const {
+  return transform_;
 }
 
 Mesh VoxelArray::toMesh() const {
