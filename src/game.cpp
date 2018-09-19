@@ -58,7 +58,6 @@ void run() {
   // clang-format off
   std::cout << "Entering game loop." << std::endl;
   window->loop([
-    &resources,
     world_handler = WorldHandler(window, resources),
     terrain_renderer = TerrainRenderer(resources),
     terrain_handler = TerrainHandler(window, resources)
