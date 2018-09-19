@@ -24,12 +24,13 @@ def mirror_tree(src, dst, pattern):
 
 def main():
   # Build the binary files.
+  copt = "/std:c++17" if os.name == "nt" else "-std=c++17"
   subprocess.check_call(
       [
           "bazel",
           "build",
           "--compilation_mode=opt",
-          "--copt=/std:c++17",
+          f"--copt={copt}",
           "//src:game",
       ],
       stdout = sys.stdout,
