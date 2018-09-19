@@ -201,4 +201,28 @@ struct SingletonResource {
   }
 };
 
+template <typename Resource, typename... Keys>
+class ResourceMutation {
+ public:
+  ResourceMutation(Resources& resources, const Keys&... keys)
+      : resources_(resources), value_(resources_.get<Resource>(keys...)) {
+    invalidator_ = [this, keys...] {
+      resources_.invalidate<Resource>(keys...);
+    };
+  }
+
+  ~ResourceMutation() {
+    invalidator_();
+  }
+
+  auto operator-> () {
+    return value_;
+  }
+
+ private:
+  Resources& resources_;
+  decltype(resources_.get<Resource>(std::declval<Keys>()...)) value_;
+  std::function<void()> invalidator_;
+};
+
 }  // namespace tequila

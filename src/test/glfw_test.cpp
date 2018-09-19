@@ -87,7 +87,7 @@ void run() {
   });
 
   // Begin scene.
-  window->loop([&]() {
+  window->loop([&](float dt) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     shader.run([&] {
       shader.uniform("light", glm::normalize(glm::vec3(-2.0f, 4.0f, 1.0f)));

@@ -12,12 +12,8 @@
 #include "src/common/errors.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/spatial.hpp"
-#include "src/common/window.hpp"
 
 namespace tequila {
-
-struct WorldWindow
-    : public SingletonResource<WorldWindow, std::shared_ptr<Window>> {};
 
 struct WorldName : public SingletonResource<WorldName, std::string> {};
 

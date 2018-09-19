@@ -1,19 +1,15 @@
+#include <glm/glm.hpp>
+
 #include <iostream>
 #include <string>
 #include <utility>
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/rotate_vector.hpp>
-
-#include <cereal/archives/json.hpp>
-
 #include "src/common/camera.hpp"
-#include "src/common/data.hpp"
 #include "src/common/errors.hpp"
-#include "src/common/files.hpp"
 #include "src/common/opengl.hpp"
 #include "src/common/resources.hpp"
 #include "src/worlds/core.hpp"
+#include "src/worlds/input.hpp"
 #include "src/worlds/terrain.hpp"
 
 namespace tequila {
@@ -52,51 +48,19 @@ void run() {
                        .withSingleton<WorldCamera>(world_camera)
                        .withSingleton<WorldLight>(world_light)
                        .withSingleton<WorldName>(world_name)
-                       .withSingleton<WorldWindow>(window)
                        .build();
 
-  // Set window event callbacks.
-  window->on<glfwSetKeyCallback>(
-      [&](int key, int scancode, int action, int mods) {
-        using namespace gl;
-        auto& camera = *resources.get<WorldCamera>();
-        resources.invalidate<WorldCamera>();
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-          window->close();
-        } else if (key == GLFW_KEY_UP) {
-          camera.position += 0.1f * camera.view;
-        } else if (key == GLFW_KEY_DOWN) {
-          camera.position -= 0.1f * camera.view;
-        } else if (key == GLFW_KEY_LEFT) {
-          camera.view = glm::rotateY(camera.view, 0.5f);
-        } else if (key == GLFW_KEY_RIGHT) {
-          camera.view = glm::rotateY(camera.view, -0.5f);
-        } else if (key == GLFW_KEY_PAGE_UP) {
-          camera.position += 0.1f * glm::vec3(0.0f, 1.0f, 0.0f);
-        } else if (key == GLFW_KEY_PAGE_DOWN) {
-          camera.position -= 0.1f * glm::vec3(0.0f, 1.0f, 0.0f);
-        } else if (key == GLFW_KEY_F) {
-          glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        } else if (key == GLFW_KEY_G) {
-          glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        }
-      });
-  window->on<glfwSetWindowSizeCallback>([&](int width, int height) {
-    int w, h;
-    window->call<glfwGetFramebufferSize>(&w, &h);
-    gl::glViewport(0, 0, w, h);
-    if (height) {
-      auto& camera = *resources.get<WorldCamera>();
-      resources.invalidate<WorldCamera>();
-      camera.aspect = static_cast<float>(width) / height;
-    }
-  });
-
-  // Begin scene.
+  // Play the game.
   std::cout << "Entering game loop." << std::endl;
-  window->loop([&]() {
+  window->loop([&resources,
+                world_handler = WorldHandler(window, resources),
+                terrain_renderer = TerrainRenderer(resources)](float dt) {
+    // Update game state by processing any event changes.
+    world_handler.update(dt);
+
+    // Render the scene to a new frame.
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
-    TerrainRenderer::draw(resources);
+    terrain_renderer.draw();
   });
 }
 

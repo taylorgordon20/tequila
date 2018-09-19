@@ -19,6 +19,12 @@ class Window {
     glfwDestroyWindow(window_);
   }
 
+  template <auto callback>
+  void clear() {
+    callbacks_.erase((intptr_t)callback);
+    callback(window_, nullptr);
+  }
+
   template <auto callback, typename FunctionType>
   void on(FunctionType fn) {
     callbacks_[(intptr_t)callback] = std::move(fn);
@@ -31,16 +37,19 @@ class Window {
 
   template <typename FunctionType>
   void loop(FunctionType fn) {
+    static double previous_frame_time = glfwGetTime();
     while (!glfwWindowShouldClose(window_)) {
-      fn();
+      float dt = static_cast<float>(glfwGetTime() - previous_frame_time);
+      fn(dt);
+      previous_frame_time = glfwGetTime();
       glfwSwapBuffers(window_);
       glfwPollEvents();
     }
   }
 
   template <auto glfw_fn, typename... Args>
-  void call(Args&&... args) {
-    glfw_fn(window_, std::forward<Args>(args)...);
+  auto call(Args&&... args) {
+    return glfw_fn(window_, std::forward<Args>(args)...);
   }
 
   void close() {

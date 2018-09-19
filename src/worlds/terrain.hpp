@@ -50,26 +50,29 @@ struct TerrainMesh {
   }
 };
 
-struct TerrainRenderer {
-  static void draw(Resources& resources) {
-    const auto& cells = *resources.get<VisibleCells>();
+class TerrainRenderer {
+ public:
+  TerrainRenderer(Resources& resources) : resources_(resources) {}
+
+  void draw() const {
+    const auto& cells = *resources_.get<VisibleCells>();
 
     // Figure out which voxel arrays need to be rendered.
     std::unordered_set<std::string> voxel_keys;
     for (auto cell : cells) {
-      auto cell_keys = resources.get<TerrainVoxelIndex>(cell);
+      auto cell_keys = resources_.get<TerrainVoxelIndex>(cell);
       voxel_keys.insert(cell_keys->begin(), cell_keys->end());
     }
 
     // Draw each voxel array's mesh.
-    auto shader = resources.get<TerrainShader>();
-    auto camera = resources.get<WorldCamera>();
-    auto light = resources.get<WorldLight>();
+    auto shader = resources_.get<TerrainShader>();
+    auto camera = resources_.get<WorldCamera>();
+    auto light = resources_.get<WorldLight>();
     shader->run([&] {
       shader->uniform("light", *light);
       shader->uniform("projection_matrix", camera->projectionMatrix());
       for (const auto& voxel_key : voxel_keys) {
-        auto mesh = resources.get<TerrainMesh>(voxel_key);
+        auto mesh = resources_.get<TerrainMesh>(voxel_key);
         auto modelview = camera->viewMatrix() * mesh->transform();
         auto normal = glm::inverse(glm::transpose(glm::mat3(modelview)));
         shader->uniform("modelview_matrix", modelview);
@@ -78,6 +81,9 @@ struct TerrainRenderer {
       }
     });
   };
+
+ private:
+  Resources& resources_;
 };
 
 }  // namespace tequila
