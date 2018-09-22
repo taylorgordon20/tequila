@@ -6,6 +6,7 @@ boost-integer
 boost-optional
 catch
 cereal
+chakracore
 eigen3
 glbinding
 glfw3

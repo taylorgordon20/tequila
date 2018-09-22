@@ -46,10 +46,19 @@ cc_binary(
 )
 
 cc_binary(
+  name = "js_test",
+  srcs = ["js_test.cpp"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+  ],
+)
+
+cc_binary(
   name = "registry_test",
   srcs = ["registry_test.cpp"],
   deps = [
-    "//src/common:lib"
+    "//src/common:lib",
   ],
 )
 

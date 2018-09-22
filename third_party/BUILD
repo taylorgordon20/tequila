@@ -19,6 +19,7 @@ cc_library(
     k: [v] for k, v in INCLUDE_MAP.items()
   }),
   deps = [
+    ":chakracore",
     ":glbinding",
     ":glfw3",
     ":libpng",
@@ -27,6 +28,18 @@ cc_library(
     ":zstd",
     "//:system_lib",
   ],
+)
+
+cc_import(
+  name = "chakracore",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/Chakracore.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/ChakraCore.dll",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(
