@@ -4,9 +4,11 @@
 
 #include <array>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 #include "src/common/errors.hpp"
+#include "src/common/functions.hpp"
 #include "src/common/strings.hpp"
 
 namespace tequila {
@@ -78,13 +80,18 @@ class JsModules {
     fn_args.at(0) = undefined();
     {
       size_t i = 1;
-      (void(fn_args[i++] = value(std::forward<Args>(args))), ...);
+      ((void)(fn_args[i++] = value(std::forward<Args>(args))), ...);
     }
 
     // Invoke the function and return its return value.
     JsValueRef fn_ret;
     JS_ENFORCE(JsCallFunction(fn_ref, fn_args.data(), fn_args.size(), &fn_ret));
     return cast<Return>(fn_ret);
+  }
+
+  void delGlobal(const std::string& name) {
+    ContextGuard ctx_guard(context_);
+    JS_ENFORCE(JsDeleteProperty(global(), propertyId(name), true, nullptr));
   }
 
   template <typename Arg>
@@ -110,6 +117,11 @@ class JsModules {
     }
   };
 
+  template <typename... Args, size_t... Is>
+  auto argsTuple(JsValueRef* args, std::index_sequence<Is...>) {
+    return std::make_tuple(cast<Args>(args[1 + Is])...);
+  }
+
   // Simple value creation functions.
   JsValueRef undefined();
   JsValueRef global();
@@ -125,6 +137,10 @@ class JsModules {
 
   template <typename ValueType>
   JsValueRef value(const std::unordered_map<std::string, ValueType>& value);
+
+  // Function creation functions.
+  template <typename Return, typename... Args>
+  JsValueRef value(std::function<Return(Args...)> fn);
 
   // Object property functions.
   JsPropertyIdRef propertyId(const std::string& prop);
@@ -228,6 +244,36 @@ JsValueRef JsModules::value(
   for (const auto& pair : value) {
     setProperty(ret, pair.first, this->value(pair.second));
   }
+  return ret;
+}
+
+template <typename Return, typename... Args>
+JsValueRef JsModules::value(std::function<Return(Args...)> fn) {
+  // Move the function onto the heap so that it can be managed by the JSRT.
+  auto fn_ptr = new std::function<JsValueRef(JsValueRef*)>(
+      [this, fn = std::move(fn)](JsValueRef* args) {
+        auto tup = argsTuple<Args...>(args, std::index_sequence_for<Args...>());
+        return value(std::apply(fn, tup));
+      });
+
+  // Adapts a JS function call to its corresponding std::function.
+  auto adapter_fn = [](JsValueRef callee,
+                       bool is_construct_call,
+                       JsValueRef* arguments,
+                       unsigned short arguments_count,
+                       void* data) {
+    ENFORCE(arguments_count == 1 + sizeof...(Args));
+    return (*static_cast<decltype(fn_ptr)>(data))(arguments);
+  };
+
+  // Deletes the std::function for a garbage collected JS function.
+  auto collect_fn = [](JsRef, void* data) {
+    delete static_cast<decltype(fn_ptr)>(data);
+  };
+
+  JsValueRef ret;
+  JS_ENFORCE(JsCreateFunction(adapter_fn, (void*)fn_ptr, &ret));
+  JS_ENFORCE(JsSetObjectBeforeCollectCallback(ret, (void*)fn_ptr, collect_fn));
   return ret;
 }
 

@@ -91,6 +91,24 @@ module.get_a_map = function() {
 module;
 )";
 
+constexpr auto kScript4 = R"(
+var module = {};
+
+module.invoke1 = function(a) {
+  return fn1(a);
+}
+
+module.invoke2 = function(a, b) {
+  return fn2(a, b);
+}
+
+module.invoke3 = function(a, b, c) {
+  return fn3(a, b, c);
+}
+
+module;
+)";
+
 TEST_CASE("Test argument types", "[js]") {
   JsModules js;
 
@@ -168,6 +186,25 @@ TEST_CASE("Test globals", "[js]") {
   REQUIRE(2 == global_map.size());
   REQUIRE(1 == global_map.at("hello"));
   REQUIRE(2 == global_map.at("bloe"));
+}
+
+TEST_CASE("Test functions", "[js]") {
+  JsModules js;
+
+  js.setGlobal(
+      "fn1", make_function([](std::string a) { return format("__%1%__", a); }));
+  js.setGlobal("fn2", make_function([](int a, int b) { return 2 * a + b; }));
+  js.setGlobal("fn3", make_function([](int a, double b, bool c) {
+                 return format("%1%:%2%:%3%", a, b, c);
+               }));
+
+  auto script_4 = js.load(kScript4);
+  REQUIRE("__foo__" == js.call<std::string>(script_4, "invoke1", "foo"));
+  REQUIRE(5 == js.call<int>(script_4, "invoke2", 2, 1));
+  REQUIRE(9 == js.call<int>(script_4, "invoke2", 4, 1));
+  REQUIRE(11 == js.call<int>(script_4, "invoke2", 3, 5));
+  REQUIRE(
+      "3:4.72:0" == js.call<std::string>(script_4, "invoke3", 3, 4.72, false));
 }
 
 }  // namespace tequila
