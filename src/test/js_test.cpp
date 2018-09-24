@@ -109,6 +109,54 @@ module.invoke3 = function(a, b, c) {
 module;
 )";
 
+/*
+constexpr auto kScript = R"(
+function foo() {
+  var junk = Math.cos(0.5) * 0;
+}
+)";
+
+TEST_CASE("Foo", "[js]") {
+  JsRuntimeHandle runtime;
+  JsCreateRuntime(JsRuntimeAttributeNone, nullptr, &runtime);
+
+  JsContextRef context;
+  JsCreateContext(runtime, &context);
+
+  {
+    JsSetCurrentContext(context);
+
+    JsValueRef script, url;
+    JsCreateExternalArrayBuffer(
+        (void*)kScript, strlen(kScript), nullptr, nullptr, &script);
+    JsCreateString("foo.js", 6, &url);
+    JsRun(script, 0, url, JsParseScriptAttributeNone, nullptr);
+
+    JsSetCurrentContext(JS_INVALID_REFERENCE);
+  }
+
+  for (int i = 0; i < 100000; i += 1) {
+    std::cout << "iteration=" << i << std::endl;
+    JsSetCurrentContext(context);
+
+    JsValueRef global, fn;
+    JsGetGlobalObject(&global);
+    JsPropertyIdRef prop_id;
+    JsCreatePropertyId("foo", 3, &prop_id);
+    JsGetProperty(global, prop_id, &fn);
+
+    JsValueRef undefined;
+    JsGetUndefinedValue(&undefined);
+    JsValueRef args[] = {undefined};
+
+    JsValueRef ret;
+    JsCallFunction(fn, args, 1, &ret);
+
+    JsSetCurrentContext(JS_INVALID_REFERENCE);
+  }
+}
+*/
+
 TEST_CASE("Test argument types", "[js]") {
   JsModule module(std::make_shared<JsContext>(), "script_1", kScript1);
   REQUIRE("foo_string" == module.call<std::string>("foo"));

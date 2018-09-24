@@ -95,18 +95,17 @@ class JsContext {
     return std::make_tuple(cast<Args>(args[1 + Is])...);
   }
 
-  template <typename Return, typename... Args>
-  auto applyFunc(
-      const std::function<Return(Args...)>& fn, std::tuple<Args...>&& tup) {
+  template <typename Return, typename Tuple, typename... Args>
+  auto applyFunc(const std::function<Return(Args...)>& fn, Tuple&& tup) {
     return value(std::apply(fn, std::move(tup)));
   }
 
   template <
       typename Return,
+      typename Tuple,
       typename... Args,
       typename = std::enable_if_t<std::is_void_v<Return>>>
-  auto applyFunc(
-      const std::function<void(Args...)>& fn, std::tuple<Args...>&& tup) {
+  auto applyFunc(const std::function<void(Args...)>& fn, Tuple&& tup) {
     std::apply(fn, std::move(tup));
     return undefined();
   }
@@ -315,7 +314,8 @@ JsValueRef JsContext::value(std::function<Return(Args...)> fn) {
   // Move the function onto the heap so that it can be managed by the JSRT.
   auto fn_ptr = new std::function<JsValueRef(JsValueRef*)>(
       [this, fn = std::move(fn)](JsValueRef* args) {
-        auto tup = argsTuple<Args...>(args, std::index_sequence_for<Args...>());
+        auto tup = argsTuple<std::decay_t<Args>...>(
+            args, std::index_sequence_for<Args...>());
         return applyFunc<Return>(fn, std::move(tup));
       });
 
@@ -335,7 +335,8 @@ JsValueRef JsContext::value(std::function<Return(Args...)> fn) {
   };
 
   JsValueRef ret;
-  JS_ENFORCE(JsCreateFunction(adapter_fn, (void*)fn_ptr, &ret));
+  JS_ENFORCE(JsCreateFunction(
+      static_cast<JsNativeFunction>(adapter_fn), (void*)fn_ptr, &ret));
   JS_ENFORCE(JsSetObjectBeforeCollectCallback(ret, (void*)fn_ptr, collect_fn));
   return ret;
 }
