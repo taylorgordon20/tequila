@@ -175,7 +175,7 @@ class ResourcesBuilder {
   }
 
   template <typename Resource, typename ValueType>
-  ResourcesBuilder& withSingleton(ValueType&& value) {
+  ResourcesBuilder& withSeed(ValueType&& value) {
     decltype(make_function(Resource())) fn =
         [value = std::forward<ValueType>(value)](
             const Resources& resources, auto... args) {
@@ -195,9 +195,9 @@ class ResourcesBuilder {
 };
 
 template <typename Resource, typename Value>
-struct SingletonResource {
+struct SeedResource {
   Value operator()(const Resources& resources) {
-    throwError("Missing singleton resource: %1%", typeid(Resource).name());
+    throwError("Missing seed resource: %1%", typeid(Resource).name());
   }
 };
 

@@ -8,6 +8,7 @@
 #include "src/common/camera.hpp"
 #include "src/common/data.hpp"
 #include "src/common/errors.hpp"
+#include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/shaders.hpp"
 #include "src/common/spatial.hpp"
@@ -52,27 +53,28 @@ struct TerrainMesh {
 
 class TerrainRenderer {
  public:
-  TerrainRenderer(Resources& resources) : resources_(resources) {}
+  TerrainRenderer(std::shared_ptr<Resources> resources)
+      : resources_(resources) {}
 
   void draw() const {
-    const auto& cells = *resources_.get<VisibleCells>();
+    auto cells = resources_->get<VisibleCells>();
 
     // Figure out which voxel arrays need to be rendered.
     std::unordered_set<std::string> voxel_keys;
-    for (auto cell : cells) {
-      auto cell_keys = resources_.get<TerrainVoxelIndex>(cell);
+    for (auto cell : *cells) {
+      auto cell_keys = resources_->get<TerrainVoxelIndex>(cell);
       voxel_keys.insert(cell_keys->begin(), cell_keys->end());
     }
 
     // Draw each voxel array's mesh.
-    auto shader = resources_.get<TerrainShader>();
-    auto camera = resources_.get<WorldCamera>();
-    auto light = resources_.get<WorldLight>();
+    auto shader = resources_->get<TerrainShader>();
+    auto camera = resources_->get<WorldCamera>();
+    auto light = resources_->get<WorldLight>();
     shader->run([&] {
       shader->uniform("light", *light);
       shader->uniform("projection_matrix", camera->projectionMatrix());
       for (const auto& voxel_key : voxel_keys) {
-        auto mesh = resources_.get<TerrainMesh>(voxel_key);
+        auto mesh = resources_->get<TerrainMesh>(voxel_key);
         auto modelview = camera->viewMatrix() * mesh->transform();
         auto normal = glm::inverse(glm::transpose(glm::mat3(modelview)));
         shader->uniform("modelview_matrix", modelview);
@@ -83,9 +85,15 @@ class TerrainRenderer {
   };
 
  private:
-  Resources& resources_;
+  std::shared_ptr<Resources> resources_;
 };
 
+template <>
+std::shared_ptr<TerrainRenderer> gen(const Registry& registry) {
+  return std::make_shared<TerrainRenderer>(registry.get<Resources>());
+}
+
+/*
 class TerrainHandler {
  public:
   TerrainHandler(std::shared_ptr<Window> window, Resources& resources)
@@ -197,5 +205,6 @@ class TerrainHandler {
   std::shared_ptr<Window> window_;
   Resources& resources_;
 };
+*/
 
 }  // namespace tequila

@@ -51,7 +51,7 @@ auto not_F(const Resources& resources, const std::string& s) {
   return format("not_F%1%", s);
 }
 
-struct G : public SingletonResource<G, std::string> {};
+struct G : public SeedResource<G, std::string> {};
 
 struct H {
   std::string operator()(const Resources& resources, int key) {
@@ -87,7 +87,7 @@ TEST_CASE("Test overrides", "[resources]") {
             return format("%1%%2%", not_C, x);
           })
           .withOverride<D>(std::move(not_D))
-          .withSingleton<E>("not_E")
+          .withSeed<E>("not_E")
           .withOverride<F>(not_F)
           .build();
   REQUIRE("not_A" == resources.get<A>());
@@ -100,10 +100,10 @@ TEST_CASE("Test overrides", "[resources]") {
   REQUIRE("not_Foo" == resources.get<F>("oo"));
 }
 
-TEST_CASE("Test singleton resources", "[resources]") {
+TEST_CASE("Test seed resources", "[resources]") {
   auto g_func = [](const Resources&) -> std::string { return "good2"; };
   auto broken = ResourcesBuilder().build();
-  auto okay_1 = ResourcesBuilder().withSingleton<G>("good1").build();
+  auto okay_1 = ResourcesBuilder().withSeed<G>("good1").build();
   auto okay_2 = ResourcesBuilder().withOverride<G>(std::move(g_func)).build();
   REQUIRE_THROWS(broken.get<G>());
   REQUIRE("good1" == okay_1.get<G>());

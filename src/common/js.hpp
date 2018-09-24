@@ -13,80 +13,53 @@
 
 namespace tequila {
 
-#define JS_ENFORCE(js_call)                                                \
-  do {                                                                     \
-    auto status = (js_call);                                               \
-    if (status == JsErrorScriptException) {                                \
-      throwJsError();                                                      \
-    } else if (status == JsErrorScriptCompile) {                           \
-      throwJsError();                                                      \
-    } else if (status != JsNoError) {                                      \
-      throwError("JsError: '%1%' at %2%:%3%", status, __FILE__, __LINE__); \
-    }                                                                      \
+// Exception type propagated on any JSRT error.
+struct JsException : public std::runtime_error {
+  JsErrorCode error_code;
+  JsException(const std::string& what, JsErrorCode error_code)
+      : std::runtime_error(what), error_code(error_code) {}
+};
+
+#define JS_ENFORCE(js_call)                                                    \
+  do {                                                                         \
+    auto error_code = (js_call);                                               \
+    if (error_code != JsNoError) {                                             \
+      throw JsException(                                                       \
+          format("JsError: '%1%' at %2%:%3%", error_code, __FILE__, __LINE__), \
+          error_code);                                                         \
+    }                                                                          \
   } while (0)
 
-class JsModules {
+// Maintains the state for an embedded JavaScript instance.
+class JsContext {
  public:
-  JsModules() {
+  JsContext() {
     JS_ENFORCE(JsCreateRuntime(JsRuntimeAttributeNone, nullptr, &runtime_));
     JS_ENFORCE(JsCreateContext(runtime_, &context_));
   }
 
-  ~JsModules() noexcept {
+  ~JsContext() noexcept {
     JsDisposeRuntime(runtime_);
   }
 
-  int64_t load(const std::string& code) {
-    ContextGuard ctx_guard(context_);
-
-    static int64_t script_id_counter = 0;
-    auto script_id = script_id_counter++;
-    auto script_name = format("%1%.js", script_id);
-
-    // Load the code into a JS value.
-    JsValueRef script;
-    JS_ENFORCE(JsCreateExternalArrayBuffer(
-        (void*)code.c_str(), code.size(), nullptr, nullptr, &script));
-
-    // Run the script and store its result into a module reference.
-    JsSourceContext src_ctx = 0;
-    JsValueRef src_url = value(script_name);
-    JsValueRef module;
-    JS_ENFORCE(
-        JsRun(script, src_ctx, src_url, JsParseScriptAttributeNone, &module));
-
-    JS_ENFORCE(JsAddRef(module, nullptr));
-    modules_[script_id] = module;
-    return script_id;
-  }
-
-  void drop(int64_t script_id) {
-    ContextGuard ctx_guard(context_);
-    auto module = modules_.at(script_id);
-    modules_.erase(script_id);
-    JsRelease(module, nullptr);
-  }
-
-  template <typename Return, typename... Args>
-  Return call(int64_t script_id, const std::string& fn, Args&&... args) {
-    ContextGuard ctx_guard(context_);
-    auto& module = modules_.at(script_id);
-
-    // Get a reference to the JS function.
-    JsValueRef fn_ref = property(module, fn);
-
-    // Prepare the function arguments.
-    std::array<JsValueRef, 1 + sizeof...(Args)> fn_args;
-    fn_args.at(0) = undefined();
-    {
-      size_t i = 1;
-      ((void)(fn_args[i++] = value(std::forward<Args>(args))), ...);
+  template <typename FunctionType>
+  auto run(FunctionType&& fn) {
+    ContextGuard guard(context_);
+    try {
+      return fn();
+    } catch (const JsException& e) {
+      if (e.error_code == JsErrorScriptException ||
+          e.error_code == JsErrorScriptCompile) {
+        JsValueRef exception;
+        JS_ENFORCE(JsGetAndClearException(&exception));
+        throwError(
+            "%1%\nError name: '%2%', message: '%3%'",
+            e.what(),
+            cast<std::string>(property(exception, "name")),
+            cast<std::string>(property(exception, "message")));
+      }
+      throw;
     }
-
-    // Invoke the function and return its return value.
-    JsValueRef fn_ret;
-    JS_ENFORCE(JsCallFunction(fn_ref, fn_args.data(), fn_args.size(), &fn_ret));
-    return cast<Return>(fn_ret);
   }
 
   void delGlobal(const std::string& name) {
@@ -106,11 +79,11 @@ class JsModules {
     return cast<Return>(property(global(), name));
   }
 
- protected:
+ private:
   class ContextGuard {
    public:
     ContextGuard(JsContextRef context) {
-      ENFORCE(JsNoError == JsSetCurrentContext(context));
+      JS_ENFORCE(JsSetCurrentContext(context));
     }
     ~ContextGuard() noexcept {
       JsSetCurrentContext(JS_INVALID_REFERENCE);
@@ -120,6 +93,22 @@ class JsModules {
   template <typename... Args, size_t... Is>
   auto argsTuple(JsValueRef* args, std::index_sequence<Is...>) {
     return std::make_tuple(cast<Args>(args[1 + Is])...);
+  }
+
+  template <typename Return, typename... Args>
+  auto applyFunc(
+      const std::function<Return(Args...)>& fn, std::tuple<Args...>&& tup) {
+    return value(std::apply(fn, std::move(tup)));
+  }
+
+  template <
+      typename Return,
+      typename... Args,
+      typename = std::enable_if_t<std::is_void_v<Return>>>
+  auto applyFunc(
+      const std::function<void(Args...)>& fn, std::tuple<Args...>&& tup) {
+    std::apply(fn, std::move(tup));
+    return undefined();
   }
 
   // Simple value creation functions.
@@ -169,64 +158,138 @@ class JsModules {
     return ret;
   }
 
-  // Error handling.
-  void throwJsError() {
-    JsValueRef exception;
-    JS_ENFORCE(JsGetAndClearException(&exception));
-    throwError(
-        "JsError: '%1%' Message: '%2%'",
-        cast<std::string>(property(exception, "name")),
-        cast<std::string>(property(exception, "message")));
-  }
+  template <>
+  void JsContext::cast<void>(JsValueRef value) {}
 
  private:
   JsRuntimeHandle runtime_;
   JsContextRef context_;
-  std::unordered_map<int64_t, JsValueRef> modules_;
+
+  friend class JsModule;
 };
 
-JsValueRef JsModules::undefined() {
+// Loads and maintains a reference to a JavaScript module object.
+class JsModule {
+ public:
+  JsModule(
+      std::shared_ptr<JsContext> context,
+      const std::string& name,
+      const std::string& code)
+      : context_(std::move(context)) {
+    ENFORCE(context_);
+    context_->run([&] {
+      // Load the code into a JS value.
+      JsValueRef script;
+      JS_ENFORCE(JsCreateExternalArrayBuffer(
+          (void*)code.c_str(), code.size(), nullptr, nullptr, &script));
+
+      // Run the script and store its result into a module reference.
+      JsValueRef url = context_->value(format("%1%.js", name));
+      JS_ENFORCE(JsRun(script, 0, url, JsParseScriptAttributeNone, &module_));
+
+      // The module is managed externally so add reference count.
+      JS_ENFORCE(JsAddRef(module_, nullptr));
+    });
+  }
+
+  ~JsModule() noexcept {
+    context_->run([&] { JsRelease(module_, nullptr); });
+  }
+
+  JsModule(const JsModule& other)
+      : context_(other.context_), module_(other.module_) {
+    context_->run([&] { JsAddRef(module_, nullptr); });
+  }
+
+  JsModule(JsModule&&) = delete;
+  JsModule& operator=(const JsModule& other) = delete;
+  JsModule& operator=(JsModule&&) = delete;
+
+  template <typename Return, typename... Args>
+  Return call(const std::string& fn_name, Args&&... args) {
+    return context_->run([&] {
+      // Get a reference to the JS function.
+      JsValueRef fn = context_->property(module_, fn_name);
+
+      // Prepare the function arguments.
+      std::array<JsValueRef, 1 + sizeof...(Args)> fn_args;
+      fn_args.at(0) = context_->undefined();
+      {
+        size_t i = 1;
+        ((void)(fn_args[i++] = context_->value(std::forward<Args>(args))), ...);
+      }
+
+      // Invoke the function and return its return value.
+      JsValueRef ret;
+      JS_ENFORCE(JsCallFunction(fn, fn_args.data(), fn_args.size(), &ret));
+      return context_->cast<Return>(ret);
+    });
+  }
+
+  bool has(const std::string& property) {
+    return context_->run([&] {
+      bool ret;
+      JS_ENFORCE(JsHasProperty(module_, context_->propertyId(property), &ret));
+      return ret;
+    });
+  }
+
+  template <typename Return>
+  Return get(const std::string& name) {
+    return context_->run([&] {
+      JsValueRef ret;
+      JS_ENFORCE(JsGetProperty(module_, context_->propertyId(property), &ret));
+      return context_->cast<Return>(ret);
+    });
+  }
+
+ private:
+  std::shared_ptr<JsContext> context_;
+  JsValueRef module_;
+};
+
+JsValueRef JsContext::undefined() {
   JsValueRef ret;
   JS_ENFORCE(JsGetUndefinedValue(&ret));
   return ret;
 }
 
-JsValueRef JsModules::global() {
+JsValueRef JsContext::global() {
   JsValueRef ret;
   JS_ENFORCE(JsGetGlobalObject(&ret));
   return ret;
 }
 
-JsValueRef JsModules::value(double value) {
+JsValueRef JsContext::value(double value) {
   JsValueRef ret;
   JS_ENFORCE(JsDoubleToNumber(value, &ret));
   return ret;
 }
 
-JsValueRef JsModules::value(int value) {
+JsValueRef JsContext::value(int value) {
   JsValueRef ret;
   JS_ENFORCE(JsIntToNumber(value, &ret));
   return ret;
 }
 
-JsValueRef JsModules::value(bool value) {
+JsValueRef JsContext::value(bool value) {
   JsValueRef ret;
   JS_ENFORCE(JsBoolToBoolean(value, &ret));
   return ret;
 }
 
-JsValueRef JsModules::value(const char* value) {
+JsValueRef JsContext::value(const char* value) {
   return this->value(std::string(value));
 }
 
-JsValueRef JsModules::value(const std::string& value) {
+JsValueRef JsContext::value(const std::string& value) {
   JsValueRef ret;
   JS_ENFORCE(JsCreateString(value.c_str(), value.size(), &ret));
   return ret;
 }
 
 template <typename ValueType>
-JsValueRef JsModules::value(const std::vector<ValueType>& value) {
+JsValueRef JsContext::value(const std::vector<ValueType>& value) {
   JsValueRef ret;
   JS_ENFORCE(JsCreateArray(value.size(), &ret));
   for (int i = 0; i < value.size(); i += 1) {
@@ -237,7 +300,7 @@ JsValueRef JsModules::value(const std::vector<ValueType>& value) {
 }
 
 template <typename ValueType>
-JsValueRef JsModules::value(
+JsValueRef JsContext::value(
     const std::unordered_map<std::string, ValueType>& value) {
   JsValueRef ret;
   JS_ENFORCE(JsCreateObject(&ret));
@@ -248,12 +311,12 @@ JsValueRef JsModules::value(
 }
 
 template <typename Return, typename... Args>
-JsValueRef JsModules::value(std::function<Return(Args...)> fn) {
+JsValueRef JsContext::value(std::function<Return(Args...)> fn) {
   // Move the function onto the heap so that it can be managed by the JSRT.
   auto fn_ptr = new std::function<JsValueRef(JsValueRef*)>(
       [this, fn = std::move(fn)](JsValueRef* args) {
         auto tup = argsTuple<Args...>(args, std::index_sequence_for<Args...>());
-        return value(std::apply(fn, tup));
+        return applyFunc<Return>(fn, std::move(tup));
       });
 
   // Adapts a JS function call to its corresponding std::function.
@@ -277,30 +340,30 @@ JsValueRef JsModules::value(std::function<Return(Args...)> fn) {
   return ret;
 }
 
-JsPropertyIdRef JsModules::propertyId(const std::string& property) {
+JsPropertyIdRef JsContext::propertyId(const std::string& property) {
   JsPropertyIdRef ret;
   JS_ENFORCE(JsCreatePropertyId(property.c_str(), property.size(), &ret));
   return ret;
 }
 
-JsValueRef JsModules::property(JsValueRef obj, const std::string& prop) {
+JsValueRef JsContext::property(JsValueRef obj, const std::string& prop) {
   JsValueRef ret;
   JS_ENFORCE(JsGetProperty(obj, propertyId(prop), &ret));
   return ret;
 }
 
-void JsModules::setProperty(
+void JsContext::setProperty(
     JsValueRef object, const std::string& prop, JsValueRef val) {
   JS_ENFORCE(JsSetProperty(object, propertyId(prop), val, true));
 }
 
-JsValueRef JsModules::index(JsValueRef object, int index) {
+JsValueRef JsContext::index(JsValueRef object, int index) {
   JsValueRef ret;
   JS_ENFORCE(JsGetIndexedProperty(object, value(index), &ret));
   return ret;
 }
 
-void JsModules::setIndex(JsValueRef object, int index, JsValueRef val) {
+void JsContext::setIndex(JsValueRef object, int index, JsValueRef val) {
   JS_ENFORCE(JsSetIndexedProperty(object, value(index), val));
 }
 
@@ -311,7 +374,7 @@ void call(int64_t script_id, const std::string& fn, Args&&... args) {
 }
 
 template <>
-void JsModules::castTo(JsValueRef value, std::string& out) {
+void JsContext::castTo(JsValueRef value, std::string& out) {
   size_t length;
   JS_ENFORCE(JsCopyString(value, nullptr, 0, &length));
 
@@ -320,22 +383,22 @@ void JsModules::castTo(JsValueRef value, std::string& out) {
 }
 
 template <>
-void JsModules::castTo(JsValueRef value, double& out) {
+void JsContext::castTo(JsValueRef value, double& out) {
   JS_ENFORCE(JsNumberToDouble(value, &out));
 }
 
 template <>
-void JsModules::castTo(JsValueRef value, int& out) {
+void JsContext::castTo(JsValueRef value, int& out) {
   JS_ENFORCE(JsNumberToInt(value, &out));
 }
 
 template <>
-void JsModules::castTo(JsValueRef value, bool& out) {
+void JsContext::castTo(JsValueRef value, bool& out) {
   JS_ENFORCE(JsBooleanToBool(value, &out));
 }
 
 template <typename ValueType>
-void JsModules::castTo(JsValueRef value, std::vector<ValueType>& out) {
+void JsContext::castTo(JsValueRef value, std::vector<ValueType>& out) {
   int out_size = cast<int>(property(value, "length"));
   out.resize(out_size);
   for (int i = 0; i < out_size; i += 1) {
@@ -344,7 +407,7 @@ void JsModules::castTo(JsValueRef value, std::vector<ValueType>& out) {
 }
 
 template <typename ValueType>
-void JsModules::castTo(
+void JsContext::castTo(
     JsValueRef value, std::unordered_map<std::string, ValueType>& out) {
   JsValueRef property_names;
   JsGetOwnPropertyNames(value, &property_names);

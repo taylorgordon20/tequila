@@ -26,9 +26,9 @@ auto make_function(Return (Class::*fn)(Args...) const)
 }
 
 // Functionoids (e.g. lambdas) with arguments explicitly specified.
-template <typename... Args, typename Fn>
-auto make_function(Fn fn)
-    -> std::function<decltype(fn(std::declval<Args>()...))(Args...)> {
+template <typename First, typename... Args, typename Fn>
+auto make_function(Fn fn) -> std::function<decltype(
+    fn(std::declval<First>(), std::declval<Args>()...))(First, Args...)> {
   return {std::move(fn)};
 }
 
