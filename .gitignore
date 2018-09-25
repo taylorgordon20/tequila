@@ -3,5 +3,5 @@ conaninfo.txt
 *.exe
 bazel-*
 *.pdb
-bin*
+/bin*
 .DS_Store
