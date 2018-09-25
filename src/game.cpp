@@ -2,8 +2,12 @@
 #include <string>
 #include <utility>
 
+#ifdef _WIN32
+#include "windows.h"
+#endif
+
 #include "src/common/errors.hpp"
-#include "src/common/js.hpp"
+#include "src/common/lua.hpp"
 #include "src/common/opengl.hpp"
 #include "src/common/resources.hpp"
 #include "src/worlds/core.hpp"
@@ -12,6 +16,36 @@
 #include "src/worlds/terrain.hpp"
 
 namespace tequila {
+
+auto makeWorldCamera() {
+  auto camera = std::make_shared<Camera>();
+  camera->position = glm::vec3(0.0f, 0.0f, 0.0f);
+  camera->view = glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f));
+  camera->fov = glm::radians(45.0f);
+  camera->aspect = 4.0f / 3.0f;
+  camera->near_distance = 0.1f;
+  camera->far_distance = 100.0f;
+  return camera;
+}
+
+auto makeWorldLight() {
+  return std::make_shared<glm::vec3>(
+      glm::normalize(glm::vec3(-2.0f, 4.0f, 1.0f)));
+}
+
+auto makeScriptContext() {
+  return std::make_shared<LuaContext>();
+}
+
+auto makeWorldResources(const std::string& world_name) {
+  return std::make_shared<Resources>(
+      ResourcesBuilder()
+          .withSeed<ScriptContext>(makeScriptContext())
+          .withSeed<WorldCamera>(makeWorldCamera())
+          .withSeed<WorldLight>(makeWorldLight())
+          .withSeed<WorldName>(world_name)
+          .build());
+}
 
 void run() {
   // Figure out what world to load.
@@ -32,6 +66,7 @@ void run() {
           .bindToDefaultFactory<EventHandler>()
           .bindToDefaultFactory<ScriptExecutor>()
           .bindToDefaultFactory<TerrainRenderer>()
+          .bindToDefaultFactory<TerrainUtil>()
           .build();
 
   // Enter the game loop.

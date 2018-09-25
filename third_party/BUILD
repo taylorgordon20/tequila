@@ -23,6 +23,7 @@ cc_library(
     ":glbinding",
     ":glfw3",
     ":libpng",
+    ":lua",
     ":sqlite3",
     ":zlib",
     ":zstd",
@@ -86,6 +87,18 @@ cc_import(
   }),
   static_library = select({
     CONDITION_MAP["x64-osx"]: "x64-osx/lib/libpng16.a",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "lua",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/lua.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/lua.dll",
     "//conditions:default": None,
   }),
 )

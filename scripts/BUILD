@@ -2,5 +2,5 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
   name = "files",
-  srcs = glob(["*.js"]),
+  srcs = glob(["*.js", "*.lua"]),
 )

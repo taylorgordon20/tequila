@@ -55,6 +55,15 @@ cc_binary(
 )
 
 cc_binary(
+  name = "lua_test",
+  srcs = ["lua_test.cpp"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+  ],
+)
+
+cc_binary(
   name = "registry_test",
   srcs = ["registry_test.cpp"],
   deps = [

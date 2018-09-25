@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/optional.hpp>
+
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -91,6 +93,74 @@ class TerrainRenderer {
 template <>
 std::shared_ptr<TerrainRenderer> gen(const Registry& registry) {
   return std::make_shared<TerrainRenderer>(registry.get<Resources>());
+}
+
+class TerrainUtil {
+ public:
+  TerrainUtil(std::shared_ptr<Resources> resources)
+      : resources_(std::move(resources)) {}
+
+  auto getVoxelCoords(VoxelArray& va, float x, float y, float z) {
+    auto inv_voxel_transform = glm::inverse(va.transform());
+    auto vp = inv_voxel_transform * glm::vec4(x, y, z, 1.0);
+    return std::make_tuple(
+        static_cast<int>(vp[0]),
+        static_cast<int>(vp[1]),
+        static_cast<int>(vp[2]));
+  }
+
+  auto getVoxelKey(float x, float y, float z) {
+    boost::optional<std::string> ret;
+    auto octree = resources_->get<WorldOctree>();
+    octree->search([&](int64_t cell) {
+      auto [x0, y0, z0, x1, y1, z1] = octree->cellBox(cell);
+      if (x0 <= x && x <= x1 && y0 <= y && y <= y1 && z0 <= z && z < z1) {
+        if (octree->cellLevel(cell) + 1 == octree->treeDepth()) {
+          auto voxel_keys = resources_->get<TerrainVoxelIndex>(cell);
+          ENFORCE(voxel_keys->size() == 1);
+          ret = voxel_keys->front();
+        } else {
+          return true;
+        }
+      }
+      return false;
+    });
+    return ret;
+  }
+
+  void reloadVoxels(const std::string& voxel_key, VoxelArray& voxel_array) {
+    auto world_db = resources_->get<WorldTable>();
+    world_db->setObject<VoxelArray>(voxel_key, voxel_array);
+    resources_->invalidate<TerrainVoxels>(voxel_key);
+  }
+
+  uint32_t getVoxel(float x, float y, float z) {
+    auto voxel_key = getVoxelKey(x, y, z);
+    if (voxel_key) {
+      auto va = resources_->get<TerrainVoxels>(*voxel_key);
+      auto [ix, iy, iz] = getVoxelCoords(*va, x, y, z);
+      return va->get(ix, iy, iz);
+    }
+    return 0;
+  }
+
+  void setVoxel(float x, float y, float z, uint32_t value) {
+    auto voxel_key = getVoxelKey(x, y, z);
+    if (voxel_key) {
+      auto va = resources_->get<TerrainVoxels>(*voxel_key);
+      auto [ix, iy, iz] = getVoxelCoords(*va, x, y, z);
+      va->set(ix, iy, iz, value);
+      reloadVoxels(*voxel_key, *va);
+    }
+  }
+
+ private:
+  std::shared_ptr<Resources> resources_;
+};
+
+template <>
+std::shared_ptr<TerrainUtil> gen(const Registry& registry) {
+  return std::make_shared<TerrainUtil>(registry.get<Resources>());
 }
 
 /*

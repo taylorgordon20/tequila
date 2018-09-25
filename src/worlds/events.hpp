@@ -34,19 +34,6 @@ class EventHandler {
       std::shared_ptr<ScriptExecutor> scripts,
       std::shared_ptr<Resources> resources)
       : window_(window), scripts_(scripts), resources_(resources) {
-    // Register key event callback.
-    window_->on<glfwSetKeyCallback>(
-        [&](int key, int scancode, int action, int mods) {
-          if (key == GLFW_KEY_ESCAPE) {
-            window_->close();
-          } else if (key == GLFW_KEY_F) {
-            gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_FILL);
-          } else if (key == GLFW_KEY_G) {
-            gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_LINE);
-          }
-          scripts_->delegate("on_key", key, scancode, action, mods);
-        });
-
     // Register window resize event callback.
     window_->on<glfwSetFramebufferSizeCallback>([&](int width, int height) {
       int w, h;
@@ -57,6 +44,27 @@ class EventHandler {
         camera->aspect = static_cast<float>(width) / height;
       }
     });
+
+    // Register key event callback.
+    window_->on<glfwSetKeyCallback>(
+        [&](int key, int scancode, int action, int mods) {
+          if (key == GLFW_KEY_ESCAPE) {
+            window_->close();
+          } else if (key == GLFW_KEY_EQUAL) {
+            gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_FILL);
+          } else if (key == GLFW_KEY_MINUS) {
+            gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_LINE);
+          }
+          scripts_->delegate("on_key", key, scancode, action, mods);
+        });
+
+    // Register click event callback.
+    window_->on<glfwSetMouseButtonCallback>(
+        [&](int button, int action, int mods) {
+          scripts_->delegate("on_click", button, action, mods);
+        });
+
+    scripts_->delegate("on_init");
   }
 
   ~EventHandler() {

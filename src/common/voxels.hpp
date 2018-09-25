@@ -14,14 +14,13 @@ namespace tequila {
 
 class VoxelArray {
  public:
-  using RgbTuple = std::tuple<uint8_t, uint8_t, uint8_t>;
   VoxelArray();
 
   // Methods to set voxels in local coordinates.
   void del(int x, int y, int z);
-  void set(int x, int y, int z, RgbTuple color);
+  void set(int x, int y, int z, uint32_t value);
   bool has(int x, int y, int z) const;
-  RgbTuple get(int x, int y, int z) const;
+  uint32_t get(int x, int y, int z) const;
 
   // Methods to transform the voxels in world coordinates.
   void translate(float x, float y, float z);

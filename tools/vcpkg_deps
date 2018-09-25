@@ -7,12 +7,14 @@ boost-optional
 catch
 cereal
 chakracore
+chaiscript
 eigen3
 glbinding
 glfw3
 glm
 libpng
 pybind11
+sol2
 sqlite-modern-cpp
 zlib
 zstd

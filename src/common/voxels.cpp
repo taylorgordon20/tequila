@@ -60,18 +60,12 @@ void VoxelArray::del(int x, int y, int z) {
   voxels_.set(x, y, z, 0);
 }
 
-void VoxelArray::set(int x, int y, int z, RgbTuple color) {
-  uint32_t rgba = 255;
-  rgba |= std::get<0>(color) << 24;
-  rgba |= std::get<1>(color) << 16;
-  rgba |= std::get<2>(color) << 8;
-  voxels_.set(x, y, z, rgba);
+void VoxelArray::set(int x, int y, int z, uint32_t value) {
+  voxels_.set(x, y, z, value);
 }
 
-VoxelArray::RgbTuple VoxelArray::get(int x, int y, int z) const {
-  uint32_t rgba = voxels_.get(x, y, z);
-  return std::make_tuple(
-      255 & (rgba >> 24), 255 & (rgba >> 16), 255 & (rgba >> 8));
+uint32_t VoxelArray::get(int x, int y, int z) const {
+  return voxels_.get(x, y, z);
 }
 
 void VoxelArray::translate(float x, float y, float z) {
