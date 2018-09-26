@@ -114,7 +114,7 @@ class TerrainUtil {
     auto octree = resources_->get<WorldOctree>();
     octree->search([&](int64_t cell) {
       auto [x0, y0, z0, x1, y1, z1] = octree->cellBox(cell);
-      if (x0 <= x && x <= x1 && y0 <= y && y <= y1 && z0 <= z && z < z1) {
+      if (x0 <= x && x < x1 && y0 <= y && y < y1 && z0 <= z && z < z1) {
         if (octree->cellLevel(cell) + 1 == octree->treeDepth()) {
           auto voxel_keys = resources_->get<TerrainVoxelIndex>(cell);
           ENFORCE(voxel_keys->size() == 1);
@@ -126,6 +126,45 @@ class TerrainUtil {
       return false;
     });
     return ret;
+  }
+
+  template <typename Function>
+  void marchVoxels(
+      const glm::vec3& from,
+      const glm::vec3& direction,
+      float distance,
+      Function voxel_fn) {
+    glm::vec3 pos = glm::vec3(from[0] - 0.5f, from[1] - 0.5f, from[2] - 0.5f);
+    glm::vec3 dir = glm::normalize(direction);
+    int sx = std::signbit(dir[0]) ? -1 : 1;
+    int sy = std::signbit(dir[1]) ? -1 : 1;
+    int sz = std::signbit(dir[2]) ? -1 : 1;
+    int ix = static_cast<int>(from[0]);
+    int iy = static_cast<int>(from[1]);
+    int iz = static_cast<int>(from[2]);
+    float march_distance = 0;
+    while (march_distance <= distance) {
+      voxel_fn(ix, iy, iz);
+      auto vx = glm::vec3(ix + sx, iy, iz);
+      auto vy = glm::vec3(ix, iy + sy, iz);
+      auto vz = glm::vec3(ix, iy, iz + sz);
+      float proj_x = glm::dot(vx - pos, dir);
+      float proj_y = glm::dot(vy - pos, dir);
+      float proj_z = glm::dot(vz - pos, dir);
+      float dx = glm::length(vx - proj_x * dir - pos);
+      float dy = glm::length(vy - proj_y * dir - pos);
+      float dz = glm::length(vz - proj_z * dir - pos);
+      if (dx < dy && dx < dz) {
+        ix += sx;
+        march_distance = proj_x;
+      } else if (dy < dx && dy < dz) {
+        iy += sy;
+        march_distance = proj_y;
+      } else {
+        iz += sz;
+        march_distance = proj_z;
+      }
+    }
   }
 
   void reloadVoxels(const std::string& voxel_key, VoxelArray& voxel_array) {
@@ -162,119 +201,5 @@ template <>
 std::shared_ptr<TerrainUtil> gen(const Registry& registry) {
   return std::make_shared<TerrainUtil>(registry.get<Resources>());
 }
-
-/*
-class TerrainHandler {
- public:
-  TerrainHandler(std::shared_ptr<Window> window, Resources& resources)
-      : window_(std::move(window)), resources_(resources) {}
-
-  void update(float dt) {
-    if (window_->call<glfwGetKey>(GLFW_KEY_SPACE) == GLFW_PRESS) {
-      addVoxel();
-    } else if (window_->call<glfwGetKey>(GLFW_KEY_DELETE) == GLFW_PRESS) {
-      delVoxel();
-    }
-  };
-
- private:
-  struct VoxelHit {
-    std::string voxel_key;
-    std::shared_ptr<VoxelArray> voxel_array;
-    std::tuple<int, int, int> voxel_pos;
-  };
-
-  auto getCameraVoxel() {
-    auto octree = resources_.get<WorldOctree>();
-    auto camera = resources_.get<WorldCamera>();
-    auto position = camera->position + 2.0f * camera->view;
-
-    // Find which voxel array needs to be updated.
-    std::string voxel_key;
-    octree->search([&](int64_t cell) {
-      auto cell_box = octree->cellBox(cell);
-      if (std::get<0>(cell_box) <= position[0] &&
-          std::get<1>(cell_box) <= position[1] &&
-          std::get<2>(cell_box) <= position[2] &&
-          std::get<3>(cell_box) >= position[0] &&
-          std::get<4>(cell_box) >= position[1] &&
-          std::get<5>(cell_box) >= position[2]) {
-        if (octree->cellLevel(cell) + 1 == octree->treeDepth()) {
-          auto voxel_keys = resources_.get<TerrainVoxelIndex>(cell);
-          ENFORCE(voxel_keys->size() == 1);
-          voxel_key = voxel_keys->front();
-        } else {
-          return true;
-        }
-      }
-      return false;
-    });
-    if (voxel_key.empty()) {
-      return VoxelHit();
-    }
-
-    // Load the voxel array and figure out the hit coordinates.
-    auto voxel_array = resources_.get<TerrainVoxels>(voxel_key);
-    auto inv_voxel_transform = glm::inverse(voxel_array->transform());
-    auto voxel_position = inv_voxel_transform * glm::vec4(position, 1.0f);
-    return VoxelHit{
-        voxel_key,
-        voxel_array,
-        {
-            static_cast<int>(voxel_position[0]),
-            static_cast<int>(voxel_position[1]),
-            static_cast<int>(voxel_position[2]),
-        },
-    };
-  }
-
-  void addVoxel() {
-    auto voxel_hit = getCameraVoxel();
-    auto voxel_array = voxel_hit.voxel_array;
-    auto vx = std::get<0>(voxel_hit.voxel_pos);
-    auto vy = std::get<1>(voxel_hit.voxel_pos);
-    auto vz = std::get<2>(voxel_hit.voxel_pos);
-    if (!voxel_array || voxel_array->has(vx, vy, vz)) {
-      return;
-    }
-
-    try {
-      auto world_db = resources_.get<WorldTable>();
-      voxel_array->set(vx, vy, vz, {255, 255, 255});
-      world_db->setObject<VoxelArray>(voxel_hit.voxel_key, *voxel_array);
-      resources_.invalidate<TerrainVoxels>(voxel_hit.voxel_key);
-    } catch (const std::exception& e) {
-      std::cout << "Failed to update voxel at coordinate: "
-                << format("%1%,%2%,%3%", vx, vy, vz) << std::endl;
-      std::cout << "Cause: " << e.what() << std::endl;
-    }
-  }
-
-  void delVoxel() {
-    auto voxel_hit = getCameraVoxel();
-    auto voxel_array = voxel_hit.voxel_array;
-    auto vx = std::get<0>(voxel_hit.voxel_pos);
-    auto vy = std::get<1>(voxel_hit.voxel_pos);
-    auto vz = std::get<2>(voxel_hit.voxel_pos);
-    if (!voxel_array || !voxel_array->has(vx, vy, vz)) {
-      return;
-    }
-
-    try {
-      auto world_db = resources_.get<WorldTable>();
-      voxel_array->del(vx, vy, vz);
-      world_db->setObject<VoxelArray>(voxel_hit.voxel_key, *voxel_array);
-      resources_.invalidate<TerrainVoxels>(voxel_hit.voxel_key);
-    } catch (const std::exception& e) {
-      std::cout << "Failed to update voxel at coordinate: "
-                << format("%1%,%2%,%3%", vx, vy, vz) << std::endl;
-      std::cout << "Cause: " << e.what() << std::endl;
-    }
-  }
-
-  std::shared_ptr<Window> window_;
-  Resources& resources_;
-};
-*/
 
 }  // namespace tequila

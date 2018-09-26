@@ -116,6 +116,27 @@ auto FFI_set_voxel(std::shared_ptr<TerrainUtil>& terrain_util) {
       });
 }
 
+auto FFI_get_ray_voxels(std::shared_ptr<TerrainUtil>& terrain_util) {
+  return sol::as_function([terrain_util](
+                              float start_x,
+                              float start_y,
+                              float start_z,
+                              float dir_x,
+                              float dir_y,
+                              float dir_z,
+                              float distance) {
+    std::vector<std::vector<int>> results;
+    terrain_util->marchVoxels(
+        glm::vec3(start_x, start_y, start_z),
+        glm::vec3(dir_x, dir_y, dir_z),
+        distance,
+        [&](int ix, int iy, int iz) {
+          results.emplace_back(std::vector<int>{ix, iy, iz});
+        });
+    return results;
+  });
+}
+
 class ScriptExecutor {
  public:
   ScriptExecutor(
@@ -136,6 +157,7 @@ class ScriptExecutor {
     ctx->set("get_window_size", FFI_get_window_size(window));
     ctx->set("get_voxel", FFI_get_voxel(terrain_util));
     ctx->set("set_voxel", FFI_set_voxel(terrain_util));
+    ctx->set("get_ray_voxels", FFI_get_ray_voxels(terrain_util));
   }
 
   template <typename... Args>

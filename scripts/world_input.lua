@@ -16,7 +16,7 @@ local KEYS = {
 local PHYSICS = {
   gravity = -0.5,
   terminal_speed = 50.0,
-  jump_speed = 10.0,
+  jump_speed = 15.0,
 }
 
 local PI = 2 * math.asin(1)
@@ -75,6 +75,22 @@ local clamp_movement = function(move)
   move[3] = clamp(move[3], bv * (1 - fz + pz) - 1, 1 - fv * (fz + pz))
 end
 
+local for_camera_ray_voxels = function(voxel_fn)
+  local cx, cy, cz = table.unpack(get_camera_pos())
+  local vx, vy, vz = table.unpack(get_camera_view())
+  local voxels = get_ray_voxels(cx, cy, cz, vx, vy, vz, 20)
+  for i, voxel_coord in ipairs(voxels) do
+    local x, y, z = table.unpack(voxel_coord)
+    local dx = math.max(0, math.abs(cx - x - 0.5) - 0.5)
+    local dy = math.max(0, math.abs(cy - y - 0.5) - 0.5)
+    local dz = math.max(0, math.abs(cz - z - 0.5) - 0.5)
+    local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+    if voxel_fn(x, y, z, distance) then
+      break
+    end
+  end
+end
+
 function module:on_init()
   print("Initialized world_input.lua")
   set_cursor_visible(false)
@@ -97,8 +113,27 @@ end
 
 function module:on_click(button, action, mods)
   if button == 0 and action == 1 then
-    local cx, cy, cz = table.unpack(get_camera_pos())
-    set_voxel(cx, cy, cz, 0xFFFFFFFF)
+    -- Insert a voxel preceding the camera ray intersection.
+    local pred = nil
+    for_camera_ray_voxels(function(x, y, z, distance)
+      if get_voxel(x, y, z) ~= 0 then
+        if pred then
+          set_voxel(pred[1], pred[2], pred[3], 0xFFFFFFFF)
+        end
+        return true
+      end
+      if distance > 0.2 then
+        pred = {x, y, z}
+      end
+    end)
+  elseif button == 1 and action == 1 then
+    -- Delete the voxel at the first camera ray intersection.
+    for_camera_ray_voxels(function(x, y, z)
+      if get_voxel(x, y, z) ~= 0 then
+        set_voxel(x, y, z, 0)
+        return true
+      end
+    end)
   end
 end
 
@@ -135,7 +170,7 @@ function module:on_update(dt)
     local theta_phi = self.orientation_angles
     theta_phi[1] = theta_phi[1] + speed * dt * math.floor(0.5 * ww - mx)
     theta_phi[2] = theta_phi[2] + speed * dt * math.floor(0.5 * wh - my)
-    theta_phi[2] = clamp(theta_phi[2], -0.4 * PI, 0.4 * PI)
+    theta_phi[2] = clamp(theta_phi[2], -0.48 * PI, 0.48 * PI)
     set_camera_view(
       math.sin(theta_phi[1]) * math.cos(theta_phi[2]),
       math.sin(theta_phi[2]),

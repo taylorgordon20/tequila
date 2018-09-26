@@ -181,9 +181,9 @@ class CubeStore {
   }
 
   void set(int x, int y, int z, ValueType value) {
-    ENFORCE(0 <= x && x < size_);
-    ENFORCE(0 <= y && y < size_);
-    ENFORCE(0 <= z && z < size_);
+    ENFORCE(0 <= x && x < size_, format("x=%1%", x));
+    ENFORCE(0 <= y && y < size_, format("y=%1%", y));
+    ENFORCE(0 <= z && z < size_, format("z=%1%", z));
     cv_.set(toIndex(x, y, z), std::move(value));
   }
 

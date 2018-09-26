@@ -1,26 +1,11 @@
 #pragma once
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtx/rotate_vector.hpp>
-
-#include <algorithm>
-#include <cmath>
 #include <memory>
 #include <string>
-#include <unordered_set>
-#include <vector>
 
 #include "src/common/camera.hpp"
-#include "src/common/data.hpp"
-#include "src/common/errors.hpp"
-#include "src/common/files.hpp"
-#include "src/common/js.hpp"
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
-#include "src/common/shaders.hpp"
-#include "src/common/spatial.hpp"
-#include "src/common/voxels.hpp"
 #include "src/common/window.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/scripts.hpp"
@@ -64,6 +49,7 @@ class EventHandler {
           scripts_->delegate("on_click", button, action, mods);
         });
 
+    // Notify scripts the initialization event.
     scripts_->delegate("on_init");
   }
 
@@ -72,7 +58,7 @@ class EventHandler {
     window_->clear<glfwSetKeyCallback>();
   }
 
-  void onUpdate(float dt) {
+  void update(float dt) {
     scripts_->delegate("on_update", dt);
   }
 
