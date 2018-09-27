@@ -1,4 +1,4 @@
 python package.py
 if ($?) {
-  bin/game.exe
+  Start-Process -FilePath bin\game.exe -WorkingDirectory bin\
 }
