@@ -14,10 +14,15 @@
 #include "src/worlds/events.hpp"
 #include "src/worlds/scripts.hpp"
 #include "src/worlds/terrain.hpp"
+#include "src/worlds/ui.hpp"
 
 namespace tequila {
 
-auto makeWorldCamera() {
+auto getScriptContext() {
+  return std::make_shared<LuaContext>();
+}
+
+auto getWorldCamera() {
   auto camera = std::make_shared<Camera>();
   camera->position = glm::vec3(0.0f, 0.0f, 0.0f);
   camera->view = glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f));
@@ -28,27 +33,28 @@ auto makeWorldCamera() {
   return camera;
 }
 
-auto makeWorldLight() {
+auto getWorldLight() {
   return std::make_shared<glm::vec3>(
       glm::normalize(glm::vec3(-2.0f, 4.0f, 1.0f)));
 }
 
-auto makeScriptContext() {
-  return std::make_shared<LuaContext>();
+auto getWorldUI() {
+  return std::make_shared<UITree>();
 }
 
 auto makeWorldResources(const std::string& world_name) {
   return std::make_shared<Resources>(
       ResourcesBuilder()
-          .withSeed<ScriptContext>(makeScriptContext())
-          .withSeed<WorldCamera>(makeWorldCamera())
-          .withSeed<WorldLight>(makeWorldLight())
+          .withSeed<ScriptContext>(getScriptContext())
+          .withSeed<WorldCamera>(getWorldCamera())
+          .withSeed<WorldLight>(getWorldLight())
           .withSeed<WorldName>(world_name)
+          .withSeed<WorldUI>(getWorldUI())
           .build());
 }
 
 void run() {
-  // Figure out what world to load.
+  // Figure out which world to load.
   std::string world_name;
   std::cout << "Enter world name (e.g. octree_world): ";
   std::getline(std::cin, world_name);
@@ -64,10 +70,25 @@ void run() {
           .bind<Window>(app.makeWindow(1024, 768, "Tequila!", nullptr, nullptr))
           .bind<Resources>(makeWorldResources(world_name))
           .bindToDefaultFactory<EventHandler>()
+          .bindToDefaultFactory<RectUIRenderer>()
           .bindToDefaultFactory<ScriptExecutor>()
           .bindToDefaultFactory<TerrainRenderer>()
           .bindToDefaultFactory<TerrainUtil>()
+          .bindToDefaultFactory<TextUIRenderer>()
+          .bindToDefaultFactory<UIRenderer>()
           .build();
+
+  // Define some UI nodes.
+  {
+    auto ui = ResourceMutation<WorldUI>(*registry.get<Resources>());
+    auto& node = ui->nodes["crosshair"];
+    node.kind = "rect";
+    node.attr["x"] = "508";
+    node.attr["y"] = "380";
+    node.attr["width"] = "8";
+    node.attr["height"] = "8";
+    node.attr["color"] = to<std::string>(0xFFFFFFAAul);
+  }
 
   // Enter the game loop.
   std::cout << "Entering game loop." << std::endl;
@@ -77,6 +98,7 @@ void run() {
     // Render the scene to a new frame.
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
     registry.get<TerrainRenderer>()->draw();
+    registry.get<UIRenderer>()->draw();
   });
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace tequila {
 
@@ -19,6 +20,11 @@ inline auto concat(T1&& t1, T2&& t2, Args&&... args) {
   return concat(
       format("%1%%2%", std::forward<T1>(t1), std::forward<T2>(t2)),
       std::forward<Args>(args)...);
+}
+
+template <typename Ret, typename... Args>
+inline auto to(Args&&... args) {
+  return boost::lexical_cast<Ret>(concat(std::forward<Args>(args)...));
 }
 
 }  // namespace tequila

@@ -158,6 +158,7 @@ function module:get_physics_movement(dt)
   move[3] = truncate(move[3], 0.00001)
 
   -- Clamp the movement vector to avoid collisions.
+  -- TODO: Tweak the ranges below to be parameterized on player dimensions.
   local cx, cy, cz = table.unpack(get_camera_pos())
   for dim = 1, 3 do
     for _, dx in ipairs({-0.45, 0.45}) do

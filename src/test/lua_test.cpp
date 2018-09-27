@@ -43,6 +43,15 @@ function module:apply2(cb)
   return cb({1, 2, 3, 4, 5})
 end
 
+function module:store_the_pointer(shared_ptr)
+  self.the_pointer = shared_ptr
+end
+
+function module:drop_the_pointer()
+  self.the_pointer = nil
+  collectgarbage()
+end
+
 return module
 )lua";
 
@@ -74,6 +83,17 @@ TEST_CASE("Test basic usage", "[lua]") {
   };
   REQUIRE("3:9.1:joe" == m1.call<std::string>("apply1", sol::as_function(cb1)));
   REQUIRE("1:2:3:4:5" == m1.call<std::string>("apply2", sol::as_function(cb2)));
+
+  // Test shared pointers.
+  bool was_deleted = false;
+  std::shared_ptr<int> a_ptr(new int(10), [&](int* i_ptr) {
+    delete i_ptr;
+    was_deleted = true;
+  });
+  m1.call<void>("store_the_pointer", std::move(a_ptr));
+  REQUIRE_FALSE(was_deleted);
+  m1.call<void>("drop_the_pointer");
+  REQUIRE(was_deleted);
 }
 
 }  // namespace tequila

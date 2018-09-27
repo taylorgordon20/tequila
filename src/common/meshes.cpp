@@ -101,7 +101,7 @@ MeshBuilder& MeshBuilder::setNormals(VertexArray3f data) {
   return *this;
 }
 
-MeshBuilder& MeshBuilder::setColors(VertexArray3f data) {
+MeshBuilder& MeshBuilder::setColors(VertexArrayf data) {
   colors_.swap(data);
   return *this;
 }

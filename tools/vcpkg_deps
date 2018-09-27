@@ -3,6 +3,8 @@ boost-container-hash
 boost-format
 boost-gil
 boost-integer
+boost-lexical-cast
+boost-math
 boost-optional
 catch
 cereal

@@ -44,13 +44,14 @@ class Mesh {
 
 class MeshBuilder {
  public:
+  using VertexArrayf = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>;
   using VertexArray2f = Eigen::Matrix<float, 2, Eigen::Dynamic>;
   using VertexArray3f = Eigen::Matrix<float, 3, Eigen::Dynamic>;
 
   MeshBuilder();
   MeshBuilder& setPositions(VertexArray3f data);
   MeshBuilder& setNormals(VertexArray3f data);
-  MeshBuilder& setColors(VertexArray3f data);
+  MeshBuilder& setColors(VertexArrayf data);
   MeshBuilder& setTexCoords(VertexArray2f data);
   MeshBuilder& setTransform(glm::mat4x4 transform);
   Mesh build();
@@ -58,7 +59,7 @@ class MeshBuilder {
  private:
   VertexArray3f positions_;
   VertexArray3f normals_;
-  VertexArray3f colors_;
+  VertexArrayf colors_;
   VertexArray2f tex_coords_;
   glm::mat4x4 transform_;
 };

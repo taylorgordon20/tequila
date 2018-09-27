@@ -19,6 +19,7 @@ cc_library(
     k: [v] for k, v in INCLUDE_MAP.items()
   }),
   deps = [
+    ":boost-math",
     ":chakracore",
     ":glbinding",
     ":glfw3",
@@ -29,6 +30,103 @@ cc_library(
     ":zstd",
     "//:system_lib",
   ],
+)
+
+cc_library(
+  name = "boost-math",
+  deps = [
+    ":boost_atomic",
+    ":boost_math_c99",
+    ":boost_math_c99f",
+    ":boost_math_c99l",
+    ":boost_math_tr1",
+    ":boost_math_tr1f",
+    ":boost_math_tr1l",
+  ],
+)
+
+cc_import(
+  name = "boost_atomic",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_atomic-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_atomic-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_math_c99",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_math_c99-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_c99-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_math_c99f",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_math_c99f-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_c99f-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_math_c99l",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_math_c99l-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_c99l-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_math_tr1",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_math_tr1-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_tr1-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_math_tr1f",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_math_tr1f-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_tr1f-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "boost_math_tr1l",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/boost_math_tr1l-vc140-mt.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_tr1l-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(

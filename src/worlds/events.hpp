@@ -9,6 +9,7 @@
 #include "src/common/window.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/scripts.hpp"
+#include "src/worlds/ui.hpp"
 
 namespace tequila {
 
@@ -27,6 +28,16 @@ class EventHandler {
         gl::glViewport(0, 0, w, h);
         auto camera = ResourceMutation<WorldCamera>(*resources_);
         camera->aspect = static_cast<float>(width) / height;
+      }
+
+      // Update the crosshair
+      {
+        auto ui = ResourceMutation<WorldUI>(*resources_);
+        auto& node = ui->nodes["crosshair"];
+        int crosshair_w = to<int>(node.attr["width"]);
+        int crosshair_h = to<int>(node.attr["height"]);
+        node.attr["x"] = to<std::string>(w / 2 - crosshair_w / 2);
+        node.attr["y"] = to<std::string>(h / 2 - crosshair_h / 2);
       }
     });
 
