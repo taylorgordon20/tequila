@@ -78,18 +78,6 @@ void run() {
           .bindToDefaultFactory<UIRenderer>()
           .build();
 
-  // Define some UI nodes.
-  {
-    auto ui = ResourceMutation<WorldUI>(*registry.get<Resources>());
-    auto& node = ui->nodes["crosshair"];
-    node.kind = "rect";
-    node.attr["x"] = "508";
-    node.attr["y"] = "380";
-    node.attr["width"] = "8";
-    node.attr["height"] = "8";
-    node.attr["color"] = to<std::string>(0xFFFFFFAAul);
-  }
-
   // Enter the game loop.
   std::cout << "Entering game loop." << std::endl;
   registry.get<Window>()->loop([&](float dt) {

@@ -3,6 +3,8 @@ local module = {
   orientation_angles = {0, 0},
   physics_mode = false,
   camera_velocity = {0, 0, 0},
+  crosshair_size = 4,
+  crosshair_color = 0xAAAAFFCC,
 }
 
 local KEYS = {
@@ -181,6 +183,33 @@ end
 function module:on_init()
   print("Initialized world_input.lua")
   set_cursor_visible(false)
+
+  local window_w, window_h = table.unpack(get_window_size())
+  create_ui_node(
+      "crosshair",
+      "rect",
+      {
+        x = window_w / 2 - self.crosshair_size / 2,
+        y = window_h / 2 - self.crosshair_size / 2,
+        width = self.crosshair_size,
+        height = self.crosshair_size,
+        color = self.crosshair_color,
+      }
+  )
+end
+
+function module:on_resize(width, height)
+  local window_w, window_h = table.unpack(get_window_size())
+  update_ui_node(
+      "crosshair",
+      {
+        x = window_w / 2 - self.crosshair_size / 2,
+        y = window_h / 2 - self.crosshair_size / 2,
+        width = self.crosshair_size,
+        height = self.crosshair_size,
+        color = self.crosshair_color,
+      }
+  )
 end
 
 function module:on_key(key, scancode, action, mods)

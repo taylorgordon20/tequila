@@ -13,6 +13,7 @@
 #include "src/common/window.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/terrain.hpp"
+#include "src/worlds/ui.hpp"
 
 namespace tequila {
 
@@ -137,6 +138,38 @@ auto FFI_get_ray_voxels(std::shared_ptr<TerrainUtil>& terrain_util) {
   });
 }
 
+auto FFI_create_ui_node(std::shared_ptr<Resources>& resources) {
+  return sol::as_function(
+      [resources](std::string id, std::string kind, const sol::table& attr) {
+        ResourceMutation<WorldUI> ui(*resources);
+        ENFORCE(!ui->nodes.count(id));
+        auto& node = ui->nodes[id];
+        node.kind = std::move(kind);
+        auto lua = resources->get<ScriptContext>();
+        attr.for_each([&](sol::object key, sol::object val) {
+          node.attr[key.as<std::string>()] = lua->state()["tostring"](val);
+        });
+      });
+}
+
+auto FFI_update_ui_node(std::shared_ptr<Resources>& resources) {
+  return sol::as_function([resources](std::string id, const sol::table& table) {
+    ResourceMutation<WorldUI> ui(*resources);
+    auto& node = ui->nodes.at(id);
+    auto lua = resources->get<ScriptContext>();
+    table.for_each([&](sol::object key, sol::object val) {
+      node.attr[key.as<std::string>()] = lua->state()["tostring"](val);
+    });
+  });
+}
+
+auto FFI_delete_ui_node(std::shared_ptr<Resources>& resources) {
+  return sol::as_function([resources](std::string id) {
+    ResourceMutation<WorldUI> ui(*resources);
+    ENFORCE(ui->nodes.erase(id));
+  });
+}
+
 class ScriptExecutor {
  public:
   ScriptExecutor(
@@ -158,6 +191,9 @@ class ScriptExecutor {
     ctx->set("get_voxel", FFI_get_voxel(terrain_util));
     ctx->set("set_voxel", FFI_set_voxel(terrain_util));
     ctx->set("get_ray_voxels", FFI_get_ray_voxels(terrain_util));
+    ctx->set("create_ui_node", FFI_create_ui_node(resources));
+    ctx->set("update_ui_node", FFI_update_ui_node(resources));
+    ctx->set("delete_ui_node", FFI_delete_ui_node(resources));
   }
 
   template <typename... Args>
