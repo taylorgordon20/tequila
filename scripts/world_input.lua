@@ -207,8 +207,18 @@ function module:update_palette_ui()
           height = palette_size,
           color = (self.palette_colors[i] & ~255) + alpha,
         }
-    )
+    )    
   end
+  update_ui_node(
+    "palette_selection",
+    {
+      x = (self.palette_selection * palette_padding + (self.palette_selection-1) * palette_size) + center - 5,
+      y = palette_padding - 5,
+      width = palette_size + 10,
+      height = palette_size + 10,
+      color = 0xFFFFFF77,
+    }
+  )
 end
 
 function module:on_init()
@@ -237,7 +247,13 @@ function module:on_init()
         {x = 0, y = 0, width = 0, height = 0, color = 0}
     )
   end
-  self.palette_selection = 1
+
+  create_ui_node(
+    "palette_selection",
+    "rect",
+    {x = 0, y = 0, width = 0, height = 0, color = 0}
+  )
+  self.palette_selection = 1  
   self:update_palette_ui()
 end
 
@@ -257,7 +273,8 @@ function module:on_resize(width, height)
 end
 
 function module:on_scroll(x_offset, y_offset)
-  print("Scroll event! x_offset=" .. x_offset .. ", y_offset=" .. y_offset)
+  self.palette_selection = math.floor(self.palette_selection - 1 - y_offset) % 8 + 1
+  self:update_palette_ui()
 end
 
 function module:on_key(key, scancode, action, mods)
