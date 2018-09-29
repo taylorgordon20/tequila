@@ -3,7 +3,7 @@ local module = {
   orientation_angles = {0, 0},
   physics_mode = false,
   camera_velocity = {0, 0, 0},
-  crosshair_size = 4,
+  crosshair_size = 8,
   crosshair_color = 0xAAAAFFCC,
   palette_colors = {},
   palette_selection = 1,
@@ -193,15 +193,16 @@ end
 function module:update_palette_ui()
   local window_w, window_h = table.unpack(get_window_size())
 
-  local palette_size = 50
-  local palette_padding = 20
+  local palette_size = window_h * 0.05
+  local palette_padding = window_h * 0.02
+  local center = (window_w - 8 * (palette_size + palette_padding)) / 2
   for i = 1, 8 do
-    alpha = switch(i == self.palette_selection, 255, 100)
+    local alpha = switch(i == self.palette_selection, 255, 100)    
     update_ui_node(
         "palette_" .. i,
-        {
-          x = window_w - palette_padding - palette_size,
-          y = window_h - i * (palette_padding + palette_size),
+        {          
+          x = (i * palette_padding + (i-1) * palette_size) + center,
+          y = palette_padding,
           width = palette_size,
           height = palette_size,
           color = (self.palette_colors[i] & ~255) + alpha,
