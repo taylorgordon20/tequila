@@ -10,10 +10,12 @@
 #include "src/common/camera.hpp"
 #include "src/common/data.hpp"
 #include "src/common/errors.hpp"
+#include "src/common/images.hpp"
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/shaders.hpp"
 #include "src/common/spatial.hpp"
+#include "src/common/textures.hpp"
 #include "src/common/timers.hpp"
 #include "src/common/voxels.hpp"
 #include "src/worlds/core.hpp"
@@ -26,6 +28,13 @@ struct TerrainShader {
         makeVertexShader(loadFile("shaders/terrain.vert.glsl")),
         makeFragmentShader(loadFile("shaders/terrain.frag.glsl")),
     });
+  }
+};
+
+struct TerrainTexture {
+  auto operator()(const Resources& resources) {
+    auto pixels = loadPngToTensor("images/normal_map.png");
+    return std::make_shared<Texture>(std::move(pixels));
   }
 };
 
@@ -68,11 +77,17 @@ class TerrainRenderer {
       voxel_keys.insert(cell_keys->begin(), cell_keys->end());
     }
 
+    // Load the generic terrain texture.
+    auto texture = resources_->get<TerrainTexture>();
+
     // Draw each voxel array's mesh.
     auto shader = resources_->get<TerrainShader>();
     auto camera = resources_->get<WorldCamera>();
     auto light = resources_->get<WorldLight>();
     shader->run([&] {
+      TextureBinding tb(*texture, 0);
+      shader->uniform("normal_map", tb.location());
+      shader->uniform("uv_scale", glm::vec2(0.5f, 0.5f));
       shader->uniform("light", *light);
       shader->uniform("projection_matrix", camera->projectionMatrix());
       for (const auto& voxel_key : voxel_keys) {

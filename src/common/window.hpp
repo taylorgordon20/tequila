@@ -80,6 +80,7 @@ class Application {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
     auto glfw_window = glfwCreateWindow(std::forward<GlfwArgs>(args)...);
 
     // Initialize OpenGL context with vsync and extension bindings.

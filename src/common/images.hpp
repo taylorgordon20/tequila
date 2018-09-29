@@ -1,3 +1,5 @@
+#pragma once
+
 #include <boost/gil/extension/io/png.hpp>
 #include <boost/gil/gil_all.hpp>
 #include <unsupported/Eigen/CXX11/Tensor>
@@ -17,10 +19,12 @@ inline void savePng(const char* path, const boost::gil::rgb8_image_t& image) {
   boost::gil::write_view(path, const_view(image), boost::gil::png_tag());
 }
 
+using ImageTensor = Eigen::Tensor<uint8_t, 3, Eigen::RowMajor>;
+
 inline auto loadPngToTensor(const char* path) {
   auto image = loadPng(path);
   auto image_view = const_view(image);
-  Eigen::Tensor<uint8_t, 3> pixels(image.height(), image.width(), 3);
+  ImageTensor pixels(image.height(), image.width(), 3);
   for (auto row = 0; row < image.height(); row += 1) {
     for (auto col = 0; col < image.width(); col += 1) {
       pixels(row, col, 0) = boost::gil::at_c<0>(image_view(row, col));
@@ -31,8 +35,7 @@ inline auto loadPngToTensor(const char* path) {
   return pixels;
 }
 
-inline auto saveTensorToPng(
-    const char* path, const Eigen::Tensor<uint8_t, 3>& tensor) {
+inline auto saveTensorToPng(const char* path, const ImageTensor& tensor) {
   boost::gil::rgb8_image_t image(tensor.dimension(1), tensor.dimension(0));
   auto image_view = view(image);
   for (auto row = 0; row < image.height(); row += 1) {

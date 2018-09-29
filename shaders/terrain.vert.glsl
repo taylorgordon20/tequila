@@ -19,6 +19,7 @@ out vec3 _light;
 out vec3 _eye;
 out vec3 _color;
 out vec2 _tex_coord;
+out float _depth;
 
 void main() {
   vec4 view_position = modelview_matrix * vec4(position, 1.0);
@@ -34,4 +35,5 @@ void main() {
   // Set surface texture / color outputs.
   _color = color;
   _tex_coord = tex_coord;
+  _depth = distance(position, _eye);
 }

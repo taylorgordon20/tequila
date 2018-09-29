@@ -74,6 +74,14 @@ void ShaderProgram::uniform(const std::string& name, int value) {
   glUniform1i(uniform(name), value);
 }
 
+void ShaderProgram::uniform(const std::string& name, float value) {
+  glUniform1f(uniform(name), value);
+}
+
+void ShaderProgram::uniform(const std::string& name, const glm::vec2& value) {
+  glUniform2fv(uniform(name), 1, glm::value_ptr(value));
+}
+
 void ShaderProgram::uniform(const std::string& name, const glm::vec3& value) {
   glUniform3fv(uniform(name), 1, glm::value_ptr(value));
 }

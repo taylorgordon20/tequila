@@ -5,10 +5,13 @@ local module = {
   camera_velocity = {0, 0, 0},
   crosshair_size = 4,
   crosshair_color = 0xAAAAFFCC,
+  palette_colors = {},
+  palette_selection = 1,
 }
 
 local KEYS = {
   space = 32,
+  tab = 258,
   pg_up = 266,
   pg_dn = 267,
   home = 268,
@@ -76,6 +79,13 @@ local clamp_movement = function(from, move, dim)
   if get_voxel(from[1] + s[1], from[2] + s[2], from[3] + s[3]) ~= 0 then
     move[dim] = clamp(m, math.floor(p) - p + pad, math.floor(p + 1) - p - pad)
   end
+end
+
+local random_color = function()
+  local r = math.random(0, 255) << 24;
+  local g = math.random(0, 255) << 16;
+  local b = math.random(0, 255) << 8;
+  return r + g + b + 255;
 end
 
 function module:get_flying_movement(dt)
@@ -180,6 +190,26 @@ function module:get_physics_movement(dt)
   return move
 end
 
+function module:update_palette_ui()
+  local window_w, window_h = table.unpack(get_window_size())
+
+  local palette_size = 50
+  local palette_padding = 20
+  for i = 1, 8 do
+    alpha = switch(i == self.palette_selection, 255, 100)
+    update_ui_node(
+        "palette_" .. i,
+        {
+          x = window_w - palette_padding - palette_size,
+          y = window_h - i * (palette_padding + palette_size),
+          width = palette_size,
+          height = palette_size,
+          color = (self.palette_colors[i] & ~255) + alpha,
+        }
+    )
+  end
+end
+
 function module:on_init()
   print("Initialized world_input.lua")
   set_cursor_visible(false)
@@ -196,6 +226,18 @@ function module:on_init()
         color = self.crosshair_color,
       }
   )
+
+  -- Assign the initial palette colors and create the UI.
+  for i = 1, 8 do
+    self.palette_colors[i] = random_color()
+    create_ui_node(
+        "palette_" .. i,
+        "rect",
+        {x = 0, y = 0, width = 0, height = 0, color = 0}
+    )
+  end
+  self.palette_selection = 1
+  self:update_palette_ui()
 end
 
 function module:on_resize(width, height)
@@ -210,6 +252,7 @@ function module:on_resize(width, height)
         color = self.crosshair_color,
       }
   )
+  self:update_palette_ui()
 end
 
 function module:on_key(key, scancode, action, mods)
@@ -224,32 +267,38 @@ function module:on_key(key, scancode, action, mods)
     set_camera_view(0, 0, 1)
   elseif key == KEYS.space and action == 1 then
     self.camera_velocity = {0, PHYSICS.jump_force, 0}
+  elseif key == KEYS.tab and action == 1 then
+    self.palette_selection = self.palette_selection % 8 + 1
+    self:update_palette_ui()
   end
 end
 
 function module:on_click(button, action, mods)
-  if button == 0 and action == 1 then
-    -- Insert a voxel preceding the camera ray intersection.
-    local pred = nil
-    for_camera_ray_voxels(function(x, y, z, distance)
-      if get_voxel(x, y, z) ~= 0 then
-        if pred then
-          set_voxel(pred[1], pred[2], pred[3], 0xFFFFFFFF)
+  if self.orientation_toggle then
+    if button == 0 and action == 1 then
+      -- Insert a voxel preceding the camera ray intersection.
+      local pred = nil
+      for_camera_ray_voxels(function(x, y, z, distance)
+        if get_voxel(x, y, z) ~= 0 then
+          if pred then
+            local color = self.palette_colors[self.palette_selection]
+            set_voxel(pred[1], pred[2], pred[3], color)
+          end
+          return true
         end
-        return true
-      end
-      if distance > 0.2 then
-        pred = {x, y, z}
-      end
-    end)
-  elseif button == 1 and action == 1 then
-    -- Delete the voxel at the first camera ray intersection.
-    for_camera_ray_voxels(function(x, y, z)
-      if get_voxel(x, y, z) ~= 0 then
-        set_voxel(x, y, z, 0)
-        return true
-      end
-    end)
+        if distance > 0.2 then
+          pred = {x, y, z}
+        end
+      end)
+    elseif button == 1 and action == 1 then
+      -- Delete the voxel at the first camera ray intersection.
+      for_camera_ray_voxels(function(x, y, z)
+        if get_voxel(x, y, z) ~= 0 then
+          set_voxel(x, y, z, 0)
+          return true
+        end
+      end)
+    end
   end
 end
 
