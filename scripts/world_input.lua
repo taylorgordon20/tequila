@@ -255,6 +255,10 @@ function module:on_resize(width, height)
   self:update_palette_ui()
 end
 
+function module:on_scroll(x_offset, y_offset)
+  print("Scroll event! x_offset=" .. x_offset .. ", y_offset=" .. y_offset)
+end
+
 function module:on_key(key, scancode, action, mods)
   if key == string.byte('E') and action == 1 then
     self.orientation_toggle = not self.orientation_toggle

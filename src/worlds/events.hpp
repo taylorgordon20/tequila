@@ -45,6 +45,11 @@ class EventHandler {
           scripts_->delegate("on_key", key, scancode, action, mods);
         });
 
+    // Register scroll event callback.
+    window_->on<glfwSetScrollCallback>([&](double x_offset, double y_offset) {
+      scripts_->delegate("on_scroll", x_offset, y_offset);
+    });
+
     // Register click event callback.
     window_->on<glfwSetMouseButtonCallback>(
         [&](int button, int action, int mods) {
