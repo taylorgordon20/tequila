@@ -15,9 +15,9 @@ def _module_path(ctx, module, module_file):
   module_path = module_file.short_path[len(module_base):]
   if all([
     module_file.basename == module.label.name,
-    module_path.endswith(".dll"),
+    module_path.endswith("_win.dll"),
   ]):
-    module_path = module_path[:-3] + "pyd"
+    module_path = module_path[:-len("_win.dll")] + ".pyd"
   return "{package}{module}".format(
     package = ctx.attr.name,
     module = module_path,
@@ -81,7 +81,7 @@ py_extension = rule(
 
 def py_cpp_module(name, srcs=[], deps=[]):
     native.cc_binary(
-      name = "{}.dll".format(name),
+      name = "{}_win.dll".format(name),
       srcs = srcs,
       linkshared = True,
       deps = deps,
@@ -97,7 +97,7 @@ def py_cpp_module(name, srcs=[], deps=[]):
     native.alias(
       name = name,
       actual = select({
-        "@bazel_tools//src/conditions:windows": "{}.dll".format(name),
+        "@bazel_tools//src/conditions:windows": "{}_win.dll".format(name),
         "//conditions:default": "{}.so".format(name),
       }),
     )

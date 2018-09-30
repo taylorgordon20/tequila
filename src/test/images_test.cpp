@@ -13,7 +13,8 @@ void run() {
   std::cout << "Loaded image: " << kInputImagePath << std::endl;
 
   // Convert pixels to normalized float representation.
-  Eigen::Tensor<float, 3> pixels = raw_pixels.cast<float>() / 255.0f;
+  Eigen::Tensor<float, 3, Eigen::RowMajor> pixels =
+      raw_pixels.cast<float>() / 255.0f;
 
   // Convert image to only have the blue channel.
   pixels.chip<2>(0).setZero();
