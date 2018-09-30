@@ -17,7 +17,7 @@ in vec2 tex_coord;
 // are represented in view coordinates and relative to the vertex.
 out vec3 _normal; 
 out vec3 _tangent; 
-out vec3 _bitangent; 
+out vec3 _cotangent; 
 out vec3 _light;
 out vec3 _eye;
 out vec3 _color;
@@ -33,7 +33,7 @@ void main() {
   // Set light vector outputs.
   _normal = normalize(normal_matrix * normal);
   _tangent = normalize(normal_matrix * tangent);
-  _bitangent = normalize(normal_matrix * cross(normal, tangent));
+  _cotangent = normalize(normal_matrix * cross(normal, tangent));
   _light = normalize(normal_matrix * light);
   _eye = -normalize(view_position.xyz);
 

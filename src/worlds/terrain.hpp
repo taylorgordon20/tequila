@@ -31,10 +31,18 @@ struct TerrainShader {
   }
 };
 
-struct TerrainTexture {
+// TODO: Move details / textures into the voxel data structure.
+struct VoxelDetail {
+  Texture texture;
+  float uv_scale;
+  VoxelDetail(Texture texture, float uv_scale)
+      : texture(std::move(texture)), uv_scale(uv_scale) {}
+};
+
+struct TerrainDetail {
   auto operator()(const Resources& resources) {
-    auto pixels = loadPngToTensor("images/squares_normal_map.png");
-    return std::make_shared<Texture>(std::move(pixels));
+    auto pixels = loadPngToTensor("images/small_squares_normal_map.png");
+    return std::make_shared<VoxelDetail>(std::move(pixels), 0.5f);
   }
 };
 
@@ -78,15 +86,16 @@ class TerrainRenderer {
     }
 
     // Load the generic terrain texture.
-    auto texture = resources_->get<TerrainTexture>();
+    auto detail = resources_->get<TerrainDetail>();
 
     // Draw each voxel array's mesh.
     auto shader = resources_->get<TerrainShader>();
     auto camera = resources_->get<WorldCamera>();
     auto light = resources_->get<WorldLight>();
     shader->run([&] {
-      TextureBinding tb(*texture, 0);
+      TextureBinding tb(detail->texture, 0);
       shader->uniform("normal_map", tb.location());
+      shader->uniform("uv_scale", detail->uv_scale);
       shader->uniform("light", *light);
       shader->uniform("projection_matrix", camera->projectionMatrix());
       for (const auto& voxel_key : voxel_keys) {

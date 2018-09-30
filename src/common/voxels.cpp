@@ -49,17 +49,6 @@ auto normalMat(std::tuple<float, float, float> normal) {
 }
 
 template <int cols>
-auto tangents(std::tuple<float, float, float> normal) {
-  Eigen::Matrix<float, 3, cols> mat;
-  for (int i = 0; i < cols; i += 1) {
-    mat(0, i) = std::get<0>(normal);
-    mat(1, i) = std::get<1>(normal);
-    mat(2, i) = std::get<2>(normal);
-  }
-  return mat;
-}
-
-template <int cols>
 auto texCoordMat() {
   Eigen::Matrix<float, 2, cols> mat;
   mat.row(0) << 0, 1, 1, 1, 0, 0;
@@ -137,6 +126,14 @@ Mesh VoxelArray::toMesh() const {
       normalMat<6>({-1.0f, 0.0f, 0.0f}),
       normalMat<6>({1.0f, 0.0f, 0.0f}),
   };
+  static const std::vector<Eigen::Matrix<float, 3, 6>> kCotangents = {
+      normalMat<6>({0.0f, 1.0f, 0.0f}),
+      normalMat<6>({0.0f, 1.0f, 0.0f}),
+      normalMat<6>({1.0f, 0.0f, 0.0f}),
+      normalMat<6>({1.0f, 0.0f, 0.0f}),
+      normalMat<6>({0.0f, 1.0f, 0.0f}),
+      normalMat<6>({0.0f, 1.0f, 0.0f}),
+  };
   static const Eigen::Matrix<float, 2, 6> kTexCoords = texCoordMat<6>();
 
   // Generate a vector with every face.
@@ -193,6 +190,10 @@ Mesh VoxelArray::toMesh() const {
 
     // Set the texture coordinates.
     tex_coords.block(0, 6 * i, 2, 6) = kTexCoords;
+    tex_coords.row(0).segment(6 * i, 6) +=
+        Eigen::Vector3f(fx, fy, fz).transpose() * kTangents.at(dir);
+    tex_coords.row(1).segment(6 * i, 6) +=
+        Eigen::Vector3f(fx, fy, fz).transpose() * kCotangents.at(dir);
 
     // Set the colors.
     float r = ((color >> 24) & 255) / 255.0f;

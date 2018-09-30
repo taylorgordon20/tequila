@@ -20,13 +20,14 @@ const float fog_rate = 0.1;
 // Geometric uniforms.
 uniform mat3 normal_matrix;
 
-// Samplers.
+// Texture uniforms.
 uniform sampler2D normal_map; 
+uniform float uv_scale; 
 
 // Interpolated vertex input.
 in vec3 _normal; 
 in vec3 _tangent; 
-in vec3 _bitangent; 
+in vec3 _cotangent; 
 in vec3 _light;
 in vec3 _eye;
 in vec3 _color;
@@ -59,11 +60,11 @@ vec3 applyFog(vec3 color, float depth) {
 
 void main() {
   // Sample the normal map.
-  vec3 texture_normal = normalize(2.0 * texture(normal_map, _tex_coord).xyz - 1.0);
+  vec3 texture_normal = normalize(2.0 * texture(normal_map, uv_scale * _tex_coord).xyz - 1.0);
 
   // Compute light component vectors.
   float occlusion = pow(max(0, dot(vec3(0, 0, 1), texture_normal)), mat_occlusion_exp);
-  vec3 normal = normalize(mat3(_tangent, _bitangent, _normal) * texture_normal);
+  vec3 normal = normalize(mat3(_tangent, _cotangent, _normal) * texture_normal);
   vec3 light = normalize(_light);
   vec3 halfv = normalize(0.5 * (_eye + _light));
 
