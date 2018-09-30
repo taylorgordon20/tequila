@@ -27,9 +27,10 @@ inline auto loadPngToTensor(const char* path) {
   ImageTensor pixels(image.height(), image.width(), 3);
   for (auto row = 0; row < image.height(); row += 1) {
     for (auto col = 0; col < image.width(); col += 1) {
-      pixels(row, col, 0) = boost::gil::at_c<0>(image_view(row, col));
-      pixels(row, col, 1) = boost::gil::at_c<1>(image_view(row, col));
-      pixels(row, col, 2) = boost::gil::at_c<2>(image_view(row, col));
+      auto inverted_row = image.height() - row - 1;
+      pixels(row, col, 0) = boost::gil::at_c<0>(image_view(col, inverted_row));
+      pixels(row, col, 1) = boost::gil::at_c<1>(image_view(col, inverted_row));
+      pixels(row, col, 2) = boost::gil::at_c<2>(image_view(col, inverted_row));
     }
   }
   return pixels;
@@ -40,7 +41,8 @@ inline auto saveTensorToPng(const char* path, const ImageTensor& tensor) {
   auto image_view = view(image);
   for (auto row = 0; row < image.height(); row += 1) {
     for (auto col = 0; col < image.height(); col += 1) {
-      image_view(row, col) = boost::gil::rgb8_pixel_t(
+      auto inverted_row = image.height() - row - 1;
+      image_view(col, inverted_row) = boost::gil::rgb8_pixel_t(
           tensor(row, col, 0), tensor(row, col, 1), tensor(row, col, 2));
     }
   }

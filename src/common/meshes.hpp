@@ -51,6 +51,7 @@ class MeshBuilder {
   MeshBuilder();
   MeshBuilder& setPositions(VertexArray3f data);
   MeshBuilder& setNormals(VertexArray3f data);
+  MeshBuilder& setTangents(VertexArray3f data);
   MeshBuilder& setColors(VertexArrayf data);
   MeshBuilder& setTexCoords(VertexArray2f data);
   MeshBuilder& setTransform(glm::mat4x4 transform);
@@ -59,6 +60,7 @@ class MeshBuilder {
  private:
   VertexArray3f positions_;
   VertexArray3f normals_;
+  VertexArray3f tangents_;
   VertexArrayf colors_;
   VertexArray2f tex_coords_;
   glm::mat4x4 transform_;

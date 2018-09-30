@@ -49,10 +49,21 @@ auto normalMat(std::tuple<float, float, float> normal) {
 }
 
 template <int cols>
+auto tangents(std::tuple<float, float, float> normal) {
+  Eigen::Matrix<float, 3, cols> mat;
+  for (int i = 0; i < cols; i += 1) {
+    mat(0, i) = std::get<0>(normal);
+    mat(1, i) = std::get<1>(normal);
+    mat(2, i) = std::get<2>(normal);
+  }
+  return mat;
+}
+
+template <int cols>
 auto texCoordMat() {
   Eigen::Matrix<float, 2, cols> mat;
-  mat.row(0) << 0, 0, 1, 1, 1, 0;
-  mat.row(1) << 0, 1, 1, 1, 0, 0;
+  mat.row(0) << 0, 1, 1, 1, 0, 0;
+  mat.row(1) << 0, 0, 1, 1, 1, 0;
   return mat;
 }
 }  // anonymous namespace
@@ -118,6 +129,14 @@ Mesh VoxelArray::toMesh() const {
       normalMat<6>({0.0f, 0.0f, -1.0f}),
       normalMat<6>({0.0f, 0.0f, 1.0f}),
   };
+  static const std::vector<Eigen::Matrix<float, 3, 6>> kTangents = {
+      normalMat<6>({0.0f, 0.0f, 1.0f}),
+      normalMat<6>({0.0f, 0.0f, -1.0f}),
+      normalMat<6>({0.0f, 0.0f, -1.0f}),
+      normalMat<6>({0.0f, 0.0f, 1.0f}),
+      normalMat<6>({-1.0f, 0.0f, 0.0f}),
+      normalMat<6>({1.0f, 0.0f, 0.0f}),
+  };
   static const Eigen::Matrix<float, 2, 6> kTexCoords = texCoordMat<6>();
 
   // Generate a vector with every face.
@@ -149,6 +168,7 @@ Mesh VoxelArray::toMesh() const {
 
   Eigen::Matrix<float, 3, Eigen::Dynamic> positions(3, 6 * faces.size());
   Eigen::Matrix<float, 3, Eigen::Dynamic> normals(3, 6 * faces.size());
+  Eigen::Matrix<float, 3, Eigen::Dynamic> tangents(3, 6 * faces.size());
   Eigen::Matrix<float, 3, Eigen::Dynamic> colors(3, 6 * faces.size());
   Eigen::Matrix<float, 2, Eigen::Dynamic> tex_coords(2, 6 * faces.size());
   for (int i = 0; i < faces.size(); i += 1) {
@@ -168,10 +188,11 @@ Mesh VoxelArray::toMesh() const {
     // Set the normals.
     normals.block(0, 6 * i, 3, 6) = kNormals.at(dir);
 
+    // Set the tangents.
+    tangents.block(0, 6 * i, 3, 6) = kTangents.at(dir);
+
     // Set the texture coordinates.
     tex_coords.block(0, 6 * i, 2, 6) = kTexCoords;
-    tex_coords.row(0).segment(6 * i, 6) += ones_row * (fx + fy + fz);
-    tex_coords.row(1).segment(6 * i, 6) += ones_row * (fx + fy + fz);
 
     // Set the colors.
     float r = ((color >> 24) & 255) / 255.0f;
@@ -183,6 +204,7 @@ Mesh VoxelArray::toMesh() const {
   return MeshBuilder()
       .setPositions(std::move(positions))
       .setNormals(std::move(normals))
+      .setTangents(std::move(tangents))
       .setColors(std::move(colors))
       .setTexCoords(std::move(tex_coords))
       .setTransform(transform_)

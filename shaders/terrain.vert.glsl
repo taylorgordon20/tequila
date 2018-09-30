@@ -9,17 +9,20 @@ uniform mat4 projection_matrix;
 // Vertex attributes.
 in vec3 position;
 in vec3 normal;
+in vec3 tangent;
 in vec3 color;
 in vec2 tex_coord;
 
 // Varying output to the fragment shader. All of the spatial outputs
 // are represented in view coordinates and relative to the vertex.
 out vec3 _normal; 
+out vec3 _tangent; 
+out vec3 _bitangent; 
 out vec3 _light;
 out vec3 _eye;
 out vec3 _color;
 out vec2 _tex_coord;
-out float _depth;
+out float _depth; 
 
 void main() {
   vec4 view_position = modelview_matrix * vec4(position, 1.0);
@@ -29,11 +32,13 @@ void main() {
 
   // Set light vector outputs.
   _normal = normalize(normal_matrix * normal);
+  _tangent = normalize(normal_matrix * tangent);
+  _bitangent = normalize(normal_matrix * cross(normal, tangent));
   _light = normalize(normal_matrix * light);
   _eye = -normalize(view_position.xyz);
 
   // Set surface texture / color outputs.
   _color = color;
   _tex_coord = tex_coord;
-  _depth = distance(position, _eye);
+  _depth = -view_position.z;
 }

@@ -84,6 +84,7 @@ void run() {
     registry.get<EventHandler>()->update(dt);
 
     // Render the scene to a new frame.
+    gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
     registry.get<TerrainRenderer>()->draw();
     registry.get<UIRenderer>()->draw();

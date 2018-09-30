@@ -3,7 +3,7 @@ local module = {
   orientation_angles = {0, 0},
   physics_mode = false,
   camera_velocity = {0, 0, 0},
-  crosshair_size = 8,
+  crosshair_size = 0.005,
   crosshair_color = 0xAAAAFFCC,
   palette_colors = {},
   palette_selection = 1,
@@ -173,9 +173,9 @@ function module:get_physics_movement(dt)
   -- TODO: Tweak the ranges below to be parameterized on player dimensions.
   local cx, cy, cz = table.unpack(get_camera_pos())
   for dim = 1, 3 do
-    for _, dx in ipairs({-0.45, 0.45}) do
-      for _, dy in ipairs({-0.75, 0, 0.75}) do
-        for _, dz in ipairs({-0.45, 0.45}) do
+    for _, dx in ipairs({-0.40, 0.40}) do
+      for _, dy in ipairs({-1.6, -0.65, 0.3}) do
+        for _, dz in ipairs({-0.40, 0.40}) do
           clamp_movement({cx + dx, cy + dy, cz + dz}, move, dim)
         end
       end
@@ -190,32 +190,54 @@ function module:get_physics_movement(dt)
   return move
 end
 
-function module:update_palette_ui()
+function module:update_ui()
   local window_w, window_h = table.unpack(get_window_size())
 
+  -- Position the crosshair at the center of the screen.
+  local crosshair_size = math.ceil(self.crosshair_size * window_h)
+  update_ui_node(
+      "crosshair",
+      {
+        x = window_w / 2 - crosshair_size / 2,
+        y = window_h / 2 - crosshair_size / 2,
+        width = crosshair_size,
+        height = crosshair_size,
+        color = self.crosshair_color,
+      }
+  )
+
+  -- Position the color palette centered in the bottom of the screen.
   local palette_size = window_h * 0.05
   local palette_padding = window_h * 0.02
-  local center = (window_w - 8 * (palette_size + palette_padding)) / 2
+  local palette_shift = (window_w - 8 * (palette_size + palette_padding)) / 2
+  local palette_x = function(index)
+    return index * palette_padding + (index - 1) * palette_size + palette_shift
+  end
   for i = 1, 8 do
     local alpha = switch(i == self.palette_selection, 255, 100)    
     update_ui_node(
         "palette_" .. i,
         {          
-          x = (i * palette_padding + (i-1) * palette_size) + center,
+          x = palette_x(i),
           y = palette_padding,
+          z = 1,
           width = palette_size,
           height = palette_size,
           color = (self.palette_colors[i] & ~255) + alpha,
         }
     )    
   end
+
+  -- Position the selection highlight beneath the appropriate palette.
+  local selection_padding = window_h * 0.01
   update_ui_node(
     "palette_selection",
     {
-      x = (self.palette_selection * palette_padding + (self.palette_selection-1) * palette_size) + center - 5,
-      y = palette_padding - 5,
-      width = palette_size + 10,
-      height = palette_size + 10,
+      x = palette_x(self.palette_selection) - selection_padding / 2,
+      y = palette_padding - selection_padding / 2,
+      z = 2,
+      width = palette_size + selection_padding,
+      height = palette_size + selection_padding,
       color = 0xFFFFFF77,
     }
   )
@@ -225,17 +247,11 @@ function module:on_init()
   print("Initialized world_input.lua")
   set_cursor_visible(false)
 
-  local window_w, window_h = table.unpack(get_window_size())
+  -- Create a crosshair that remains centered in the screen.
   create_ui_node(
       "crosshair",
       "rect",
-      {
-        x = window_w / 2 - self.crosshair_size / 2,
-        y = window_h / 2 - self.crosshair_size / 2,
-        width = self.crosshair_size,
-        height = self.crosshair_size,
-        color = self.crosshair_color,
-      }
+      {x = 0, y = 0, width = 0, height = 0, color = 0}
   )
 
   -- Assign the initial palette colors and create the UI.
@@ -247,34 +263,24 @@ function module:on_init()
         {x = 0, y = 0, width = 0, height = 0, color = 0}
     )
   end
-
   create_ui_node(
     "palette_selection",
     "rect",
     {x = 0, y = 0, width = 0, height = 0, color = 0}
   )
   self.palette_selection = 1  
-  self:update_palette_ui()
+
+  -- Update the UI relative to the current window size.
+  self:update_ui()
 end
 
 function module:on_resize(width, height)
-  local window_w, window_h = table.unpack(get_window_size())
-  update_ui_node(
-      "crosshair",
-      {
-        x = window_w / 2 - self.crosshair_size / 2,
-        y = window_h / 2 - self.crosshair_size / 2,
-        width = self.crosshair_size,
-        height = self.crosshair_size,
-        color = self.crosshair_color,
-      }
-  )
-  self:update_palette_ui()
+  self:update_ui()
 end
 
 function module:on_scroll(x_offset, y_offset)
   self.palette_selection = math.floor(self.palette_selection - 1 - y_offset) % 8 + 1
-  self:update_palette_ui()
+  self:update_ui()
 end
 
 function module:on_key(key, scancode, action, mods)
@@ -291,7 +297,7 @@ function module:on_key(key, scancode, action, mods)
     self.camera_velocity = {0, PHYSICS.jump_force, 0}
   elseif key == KEYS.tab and action == 1 then
     self.palette_selection = self.palette_selection % 8 + 1
-    self:update_palette_ui()
+    self:update_ui()
   end
 end
 

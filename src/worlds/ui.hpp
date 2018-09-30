@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 
+#include "src/common/maps.hpp"
 #include "src/common/opengl.hpp"
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
@@ -46,6 +47,7 @@ struct WorldRectNode {
     const auto& ui_node = resources.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(ui_node.attr.at("x"));
     auto y = to<float>(ui_node.attr.at("y"));
+    auto z = to<float>(get_or(ui_node.attr, "z", "1"));
     auto w = to<float>(ui_node.attr.at("width"));
     auto h = to<float>(ui_node.attr.at("height"));
     auto rgba = to<uint32_t>(ui_node.attr.at("color"));
@@ -54,7 +56,7 @@ struct WorldRectNode {
     Eigen::Matrix<float, 3, 6> positions;
     positions.row(0) << x, x, x + w, x + w, x, x + w;
     positions.row(1) << y, y + h, y, y, y + h, y + h;
-    positions.row(2) << -1, -1, -1, -1, -1, -1;
+    positions.row(2) << -z, -z, -z, -z, -z, -z;
 
     // Parse out the rect's color.
     Eigen::Matrix<float, 4, 6> colors;
@@ -140,13 +142,7 @@ class UIRenderer {
   void draw() {
     int width, height;
     window_->call<glfwGetFramebufferSize>(&width, &height);
-    auto ortho_mat = glm::ortho<float>(
-        0.0,
-        static_cast<float>(width),
-        0.0,
-        static_cast<float>(height),
-        0.0,
-        1000.0);
+    auto ortho_mat = glm::ortho<float>(0.0, width, 0.0, height, 0.0, 1000.0);
 
     auto shader = resources_->get<UIShader>();
     shader->run([&] {

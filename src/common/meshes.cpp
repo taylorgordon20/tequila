@@ -101,6 +101,11 @@ MeshBuilder& MeshBuilder::setNormals(VertexArray3f data) {
   return *this;
 }
 
+MeshBuilder& MeshBuilder::setTangents(VertexArray3f data) {
+  tangents_.swap(data);
+  return *this;
+}
+
 MeshBuilder& MeshBuilder::setColors(VertexArrayf data) {
   colors_.swap(data);
   return *this;
@@ -131,6 +136,11 @@ Mesh MeshBuilder::build() {
     rows += normals_.rows();
     cols = normals_.cols();
   }
+  if (tangents_.cols()) {
+    attributes.emplace_back("tangent", tangents_.rows());
+    rows += tangents_.rows();
+    cols = tangents_.cols();
+  }
   if (colors_.cols()) {
     attributes.emplace_back("color", colors_.rows());
     rows += colors_.rows();
@@ -152,6 +162,10 @@ Mesh MeshBuilder::build() {
   if (normals_.cols()) {
     mesh_data.block(offset, 0, normals_.rows(), cols) = normals_;
     offset += normals_.rows();
+  }
+  if (tangents_.cols()) {
+    mesh_data.block(offset, 0, tangents_.rows(), cols) = tangents_;
+    offset += tangents_.rows();
   }
   if (colors_.cols()) {
     mesh_data.block(offset, 0, colors_.rows(), cols) = colors_;

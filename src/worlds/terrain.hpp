@@ -33,7 +33,7 @@ struct TerrainShader {
 
 struct TerrainTexture {
   auto operator()(const Resources& resources) {
-    auto pixels = loadPngToTensor("images/normal_map.png");
+    auto pixels = loadPngToTensor("images/squares_normal_map.png");
     return std::make_shared<Texture>(std::move(pixels));
   }
 };
@@ -87,7 +87,6 @@ class TerrainRenderer {
     shader->run([&] {
       TextureBinding tb(*texture, 0);
       shader->uniform("normal_map", tb.location());
-      shader->uniform("uv_scale", glm::vec2(0.5f, 0.5f));
       shader->uniform("light", *light);
       shader->uniform("projection_matrix", camera->projectionMatrix());
       for (const auto& voxel_key : voxel_keys) {
