@@ -7,6 +7,8 @@ local module = {
   crosshair_color = 0xAAAAFFCC,
   palette_colors = {},
   palette_selection = 1,
+  average_dt = 0,
+  frame_count = 0,
 }
 
 local KEYS = {
@@ -186,7 +188,7 @@ function module:get_physics_movement(dt)
   self.camera_velocity[1] = move[1] / dt
   self.camera_velocity[2] = move[2] / dt
   self.camera_velocity[3] = move[3] / dt
- 
+
   return move
 end
 

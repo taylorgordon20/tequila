@@ -29,7 +29,7 @@ auto getWorldCamera() {
   camera->fov = glm::radians(45.0f);
   camera->aspect = 4.0f / 3.0f;
   camera->near_distance = 0.1f;
-  camera->far_distance = 100.0f;
+  camera->far_distance = 256.0f;
   return camera;
 }
 

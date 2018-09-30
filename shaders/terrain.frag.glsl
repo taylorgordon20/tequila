@@ -14,7 +14,7 @@ const vec3 light_specular = vec3(1.0, 1.0, 1.0);
 
 // Fog properties.
 const vec3 fog_color = vec3(0.62, 0.66, 0.8);
-const float fog_start = 32.0;
+const float fog_start = 200.0;
 const float fog_rate = 0.1;
 
 // Geometric uniforms.
