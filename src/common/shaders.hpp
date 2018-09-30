@@ -57,6 +57,10 @@ class ShaderProgram {
   int uniform(const std::string& name) const;
   int attribute(const std::string& name) const;
 
+  // Methods to conditionally check for shader state.
+  bool hasUniform(const std::string& name) const;
+  bool hasAttribute(const std::string& name) const;
+
   void printDebugInfo() const;
 
  private:

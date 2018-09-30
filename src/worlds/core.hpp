@@ -10,7 +10,6 @@
 #include "src/common/camera.hpp"
 #include "src/common/data.hpp"
 #include "src/common/errors.hpp"
-#include "src/common/js.hpp"
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/spatial.hpp"

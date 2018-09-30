@@ -15,6 +15,7 @@ glbinding
 glfw3
 glm
 libpng
+lua
 pybind11
 sol2
 sqlite-modern-cpp

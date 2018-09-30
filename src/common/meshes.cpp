@@ -65,16 +65,18 @@ void Mesh::draw(ShaderProgram& shader) const {
   auto stride = vertices_.rows() * sizeof(float);
   size_t offset = 0;
   for (const auto& attribute : attributes_) {
-    auto location = shader.attribute(attribute.name);
-    glEnableVertexAttribArray(location);
-    glVertexAttribPointer(
-        location,
-        attribute.dimension,
-        GL_FLOAT,
-        GL_FALSE,
-        stride,
-        static_cast<float*>(nullptr) + offset);
-    offset += attribute.dimension;
+    if (shader.hasAttribute(attribute.name)) {
+      auto location = shader.attribute(attribute.name);
+      glEnableVertexAttribArray(location);
+      glVertexAttribPointer(
+          location,
+          attribute.dimension,
+          GL_FLOAT,
+          GL_FALSE,
+          stride,
+          static_cast<float*>(nullptr) + offset);
+      offset += attribute.dimension;
+    }
   }
 
   // Draw the vertex data.
@@ -82,8 +84,10 @@ void Mesh::draw(ShaderProgram& shader) const {
 
   // Clean up.
   for (const auto& attribute : attributes_) {
-    auto location = shader.attribute(attribute.name);
-    glDisableVertexAttribArray(location);
+    if (shader.hasAttribute(attribute.name)) {
+      auto location = shader.attribute(attribute.name);
+      glDisableVertexAttribArray(location);
+    }
   }
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);

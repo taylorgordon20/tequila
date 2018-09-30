@@ -55,6 +55,10 @@ cc_import(
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_atomic-vc141-mt-x64-1_68.dll",
     "//conditions:default": None,
   }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libboost_atomic.a",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(
@@ -65,6 +69,10 @@ cc_import(
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_c99-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libboost_math_c99.a",
     "//conditions:default": None,
   }),
 )
@@ -79,6 +87,10 @@ cc_import(
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_c99f-vc141-mt-x64-1_68.dll",
     "//conditions:default": None,
   }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libboost_math_c99f.a",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(
@@ -89,6 +101,10 @@ cc_import(
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_c99l-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libboost_math_c99l.a",
     "//conditions:default": None,
   }),
 )
@@ -103,6 +119,10 @@ cc_import(
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_tr1-vc141-mt-x64-1_68.dll",
     "//conditions:default": None,
   }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libboost_math_tr1.a",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(
@@ -115,6 +135,10 @@ cc_import(
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_tr1f-vc141-mt-x64-1_68.dll",
     "//conditions:default": None,
   }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libboost_math_tr1f.a",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(
@@ -125,6 +149,10 @@ cc_import(
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/boost_math_tr1l-vc141-mt-x64-1_68.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libboost_math_tr1l.a",
     "//conditions:default": None,
   }),
 )
@@ -197,6 +225,10 @@ cc_import(
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/lua.dll",
+    "//conditions:default": None,
+  }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/liblua.a",
     "//conditions:default": None,
   }),
 )

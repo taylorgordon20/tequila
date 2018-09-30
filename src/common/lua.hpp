@@ -22,7 +22,7 @@ class LuaContext {
 
   template <typename Global>
   void has(const std::string& name) {
-    return state().get<Global>(name) != sol::nil;
+    return state().get<Global>(name) != sol::lua_nil;
   }
 
   template <typename Global>
@@ -50,7 +50,7 @@ class LuaModule {
   }
 
   bool has(const std::string& fn) {
-    return module_.get<sol::function>(fn) != sol::nil;
+    return module_.get<sol::function>(fn) != sol::lua_nil;
   }
 
   template <

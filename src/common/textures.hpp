@@ -27,7 +27,7 @@ class Texture {
 class TextureBinding {
  public:
   TextureBinding(Texture& texture, int location);
-  ~TextureBinding();
+  ~TextureBinding() noexcept;
 
   int location() const;
 

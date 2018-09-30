@@ -33,6 +33,7 @@ inline std::shared_ptr<InstanceType> gen(const Registry&) {
 // that need to be applied dynamically to each provider.
 class ProviderBase {
  public:
+  virtual ~ProviderBase() = default;
   virtual void prepare(const Registry&) = 0;
   virtual std::unique_ptr<ProviderBase> clone() const = 0;
 };

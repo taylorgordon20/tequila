@@ -114,6 +114,14 @@ int ShaderProgram::attribute(const std::string& name) const {
   return ret;
 }
 
+bool ShaderProgram::hasUniform(const std::string& name) const {
+  return glGetUniformLocation(program_, name.c_str()) != -1;
+}
+
+bool ShaderProgram::hasAttribute(const std::string& name) const {
+  return glGetAttribLocation(program_, name.c_str()) != -1;
+}
+
 void ShaderProgram::printDebugInfo() const {
   constexpr auto kBufferSize = 256;
   GLint size, count;

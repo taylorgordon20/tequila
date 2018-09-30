@@ -2,7 +2,7 @@ BUILD_FILE_CONTENTS = """package(default_visibility = ["//visibility:public"])
 
 cc_library(
   name = "include",
-  srcs = ["libs/python37.lib"],
+  srcs = glob(["libs/python37.lib"]),
   hdrs = glob(["include/*"]),
   includes = ["include"],
 )
