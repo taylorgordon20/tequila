@@ -91,7 +91,7 @@ auto FFI_set_cursor_visible(std::shared_ptr<Window>& window) {
     if (visible) {
       window->call<glfwSetInputMode>(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     } else {
-      window->call<glfwSetInputMode>(GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+      window->call<glfwSetInputMode>(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
   });
 }
