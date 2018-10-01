@@ -7,8 +7,7 @@ local module = {
   crosshair_color = 0xAAAAFFCC,
   palette_colors = {},
   palette_selection = 1,
-  average_dt = 0,
-  frame_count = 0,
+  edit_delay_s = 0,
 }
 
 local KEYS = {
@@ -245,6 +244,33 @@ function module:update_ui()
   )
 end
 
+function module:insert_voxel()
+  local pred = nil
+  for_camera_ray_voxels(function(x, y, z, distance)
+    if get_voxel(x, y, z) ~= 0 then
+      if pred then
+        local color = self.palette_colors[self.palette_selection]
+        set_voxel(pred[1], pred[2], pred[3], color)
+        self.edit_delay_s = 0
+      end
+      return true
+    end
+    if distance > 0.2 then
+      pred = {x, y, z}
+    end
+  end)
+end
+
+function module:remove_voxel()
+  for_camera_ray_voxels(function(x, y, z)
+    if get_voxel(x, y, z) ~= 0 then
+      set_voxel(x, y, z, 0)
+      self.edit_delay_s = 0
+      return true
+    end
+  end)
+end
+
 function module:on_init()
   print("Initialized world_input.lua")
   set_cursor_visible(false)
@@ -306,28 +332,9 @@ end
 function module:on_click(button, action, mods)
   if self.orientation_toggle then
     if button == 0 and action == 1 then
-      -- Insert a voxel preceding the camera ray intersection.
-      local pred = nil
-      for_camera_ray_voxels(function(x, y, z, distance)
-        if get_voxel(x, y, z) ~= 0 then
-          if pred then
-            local color = self.palette_colors[self.palette_selection]
-            set_voxel(pred[1], pred[2], pred[3], color)
-          end
-          return true
-        end
-        if distance > 0.2 then
-          pred = {x, y, z}
-        end
-      end)
+      self:insert_voxel()
     elseif button == 1 and action == 1 then
-      -- Delete the voxel at the first camera ray intersection.
-      for_camera_ray_voxels(function(x, y, z)
-        if get_voxel(x, y, z) ~= 0 then
-          set_voxel(x, y, z, 0)
-          return true
-        end
-      end)
+      self:remove_voxel()
     end
   end
 end
@@ -365,6 +372,14 @@ function module:on_update(dt)
 
     -- Reset the cursor back to the center of the screen.
     set_cursor_pos(0.5 * ww, 0.5 * wh)
+
+    -- Applied delay voxel edits.
+    self.edit_delay_s = self.edit_delay_s + dt
+    if is_mouse_pressed(0) and self.edit_delay_s > 0.15 then
+      self:insert_voxel()
+    elseif is_mouse_pressed(1) and self.edit_delay_s > 0.15 then
+      self:remove_voxel()
+    end
   end
 end
 
