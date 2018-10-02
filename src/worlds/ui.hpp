@@ -67,10 +67,10 @@ struct WorldRectNode {
 
     // Parse out the rect's color.
     auto color = glm::vec4(
-        (rgba & 0xFF000000) / 255.0f,
-        (rgba & 0x00FF0000) / 255.0f,
-        (rgba & 0x0000FF00) / 255.0f,
-        (rgba & 0x000000FF) / 255.0f);
+        (rgba >> 24 & 0xFF) / 255.0f,
+        (rgba >> 16 & 0xFF) / 255.0f,
+        (rgba >> 8 & 0xFF) / 255.0f,
+        (rgba & 0xFF) / 255.0f);
 
     return std::make_shared<RectNode>(
         MeshBuilder()
@@ -136,10 +136,10 @@ struct WorldTextNode {
 
     // Parse out the text's color.
     auto color = glm::vec4(
-        (rgba & 0xFF000000) / 255.0f,
-        (rgba & 0x00FF0000) / 255.0f,
-        (rgba & 0x0000FF00) / 255.0f,
-        (rgba & 0x000000FF) / 255.0f);
+        (rgba >> 24 & 0xFF) / 255.0f,
+        (rgba >> 16 & 0xFF) / 255.0f,
+        (rgba >> 8 & 0xFF) / 255.0f,
+        (rgba & 0xFF) / 255.0f);
 
     return std::make_shared<Text>(
         std::move(text.mesh), std::move(text.texture), std::move(color));

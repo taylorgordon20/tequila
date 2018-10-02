@@ -11,7 +11,6 @@
 #include "src/common/lua.hpp"
 #include "src/common/opengl.hpp"
 #include "src/common/resources.hpp"
-#include "src/worlds/console.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/events.hpp"
 #include "src/worlds/scripts.hpp"
@@ -71,7 +70,6 @@ void run() {
       RegistryBuilder()
           .bind<Window>(app.makeWindow(1024, 768, "Tequila!", nullptr, nullptr))
           .bind<Resources>(makeWorldResources(world_name))
-          .bindToDefaultFactory<Console>()
           .bindToDefaultFactory<EventHandler>()
           .bindToDefaultFactory<RectUIRenderer>()
           .bindToDefaultFactory<ScriptExecutor>()

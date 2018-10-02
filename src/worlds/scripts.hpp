@@ -20,6 +20,13 @@ namespace tequila {
 struct ScriptContext
     : SeedResource<ScriptContext, std::shared_ptr<LuaContext>> {};
 
+struct ConsoleScript {
+  auto operator()(const Resources& resources) {
+    return std::make_shared<LuaModule>(
+        *resources.get<ScriptContext>(), loadFile("scripts/console.lua"));
+  }
+};
+
 struct WorldInputScript {
   auto operator()(const Resources& resources) {
     return std::make_shared<LuaModule>(
@@ -200,10 +207,14 @@ class ScriptExecutor {
   void delegate(const std::string& event, Args&&... args) {
     // Delegate the event call to all active scripts.
     std::vector<std::shared_ptr<LuaModule>> lua_modules;
+    lua_modules.push_back(resources_->get<ConsoleScript>());
     lua_modules.push_back(resources_->get<WorldInputScript>());
     for (const auto& module : lua_modules) {
       if (module->has(event)) {
-        module->call<void>(event, args...);
+        auto ret = module->call<sol::optional<bool>>(event, args...);
+        if (ret && *ret) {
+          break;
+        }
       }
     }
   }

@@ -31,6 +31,6 @@ template <typename StringType, typename... Args>
   __MSVC_EXPAND(     \
       __WHICH_ENFORCE(__VA_ARGS__, __ENFORCE_2, __ENFORCE_1)(__VA_ARGS__))
 
-#define LOGV(expr) std::cout << #expr << "=" << expr << std::endl;
+#define LOGV(expr) std::cout << #expr << "=" << (expr) << std::endl;
 
 }  // namespace tequila

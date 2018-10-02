@@ -309,6 +309,9 @@ function module:on_init()
 
   -- Update the UI relative to the current window size.
   self:update_ui()
+
+  -- TEST CODE:
+  for n in pairs(_G) do print(n) end
 end
 
 function module:on_resize(width, height)

@@ -7,7 +7,6 @@
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/window.hpp"
-#include "src/worlds/console.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/scripts.hpp"
 #include "src/worlds/ui.hpp"
@@ -17,14 +16,10 @@ namespace tequila {
 class EventHandler {
  public:
   EventHandler(
-      std::shared_ptr<Console> console,
       std::shared_ptr<Window> window,
       std::shared_ptr<ScriptExecutor> scripts,
       std::shared_ptr<Resources> resources)
-      : console_(console),
-        window_(window),
-        scripts_(scripts),
-        resources_(resources) {
+      : window_(window), scripts_(scripts), resources_(resources) {
     // Register window resize event callback.
     window_->on<glfwSetFramebufferSizeCallback>([&](int width, int height) {
       int w, h;
@@ -51,6 +46,11 @@ class EventHandler {
         });
 
     // Register scroll event callback.
+    window_->on<glfwSetCharCallback>([&](unsigned int codepoint) {
+      scripts_->delegate("on_text", codepoint);
+    });
+
+    // Register scroll event callback.
     window_->on<glfwSetScrollCallback>([&](double x_offset, double y_offset) {
       scripts_->delegate("on_scroll", x_offset, y_offset);
     });
@@ -60,11 +60,6 @@ class EventHandler {
         [&](int button, int action, int mods) {
           scripts_->delegate("on_click", button, action, mods);
         });
-
-    // Registry console line callback.
-    console_->onLine([](std::string line) {
-      std::cout << "Received input: \"" << line << "\"" << std::endl;
-    });
 
     // Notify scripts the initialization event.
     scripts_->delegate("on_init");
@@ -80,7 +75,6 @@ class EventHandler {
   }
 
  private:
-  std::shared_ptr<Console> console_;
   std::shared_ptr<Window> window_;
   std::shared_ptr<ScriptExecutor> scripts_;
   std::shared_ptr<Resources> resources_;
@@ -89,7 +83,6 @@ class EventHandler {
 template <>
 std::shared_ptr<EventHandler> gen(const Registry& registry) {
   return std::make_shared<EventHandler>(
-      registry.get<Console>(),
       registry.get<Window>(),
       registry.get<ScriptExecutor>(),
       registry.get<Resources>());

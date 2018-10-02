@@ -17,7 +17,12 @@ using LuaError = std::runtime_error;
 class LuaContext {
  public:
   LuaContext() {
-    state_.open_libraries();
+    state_.open_libraries(
+        sol::lib::base,
+        sol::lib::math,
+        sol::lib::string,
+        sol::lib::table,
+        sol::lib::utf8);
   }
 
   template <typename Global>
