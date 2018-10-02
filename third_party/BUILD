@@ -20,7 +20,9 @@ cc_library(
   }),
   deps = [
     ":boost-math",
+    ":bz2",
     ":chakracore",
+    ":freetype",
     ":glbinding",
     ":glfw3",
     ":libpng",
@@ -158,6 +160,18 @@ cc_import(
 )
 
 cc_import(
+  name = "bz2",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/bz2.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/libbz2.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
   name = "chakracore",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/Chakracore.lib",
@@ -165,6 +179,18 @@ cc_import(
   }),
   shared_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/ChakraCore.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "freetype",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/freetype.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/freetype.dll",
     "//conditions:default": None,
   }),
 )

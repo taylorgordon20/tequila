@@ -45,6 +45,7 @@ class ShaderProgram {
   void run(std::function<void()> fn);
 
   // Methods to specify uniform variables in shader.
+  void uniform(const std::string& name, bool value);
   void uniform(const std::string& name, int value);
   void uniform(const std::string& name, float value);
   void uniform(const std::string& name, const glm::vec2& value);

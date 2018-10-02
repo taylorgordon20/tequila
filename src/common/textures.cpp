@@ -8,6 +8,8 @@ namespace tequila {
 using namespace gl;
 
 Texture::Texture(const ImageTensor& pixels) {
+  ENFORCE(pixels.dimension(2) == 3 || pixels.dimension(2) == 4);
+
   // Create an OpenGL texture object.
   glGenTextures(1, &texture_);
 
@@ -22,11 +24,11 @@ Texture::Texture(const ImageTensor& pixels) {
   glTexImage2D(
       GL_TEXTURE_2D,
       0,
-      GL_RGB,
+      GL_RGBA,
       pixels.dimension(1),
       pixels.dimension(0),
       0,
-      GL_RGB,
+      pixels.dimension(2) == 4 ? GL_RGBA : GL_RGB,
       GL_UNSIGNED_BYTE,
       pixels.data());
   glGenerateMipmap(GL_TEXTURE_2D);

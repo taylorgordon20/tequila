@@ -31,6 +31,7 @@ class Mesh {
   Mesh(const Mesh&) = delete;
   Mesh& operator=(const Mesh&) = delete;
 
+  glm::mat4x4& transform();
   const glm::mat4x4& transform() const;
   void draw(ShaderProgram& shader) const;
 

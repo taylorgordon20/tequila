@@ -5,6 +5,7 @@ static_files(
   name = "static_files",
   srcs = [
     "//data:files",
+    "//fonts:files",
     "//scripts:files",
     "//shaders:files",
     "//images:files",

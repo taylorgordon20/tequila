@@ -89,3 +89,13 @@ cc_binary(
     "//third_party:lib",
   ],
 )
+
+cc_binary(
+  name = "text_test",
+  srcs = ["text_test.cpp"],
+  data = ["//src:static_files"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+  ],
+)

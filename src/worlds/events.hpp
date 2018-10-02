@@ -7,6 +7,7 @@
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/window.hpp"
+#include "src/worlds/console.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/scripts.hpp"
 #include "src/worlds/ui.hpp"
@@ -16,10 +17,14 @@ namespace tequila {
 class EventHandler {
  public:
   EventHandler(
+      std::shared_ptr<Console> console,
       std::shared_ptr<Window> window,
       std::shared_ptr<ScriptExecutor> scripts,
       std::shared_ptr<Resources> resources)
-      : window_(window), scripts_(scripts), resources_(resources) {
+      : console_(console),
+        window_(window),
+        scripts_(scripts),
+        resources_(resources) {
     // Register window resize event callback.
     window_->on<glfwSetFramebufferSizeCallback>([&](int width, int height) {
       int w, h;
@@ -56,6 +61,11 @@ class EventHandler {
           scripts_->delegate("on_click", button, action, mods);
         });
 
+    // Registry console line callback.
+    console_->onLine([](std::string line) {
+      std::cout << "Received input: \"" << line << "\"" << std::endl;
+    });
+
     // Notify scripts the initialization event.
     scripts_->delegate("on_init");
   }
@@ -70,6 +80,7 @@ class EventHandler {
   }
 
  private:
+  std::shared_ptr<Console> console_;
   std::shared_ptr<Window> window_;
   std::shared_ptr<ScriptExecutor> scripts_;
   std::shared_ptr<Resources> resources_;
@@ -78,6 +89,7 @@ class EventHandler {
 template <>
 std::shared_ptr<EventHandler> gen(const Registry& registry) {
   return std::make_shared<EventHandler>(
+      registry.get<Console>(),
       registry.get<Window>(),
       registry.get<ScriptExecutor>(),
       registry.get<Resources>());

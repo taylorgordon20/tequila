@@ -8,6 +8,8 @@ local module = {
   palette_colors = {},
   palette_selection = 1,
   edit_delay_s = 0,
+  debug_dt_avg = 0.0167,
+  debug_delay_s = 0,
 }
 
 local KEYS = {
@@ -296,7 +298,14 @@ function module:on_init()
     "rect",
     {x = 0, y = 0, width = 0, height = 0, color = 0}
   )
-  self.palette_selection = 1  
+  self.palette_selection = 1
+
+  -- Create a debug information text node in the top-left of the screen.
+  create_ui_node(
+    "debug_info",
+    "text",
+    {x = 10, y = 10, color = 0xFFFFFFFF, text = "FPS: calculating..."}
+  )
 
   -- Update the UI relative to the current window size.
   self:update_ui()
@@ -380,6 +389,17 @@ function module:on_update(dt)
     elseif is_mouse_pressed(1) and self.edit_delay_s > 0.15 then
       self:remove_voxel()
     end
+  end
+
+  -- Calculate the frame rate statistics and render into the debug panel.
+  self.debug_dt_avg = 0.1 * dt + 0.9 * self.debug_dt_avg
+  self.debug_delay_s = self.debug_delay_s + dt
+  if self.debug_delay_s > 1.0 then
+    update_ui_node(
+      "debug_info",
+      {text = string.format("FPS: %.2f", 1 / self.debug_dt_avg)}
+    )
+    self.debug_delay_s = 0.0
   end
 end
 

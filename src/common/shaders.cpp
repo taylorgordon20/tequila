@@ -70,6 +70,10 @@ void ShaderProgram::run(std::function<void()> fn) {
   }
 }
 
+void ShaderProgram::uniform(const std::string& name, bool value) {
+  glUniform1b(uniform(name), value);
+}
+
 void ShaderProgram::uniform(const std::string& name, int value) {
   glUniform1i(uniform(name), value);
 }

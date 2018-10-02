@@ -9,8 +9,8 @@ boost-optional
 catch
 cereal
 chakracore
-chaiscript
 eigen3
+freetype
 glbinding
 glfw3
 glm

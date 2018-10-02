@@ -41,7 +41,7 @@ struct VoxelDetail {
 
 struct TerrainDetail {
   auto operator()(const Resources& resources) {
-    auto pixels = loadPngToTensor("images/small_squares_normal_map.png");
+    auto pixels = loadPngToTensor("images/fabric_normal_map.png");
     return std::make_shared<VoxelDetail>(std::move(pixels), 0.5f);
   }
 };

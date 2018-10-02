@@ -52,6 +52,10 @@ Mesh& Mesh::operator=(Mesh&& other) {
   return *this;
 }
 
+glm::mat4x4& Mesh::transform() {
+  return transform_;
+}
+
 const glm::mat4x4& Mesh::transform() const {
   return transform_;
 }
