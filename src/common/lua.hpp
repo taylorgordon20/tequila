@@ -7,6 +7,8 @@
 #include <sol.hpp>
 
 #include <stdexcept>
+#include <type_traits>
+#include <typeinfo>
 
 #include "src/common/strings.hpp"
 
@@ -23,6 +25,7 @@ class LuaContext {
         sol::lib::string,
         sol::lib::table,
         sol::lib::utf8);
+    state()["__ffi"] = sol::new_table();
   }
 
   template <typename Global>
@@ -37,6 +40,7 @@ class LuaContext {
 
   template <typename Global>
   void set(const std::string& name, Global&& global) {
+    state()["__ffi"][name] = typeid(std::decay_t<Global>).name();
     state()[name] = std::forward<Global>(global);
   }
 

@@ -25,8 +25,16 @@ struct UIShader {
 };
 
 struct UIFont {
-  auto operator()(const Resources& resources) {
-    return std::make_shared<Font>("fonts/calibri.ttf", 32);
+  auto operator()(const Resources& resources, const std::string& style) {
+    if (style == "small") {
+      return std::make_shared<Font>("fonts/calibri.ttf", 18);
+    } else if (style == "medium") {
+      return std::make_shared<Font>("fonts/calibri.ttf", 32);
+    } else if (style == "big") {
+      return std::make_shared<Font>("fonts/calibri.ttf", 64);
+    } else {
+      ENFORCE(false);
+    }
   }
 };
 
@@ -127,11 +135,11 @@ struct WorldTextNode {
     auto x = to<float>(ui_node.attr.at("x"));
     auto y = to<float>(ui_node.attr.at("y"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
+    auto font = to<std::string>(get_or(ui_node.attr, "font", "small"));
     auto rgba = to<uint32_t>(ui_node.attr.at("color"));
 
     // Build the text mesh.
-    auto font = resources.get<UIFont>();
-    auto text = font->buildText(ui_node.attr.at("text"));
+    auto text = resources.get<UIFont>(font)->buildText(ui_node.attr.at("text"));
     text.mesh.transform() = glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z));
 
     // Parse out the text's color.

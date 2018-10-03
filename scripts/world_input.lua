@@ -275,7 +275,7 @@ end
 
 function module:on_init()
   print("Initialized world_input.lua")
-  set_cursor_visible(false)
+  show_cursor(false)
 
   -- Create a crosshair that remains centered in the screen.
   create_ui_node(
@@ -304,14 +304,11 @@ function module:on_init()
   create_ui_node(
     "debug_info",
     "text",
-    {x = 10, y = 10, color = 0xFFFFFFFF, text = "FPS: calculating..."}
+    {x = 10, y = 10, color = 0xFFFFFFFF, text = "FPS: ...", font = "medium"}
   )
 
   -- Update the UI relative to the current window size.
   self:update_ui()
-
-  -- TEST CODE:
-  for n in pairs(_G) do print(n) end
 end
 
 function module:on_resize(width, height)
@@ -326,7 +323,7 @@ end
 function module:on_key(key, scancode, action, mods)
   if key == string.byte('E') and action == 1 then
     self.orientation_toggle = not self.orientation_toggle
-    set_cursor_visible(not self.orientation_toggle)
+    show_cursor(not self.orientation_toggle)
   elseif key == string.byte('G') and action == 1 then
     self.physics_mode = not self.physics_mode
     self.camera_velocity = {0, 0, 0}
