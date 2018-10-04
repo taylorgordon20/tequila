@@ -67,6 +67,10 @@ class LuaModule {
     return delete_;
   }
 
+  auto& table() {
+    return module_;
+  }
+
   bool has(const std::string& name) {
     auto ret = module_.get<sol::optional<sol::object>>(name);
     return !!ret;

@@ -101,12 +101,41 @@ class ResourceCache {
  private:
   template <typename Resource, typename... Keys>
   auto getKey(const Keys&... keys) const {
-    constexpr auto s1 = 1269021407;
-    constexpr auto s2 = 2139465699;
-    auto ti = std::type_index(typeid(Resource));
-    uint64_t lo = boost::hash_value(std::make_tuple(s1, ti, keys...));
-    uint64_t hi = boost::hash_value(std::make_tuple(s2, ti, keys...));
+    uint64_t lo = boost::hash_value(keyTuple<Resource, Keys...>(
+        &Resource::operator(), 1269021407, keys...));
+    uint64_t hi = boost::hash_value(keyTuple<Resource, Keys...>(
+        &Resource::operator(), 2139465699, keys...));
     return (hi << 32) + lo;
+  }
+
+  // Extracts a key tuple for Resources defined with non-const factories.
+  template <
+      typename Resource,
+      typename... Keys,
+      typename Return,
+      typename... Args>
+  auto keyTuple(
+      Return (Resource::*factory_fn)(const Resources&, Args...),
+      int seed,
+      const Keys&... keys) const
+      -> std::tuple<int, std::type_index, std::decay_t<Args>...> {
+    return std::tuple<int, std::type_index, std::decay_t<Args>...>(
+        seed, std::type_index(typeid(Resource)), keys...);
+  }
+
+  // Extracts a key tuple for Resources defined with const factories.
+  template <
+      typename Resource,
+      typename... Keys,
+      typename Return,
+      typename... Args>
+  auto keyTuple(
+      Return (Resource::*factory_fn)(const Resources&, Args...) const,
+      int seed,
+      const Keys&... keys) const
+      -> std::tuple<int, std::type_index, std::decay_t<Args>...> {
+    return std::tuple<int, std::type_index, std::decay_t<Args>...>(
+        seed, std::type_index(typeid(Resource)), keys...);
   }
 
   std::unordered_set<uint64_t> keys_;

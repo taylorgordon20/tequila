@@ -20,8 +20,9 @@ namespace tequila {
 struct ScriptContext
     : SeedResource<ScriptContext, std::shared_ptr<LuaContext>> {};
 
-struct ModuleScript {
+struct ScriptModule {
   auto operator()(const Resources& resources, const std::string& name) {
+    std::cout << "Loading module" << name << std::endl;
     try {
       auto code = loadFile(format("scripts/%1%.lua", name).c_str());
       return std::make_shared<LuaModule>(*resources.get<ScriptContext>(), code);
@@ -38,6 +39,12 @@ auto FFI_exit(std::shared_ptr<Window>& window) {
 
 auto FFI_reload(std::shared_ptr<Resources>& resources) {
   return [resources] { resources->invalidate<ScriptContext>(); };
+}
+
+auto FFI_get_module(std::shared_ptr<Resources>& resources) {
+  return [resources](const std::string& script) {
+    return resources->get<ScriptModule>(script)->table();
+  };
 }
 
 auto FFI_get_light_dir(std::shared_ptr<Resources>& resources) {
@@ -212,10 +219,10 @@ class ScriptExecutor {
 
     // Delegate the event call to all active scripts.
     std::vector<std::shared_ptr<LuaModule>> lua_modules;
-    lua_modules.push_back(resources_->get<ModuleScript>("debug"));
-    lua_modules.push_back(resources_->get<ModuleScript>("console"));
-    lua_modules.push_back(resources_->get<ModuleScript>("camera"));
-    lua_modules.push_back(resources_->get<ModuleScript>("editor"));
+    lua_modules.push_back(resources_->get<ScriptModule>("debug"));
+    lua_modules.push_back(resources_->get<ScriptModule>("console"));
+    lua_modules.push_back(resources_->get<ScriptModule>("camera"));
+    lua_modules.push_back(resources_->get<ScriptModule>("editor"));
     for (const auto& module : lua_modules) {
       if (!module->has("__initialized")) {
         module->call<void>("on_init");
@@ -240,28 +247,35 @@ class ScriptExecutor {
   }
 
  private:
+  template <typename Function>
+  auto wrapFFI(Function&& fn) {
+    // TODO: Add FFI error handling.
+    return make_function(fn);
+  }
+
   void initializeFFI(LuaContext& ctx) {
     std::cout << "Intializing Lua FFI." << std::endl;
-    ctx.set("exit", make_function(FFI_exit(window_)));
-    ctx.set("reload", make_function(FFI_reload(resources_)));
-    ctx.set("get_light_dir", make_function(FFI_get_light_dir(resources_)));
-    ctx.set("set_light_dir", make_function(FFI_set_light_dir(resources_)));
-    ctx.set("get_camera_pos", make_function(FFI_get_camera_pos(resources_)));
-    ctx.set("set_camera_pos", make_function(FFI_set_camera_pos(resources_)));
-    ctx.set("get_camera_view", make_function(FFI_get_camera_view(resources_)));
-    ctx.set("set_camera_view", make_function(FFI_set_camera_view(resources_)));
-    ctx.set("is_key_pressed", make_function(FFI_is_key_pressed(window_)));
-    ctx.set("is_mouse_pressed", make_function(FFI_is_mouse_pressed(window_)));
-    ctx.set("get_cursor_pos", make_function(FFI_get_cursor_pos(window_)));
-    ctx.set("set_cursor_pos", make_function(FFI_set_cursor_pos(window_)));
-    ctx.set("show_cursor", make_function(FFI_show_cursor(window_)));
-    ctx.set("get_window_size", make_function(FFI_get_window_size(window_)));
-    ctx.set("get_voxel", make_function(FFI_get_voxel(terrain_util_)));
-    ctx.set("set_voxel", make_function(FFI_set_voxel(terrain_util_)));
-    ctx.set("get_ray_voxels", make_function(FFI_get_ray_voxels(terrain_util_)));
-    ctx.set("create_ui_node", make_function(FFI_create_ui_node(resources_)));
-    ctx.set("update_ui_node", make_function(FFI_update_ui_node(resources_)));
-    ctx.set("delete_ui_node", make_function(FFI_delete_ui_node(resources_)));
+    ctx.set("exit", wrapFFI(FFI_exit(window_)));
+    ctx.set("reload", wrapFFI(FFI_reload(resources_)));
+    ctx.set("get_module", wrapFFI(FFI_get_module(resources_)));
+    ctx.set("get_light_dir", wrapFFI(FFI_get_light_dir(resources_)));
+    ctx.set("set_light_dir", wrapFFI(FFI_set_light_dir(resources_)));
+    ctx.set("get_camera_pos", wrapFFI(FFI_get_camera_pos(resources_)));
+    ctx.set("set_camera_pos", wrapFFI(FFI_set_camera_pos(resources_)));
+    ctx.set("get_camera_view", wrapFFI(FFI_get_camera_view(resources_)));
+    ctx.set("set_camera_view", wrapFFI(FFI_set_camera_view(resources_)));
+    ctx.set("is_key_pressed", wrapFFI(FFI_is_key_pressed(window_)));
+    ctx.set("is_mouse_pressed", wrapFFI(FFI_is_mouse_pressed(window_)));
+    ctx.set("get_cursor_pos", wrapFFI(FFI_get_cursor_pos(window_)));
+    ctx.set("set_cursor_pos", wrapFFI(FFI_set_cursor_pos(window_)));
+    ctx.set("show_cursor", wrapFFI(FFI_show_cursor(window_)));
+    ctx.set("get_window_size", wrapFFI(FFI_get_window_size(window_)));
+    ctx.set("get_voxel", wrapFFI(FFI_get_voxel(terrain_util_)));
+    ctx.set("set_voxel", wrapFFI(FFI_set_voxel(terrain_util_)));
+    ctx.set("get_ray_voxels", wrapFFI(FFI_get_ray_voxels(terrain_util_)));
+    ctx.set("create_ui_node", wrapFFI(FFI_create_ui_node(resources_)));
+    ctx.set("update_ui_node", wrapFFI(FFI_update_ui_node(resources_)));
+    ctx.set("delete_ui_node", wrapFFI(FFI_delete_ui_node(resources_)));
     ctx.state()["__initialized"] = true;
   }
 

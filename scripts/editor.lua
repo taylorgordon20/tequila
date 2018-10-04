@@ -30,6 +30,18 @@ local random_color = function()
   return r + g + b + 255;
 end
 
+function module:set_palette_index(index)
+  self.palette_selection = index
+  self:update_ui()
+  return true
+end
+
+function module:set_palette_color(index, color)
+  self.palette_colors[index] = color
+  self:update_ui()
+  return true
+end
+
 function module:update_ui()
   local window_w, window_h = table.unpack(get_window_size())
 
@@ -111,6 +123,14 @@ function module:remove_voxel()
 end
 
 function module:on_init()
+  -- Registry a console command to set palette colors.
+  get_module("console"):create_command(
+      "set_palette",
+      function(index, color)
+        self:set_palette_color(index, color)
+      end
+  )
+
   -- Create a crosshair that remains centered in the screen.
   create_ui_node("crosshair", "rect", {})
 
@@ -132,6 +152,9 @@ function module:on_done()
     delete_ui_node("palette_" .. i)
   end
   delete_ui_node("crosshair")
+
+  -- Unregister console commands.
+  get_module("console"):delete_command("set_palette")
 end
 
 function module:on_resize(width, height)

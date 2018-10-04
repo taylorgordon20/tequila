@@ -1,12 +1,6 @@
 local module = {}
 
-local KEYS = {
-  down = 264,
-  up = 265,
-  enter = 257,
-  backspace = 259,
-}
-
+local console_cmds = {}
 local console_font = 0.025
 local console_size = 0.9
 local console_logs = {}
@@ -44,6 +38,14 @@ function module:log(line)
   table.remove(console_logs)
 end
 
+function module:create_command(name, callback)
+  console_cmds[name] = callback
+end
+
+function module:delete_command(name)
+  console_cmds[name] = nil
+end
+
 function module:execute_command(command)
   env = {
     math = math,
@@ -56,6 +58,11 @@ function module:execute_command(command)
   -- Add FFI to the environment.
   for name, descriptor in pairs(__ffi) do
     env[name] = _G[name]
+  end
+
+  -- Add external commands to the console.
+  for name, callback in pairs(console_cmds) do
+    env[name] = callback
   end
 
   -- Add help function to the environment.
