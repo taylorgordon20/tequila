@@ -22,7 +22,6 @@ struct ScriptContext
 
 struct ScriptModule {
   auto operator()(const Resources& resources, const std::string& name) {
-    std::cout << "Loading module" << name << std::endl;
     try {
       auto code = loadFile(format("scripts/%1%.lua", name).c_str());
       return std::make_shared<LuaModule>(*resources.get<ScriptContext>(), code);
