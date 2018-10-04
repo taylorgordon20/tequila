@@ -40,8 +40,8 @@ class Window {
     static double previous_frame_time = glfwGetTime();
     while (!glfwWindowShouldClose(window_)) {
       float dt = static_cast<float>(glfwGetTime() - previous_frame_time);
-      fn(dt);
       previous_frame_time = glfwGetTime();
+      fn(dt);
       glfwSwapBuffers(window_);
       glfwPollEvents();
     }
