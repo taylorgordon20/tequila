@@ -132,6 +132,12 @@ function module:on_init()
   end
 end
 
+function module:on_done()
+  for i = 1, 10 do delete_ui_node("console_logs_" .. i) end
+  delete_ui_node("console_text")
+  delete_ui_node("console_back")
+end
+
 function module:on_resize(width, height)
   local window_w, window_h = table.unpack(get_window_size())
   update_ui_node(

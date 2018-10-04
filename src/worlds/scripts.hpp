@@ -39,7 +39,7 @@ auto FFI_exit(std::shared_ptr<Window>& window) {
 }
 
 auto FFI_reload(std::shared_ptr<Resources>& resources) {
-  return [resources] { /* TODO */ };
+  return [resources] { resources->invalidate<ScriptContext>(); };
 }
 
 auto FFI_get_light_dir(std::shared_ptr<Resources>& resources) {
@@ -51,7 +51,7 @@ auto FFI_get_light_dir(std::shared_ptr<Resources>& resources) {
 
 auto FFI_set_light_dir(std::shared_ptr<Resources>& resources) {
   return [resources](float x, float y, float z) {
-    auto light = ResourceMutation<WorldLight>(*resources);
+    ResourceMutation<WorldLight> light(*resources);
     light->operator[](0) = x;
     light->operator[](1) = y;
     light->operator[](2) = z;
@@ -68,7 +68,7 @@ auto FFI_get_camera_pos(std::shared_ptr<Resources>& resources) {
 
 auto FFI_set_camera_pos(std::shared_ptr<Resources>& resources) {
   return [resources](float x, float y, float z) {
-    auto camera = ResourceMutation<WorldCamera>(*resources);
+    ResourceMutation<WorldCamera> camera(*resources);
     camera->position[0] = x;
     camera->position[1] = y;
     camera->position[2] = z;
@@ -191,7 +191,7 @@ auto FFI_update_ui_node(std::shared_ptr<Resources>& resources) {
 }
 
 auto FFI_delete_ui_node(std::shared_ptr<Resources>& resources) {
-  return [resources](std::string id) {
+  return [resources](const std::string& id) {
     ResourceMutation<WorldUI> ui(*resources);
     ENFORCE(ui->nodes.erase(id));
   };
@@ -203,37 +203,29 @@ class ScriptExecutor {
       std::shared_ptr<Window> window,
       std::shared_ptr<Resources> resources,
       std::shared_ptr<TerrainUtil> terrain_util)
-      : resources_(resources) {
-    auto ctx = resources_->get<ScriptContext>();
-    ctx->set("exit", make_function(FFI_exit(window)));
-    ctx->set("reload", make_function(FFI_reload(resources)));
-    ctx->set("get_light_dir", make_function(FFI_get_light_dir(resources)));
-    ctx->set("set_light_dir", make_function(FFI_set_light_dir(resources)));
-    ctx->set("get_camera_pos", make_function(FFI_get_camera_pos(resources)));
-    ctx->set("set_camera_pos", make_function(FFI_set_camera_pos(resources)));
-    ctx->set("get_camera_view", make_function(FFI_get_camera_view(resources)));
-    ctx->set("set_camera_view", make_function(FFI_set_camera_view(resources)));
-    ctx->set("is_key_pressed", make_function(FFI_is_key_pressed(window)));
-    ctx->set("is_mouse_pressed", make_function(FFI_is_mouse_pressed(window)));
-    ctx->set("get_cursor_pos", make_function(FFI_get_cursor_pos(window)));
-    ctx->set("set_cursor_pos", make_function(FFI_set_cursor_pos(window)));
-    ctx->set("show_cursor", make_function(FFI_show_cursor(window)));
-    ctx->set("get_window_size", make_function(FFI_get_window_size(window)));
-    ctx->set("get_voxel", make_function(FFI_get_voxel(terrain_util)));
-    ctx->set("set_voxel", make_function(FFI_set_voxel(terrain_util)));
-    ctx->set("get_ray_voxels", make_function(FFI_get_ray_voxels(terrain_util)));
-    ctx->set("create_ui_node", make_function(FFI_create_ui_node(resources)));
-    ctx->set("update_ui_node", make_function(FFI_update_ui_node(resources)));
-    ctx->set("delete_ui_node", make_function(FFI_delete_ui_node(resources)));
-  }
+      : window_(window), resources_(resources), terrain_util_(terrain_util) {}
 
   template <typename... Args>
   void delegate(const std::string& event, Args&&... args) {
+    auto ctx = resources_->get<ScriptContext>();
+    if (ctx->state()["__initialized"] == sol::lua_nil) {
+      initializeFFI(*ctx);
+    }
+
     // Delegate the event call to all active scripts.
     std::vector<std::shared_ptr<LuaModule>> lua_modules;
     lua_modules.push_back(resources_->get<ConsoleScript>());
     lua_modules.push_back(resources_->get<WorldInputScript>());
     for (const auto& module : lua_modules) {
+      if (!module->has("__initialized")) {
+        module->call<void>("on_init");
+        module->deleter() = [](LuaModule* module) {
+          if (module->has("on_done")) {
+            module->call<void>("on_done");
+          }
+        };
+        module->set("__initialized", true);
+      }
       if (module->has(event)) {
         auto ret = module->call<sol::optional<bool>>(event, args...);
         if (ret && *ret) {
@@ -244,7 +236,34 @@ class ScriptExecutor {
   }
 
  private:
+  void initializeFFI(LuaContext& ctx) {
+    std::cout << "Intializing Lua FFI." << std::endl;
+    ctx.set("exit", make_function(FFI_exit(window_)));
+    ctx.set("reload", make_function(FFI_reload(resources_)));
+    ctx.set("get_light_dir", make_function(FFI_get_light_dir(resources_)));
+    ctx.set("set_light_dir", make_function(FFI_set_light_dir(resources_)));
+    ctx.set("get_camera_pos", make_function(FFI_get_camera_pos(resources_)));
+    ctx.set("set_camera_pos", make_function(FFI_set_camera_pos(resources_)));
+    ctx.set("get_camera_view", make_function(FFI_get_camera_view(resources_)));
+    ctx.set("set_camera_view", make_function(FFI_set_camera_view(resources_)));
+    ctx.set("is_key_pressed", make_function(FFI_is_key_pressed(window_)));
+    ctx.set("is_mouse_pressed", make_function(FFI_is_mouse_pressed(window_)));
+    ctx.set("get_cursor_pos", make_function(FFI_get_cursor_pos(window_)));
+    ctx.set("set_cursor_pos", make_function(FFI_set_cursor_pos(window_)));
+    ctx.set("show_cursor", make_function(FFI_show_cursor(window_)));
+    ctx.set("get_window_size", make_function(FFI_get_window_size(window_)));
+    ctx.set("get_voxel", make_function(FFI_get_voxel(terrain_util_)));
+    ctx.set("set_voxel", make_function(FFI_set_voxel(terrain_util_)));
+    ctx.set("get_ray_voxels", make_function(FFI_get_ray_voxels(terrain_util_)));
+    ctx.set("create_ui_node", make_function(FFI_create_ui_node(resources_)));
+    ctx.set("update_ui_node", make_function(FFI_update_ui_node(resources_)));
+    ctx.set("delete_ui_node", make_function(FFI_delete_ui_node(resources_)));
+    ctx.state()["__initialized"] = true;
+  }
+
+  std::shared_ptr<Window> window_;
   std::shared_ptr<Resources> resources_;
+  std::shared_ptr<TerrainUtil> terrain_util_;
 };
 
 template <>

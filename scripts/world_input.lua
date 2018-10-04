@@ -274,7 +274,6 @@ function module:remove_voxel()
 end
 
 function module:on_init()
-  print("Initialized world_input.lua")
   show_cursor(false)
 
   -- Create a crosshair that remains centered in the screen.
@@ -309,6 +308,13 @@ function module:on_init()
 
   -- Update the UI relative to the current window size.
   self:update_ui()
+end
+
+function module:on_done()
+  delete_ui_node("debug_info")
+  delete_ui_node("palette_selection")
+  for i = 1, 8 do delete_ui_node("palette_" .. i) end
+  delete_ui_node("crosshair")
 end
 
 function module:on_resize(width, height)

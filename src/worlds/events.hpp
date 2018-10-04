@@ -60,9 +60,6 @@ class EventHandler {
         [&](int button, int action, int mods) {
           scripts_->delegate("on_click", button, action, mods);
         });
-
-    // Notify scripts the initialization event.
-    scripts_->delegate("on_init");
   }
 
   ~EventHandler() {

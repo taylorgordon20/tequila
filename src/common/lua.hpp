@@ -56,10 +56,30 @@ class LuaModule {
  public:
   LuaModule(LuaContext& context, const std::string& code) {
     module_ = context.state().script(code);
+    delete_ = [](LuaModule*) {};
   }
 
-  bool has(const std::string& fn) {
-    return module_.get<sol::function>(fn) != sol::lua_nil;
+  ~LuaModule() {
+    delete_(this);
+  }
+
+  auto& deleter() {
+    return delete_;
+  }
+
+  bool has(const std::string& name) {
+    auto ret = module_.get<sol::optional<sol::object>>(name);
+    return !!ret;
+  }
+
+  template <typename Value>
+  Value get(const std::string& name) {
+    return module_.get<Value>(name);
+  }
+
+  template <typename Value>
+  void set(const std::string& name, Value&& value) {
+    module_[name] = std::forward<Value>(value);
   }
 
   template <
@@ -91,6 +111,7 @@ class LuaModule {
 
  private:
   sol::table module_;
+  std::function<void(LuaModule*)> delete_;
 };
 
 }  // namespace tequila
