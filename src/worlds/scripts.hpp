@@ -20,17 +20,15 @@ namespace tequila {
 struct ScriptContext
     : SeedResource<ScriptContext, std::shared_ptr<LuaContext>> {};
 
-struct ConsoleScript {
-  auto operator()(const Resources& resources) {
-    return std::make_shared<LuaModule>(
-        *resources.get<ScriptContext>(), loadFile("scripts/console.lua"));
-  }
-};
-
-struct WorldInputScript {
-  auto operator()(const Resources& resources) {
-    return std::make_shared<LuaModule>(
-        *resources.get<ScriptContext>(), loadFile("scripts/world_input.lua"));
+struct ModuleScript {
+  auto operator()(const Resources& resources, const std::string& name) {
+    try {
+      auto code = loadFile(format("scripts/%1%.lua", name).c_str());
+      return std::make_shared<LuaModule>(*resources.get<ScriptContext>(), code);
+    } catch (const LuaError& error) {
+      std::cout << "Error parsing script: " << name << ".lua" << std::endl;
+      throw;
+    }
   }
 };
 
@@ -214,14 +212,20 @@ class ScriptExecutor {
 
     // Delegate the event call to all active scripts.
     std::vector<std::shared_ptr<LuaModule>> lua_modules;
-    lua_modules.push_back(resources_->get<ConsoleScript>());
-    lua_modules.push_back(resources_->get<WorldInputScript>());
+    lua_modules.push_back(resources_->get<ModuleScript>("debug"));
+    lua_modules.push_back(resources_->get<ModuleScript>("console"));
+    lua_modules.push_back(resources_->get<ModuleScript>("camera"));
+    lua_modules.push_back(resources_->get<ModuleScript>("editor"));
     for (const auto& module : lua_modules) {
       if (!module->has("__initialized")) {
         module->call<void>("on_init");
         module->deleter() = [](LuaModule* module) {
           if (module->has("on_done")) {
-            module->call<void>("on_done");
+            try {
+              module->call<void>("on_done");
+            } catch (const LuaError& e) {
+              std::cout << "Bad 'on_done' function: " << e.what() << std::endl;
+            }
           }
         };
         module->set("__initialized", true);

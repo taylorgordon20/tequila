@@ -7,14 +7,8 @@ local KEYS = {
   backspace = 259,
 }
 
-local switch = function(condition, true_result, false_result)
-  if condition then
-    return true_result
-  else 
-    return false_result
-  end
-end
-
+local console_font = 0.025
+local console_size = 0.9
 local console_logs = {}
 local console_text = ""
 local console_open = false
@@ -43,6 +37,11 @@ function history:push(command)
   self.commands[#self.commands] = command
   table.insert(self.commands, #self.commands + 1, "")
   self.index = #self.commands
+end
+
+function module:log(line)
+  table.insert(console_logs, 1, line)
+  table.remove(console_logs)
 end
 
 function module:execute_command(command)
@@ -80,80 +79,74 @@ function module:execute_command(command)
 
   local okay, ret = pcall(eval)
   if not okay then
-    table.insert(console_logs, 1, "error: " .. tostring(ret))
+    self:log("error: " .. tostring(ret))
   else
-    table.insert(console_logs, 1, tostring(ret))
+    self:log(tostring(ret))
   end
 end
 
 function module:update_console()
+  local window_w, window_h = table.unpack(get_window_size())
   update_ui_node(
     "console_back",
-    {color = switch(console_open, 0x000000AA, 0x00000000)}
+    {
+      x = 0,
+      y = (1 - console_size) * window_h,
+      z = #console_logs + 2,
+      width = window_w,
+      height = console_size * window_h,
+      color = switch(console_open, 0x000000AA, 0x00000000)
+    }
   )
   update_ui_node(
     "console_text",
     {
+      x = 0,
+      y = (1 - console_size) * window_h,
+      z = 1,
       text = ">>> " .. console_text,
-      color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00)
+      color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00),
+      font = math.ceil(console_font * window_h),
     }
   )
-  for i = 1, 10 do
+  for i = 1, #console_logs do
+    line_space = math.ceil(1.5 * console_font * window_h)
     update_ui_node(
       "console_logs_" .. i,
       {
+        x = 0,
+        y = (1 - console_size) * window_h + i * line_space,
+        z = i + 1,
         text = console_logs[i],
-        color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00)
+        color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00),
+        font = math.ceil(console_font * window_h),
       }
     )
   end
 end
 
 function module:on_init()
-  local window_w, window_h = table.unpack(get_window_size())
-  create_ui_node(
-    "console_back",
-    "rect",
-    {x = 0, y = window_h - 256, z = 2, width = window_w, height = 256, color = 0}
-  )
+  -- Initialize the log to empty strings.
+  for i = 1, 100 do console_logs[i] = "" end
 
-  -- Create a debug information text node in the top-left of the screen.
-  create_ui_node(
-    "console_text",
-    "text",
-    {x = 0, y = window_h - 256, z = 1, color = 0xFFFFFF00, text = ">>> "}
-  )
-  for i = 1, 10 do
-    create_ui_node(
-      "console_logs_" .. i,
-      "text",
-      {x = 0, y = window_h - 256 + i * 30, z = 1, color = 0xFFFFFF00, text = ""}
-    )
+  -- Initialize the UI nodes.
+  create_ui_node("console_back", "rect", {})
+  create_ui_node("console_text", "text", {})
+  for i = 1, #console_logs do
+    create_ui_node("console_logs_" .. i, "text", {})
   end
 end
 
 function module:on_done()
-  for i = 1, 10 do delete_ui_node("console_logs_" .. i) end
+  for i = 1, #console_logs do 
+    delete_ui_node("console_logs_" .. i)
+  end
   delete_ui_node("console_text")
   delete_ui_node("console_back")
 end
 
 function module:on_resize(width, height)
-  local window_w, window_h = table.unpack(get_window_size())
-  update_ui_node(
-    "console_back",
-    {y = window_h - 256, width = window_w}
-  )
-  update_ui_node(
-    "console_text",
-    {y = window_h - 256}
-  )
-  for i = 1, 10 do
-    update_ui_node(
-      "console_logs_" .. i,
-      {y = window_h - 256 + i * 30}
-    )
-  end
+  self:update_console()
 end
 
 function module:on_key(key, scancode, action, mods)
@@ -172,7 +165,7 @@ function module:on_key(key, scancode, action, mods)
     self:update_console()
   elseif console_open and key == KEYS.enter and action == 1 then
     local command = console_text
-    table.insert(console_logs, 1, ">>> " .. command)
+    self:log(">>> " .. command)
     history:push(command)
     console_text = ""
     self:execute_command(command)

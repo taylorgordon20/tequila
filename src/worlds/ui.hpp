@@ -25,16 +25,8 @@ struct UIShader {
 };
 
 struct UIFont {
-  auto operator()(const Resources& resources, const std::string& style) {
-    if (style == "small") {
-      return std::make_shared<Font>("fonts/calibri.ttf", 18);
-    } else if (style == "medium") {
-      return std::make_shared<Font>("fonts/calibri.ttf", 32);
-    } else if (style == "big") {
-      return std::make_shared<Font>("fonts/calibri.ttf", 64);
-    } else {
-      ENFORCE(false);
-    }
+  auto operator()(const Resources& resources, size_t font_size) {
+    return std::make_shared<Font>("fonts/calibri.ttf", font_size);
   }
 };
 
@@ -60,12 +52,12 @@ struct RectNode {
 struct WorldRectNode {
   auto operator()(const Resources& resources, const std::string& id) {
     const auto& ui_node = resources.get<WorldUI>()->nodes.at(id);
-    auto x = to<float>(ui_node.attr.at("x"));
-    auto y = to<float>(ui_node.attr.at("y"));
+    auto x = to<float>(get_or(ui_node.attr, "x", "0"));
+    auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
-    auto w = to<float>(ui_node.attr.at("width"));
-    auto h = to<float>(ui_node.attr.at("height"));
-    auto rgba = to<uint32_t>(ui_node.attr.at("color"));
+    auto w = to<float>(get_or(ui_node.attr, "width", "0"));
+    auto h = to<float>(get_or(ui_node.attr, "height", "0"));
+    auto rgba = to<uint32_t>(get_or(ui_node.attr, "color", "0"));
 
     // Parse out the rect's geometry.
     Eigen::Matrix<float, 3, 6> positions;
@@ -132,15 +124,16 @@ std::shared_ptr<RectUIRenderer> gen(const Registry& registry) {
 struct WorldTextNode {
   auto operator()(const Resources& resources, const std::string& id) {
     const auto& ui_node = resources.get<WorldUI>()->nodes.at(id);
-    auto x = to<float>(ui_node.attr.at("x"));
-    auto y = to<float>(ui_node.attr.at("y"));
+    auto x = to<float>(get_or(ui_node.attr, "x", "0"));
+    auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
-    auto font = to<std::string>(get_or(ui_node.attr, "font", "small"));
-    auto rgba = to<uint32_t>(ui_node.attr.at("color"));
+    auto font = to<size_t>(get_or(ui_node.attr, "font", "20"));
+    auto rgba = to<uint32_t>(get_or(ui_node.attr, "color", "0"));
+    auto text = get_or(ui_node.attr, "text", "");
 
     // Build the text mesh.
-    auto text = resources.get<UIFont>(font)->buildText(ui_node.attr.at("text"));
-    text.mesh.transform() = glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z));
+    auto node = resources.get<UIFont>(font)->buildText(text);
+    node.mesh.transform() = glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z));
 
     // Parse out the text's color.
     auto color = glm::vec4(
@@ -150,7 +143,7 @@ struct WorldTextNode {
         (rgba & 0xFF) / 255.0f);
 
     return std::make_shared<Text>(
-        std::move(text.mesh), std::move(text.texture), std::move(color));
+        std::move(node.mesh), std::move(node.texture), std::move(color));
   }
 };
 

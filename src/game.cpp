@@ -20,7 +20,9 @@
 namespace tequila {
 
 auto getScriptContext() {
-  return std::make_shared<LuaContext>();
+  auto ret = std::make_shared<LuaContext>();
+  ret->state().script(loadFile("scripts/common.lua"));
+  return ret;
 }
 
 auto getWorldCamera() {

@@ -21,7 +21,7 @@ namespace tequila {
 
 namespace {
 
-constexpr auto kInitialAtlasSize = 256;
+constexpr auto kInitialAtlasSize = 128;
 
 FT_Face loadFreeTypeFace(const std::string& filename, size_t size) {
   static FT_Library library = [] {
@@ -41,7 +41,7 @@ FT_Face loadFreeTypeFace(const std::string& filename, size_t size) {
 Font::Font(const char* font_file, size_t font_size)
     : font_face_(loadFreeTypeFace(resolvePathOrThrow(font_file), font_size)),
       atlas_size_(kInitialAtlasSize) {
-  // Initialize the index with ASCII codepoints.
+  ENFORCE(font_size <= 256)
   for (char32_t c = 32; c < 127; c += 1) {
     atlas_index_.emplace(c, std::tuple(0, 0, 0, 0));
   }
@@ -137,11 +137,15 @@ void Font::buildAtlas() {
     // Render the character's glyph image as a bitmap.
     FT_GlyphSlot slot = font_face_->glyph;
     FT_UInt glyph_index = FT_Get_Char_Index(font_face_, codepoints.at(i));
-    ENFORCE(!FT_Load_Glyph(font_face_, glyph_index, FT_LOAD_DEFAULT));
+    ENFORCE(!FT_Load_Glyph(
+        font_face_, glyph_index, FT_LOAD_NO_BITMAP | FT_LOAD_DEFAULT));
     ENFORCE(!FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL));
 
-    int advance_width = slot->advance.x >> 6;
-    int advance_height = font_face_->height >> 6;
+    const auto& metrics = font_face_->size->metrics;
+    int baseline_x = std::max<int>(0, slot->bitmap_left);
+    int advance_width = std::max<int>(slot->advance.x >> 6, slot->bitmap.width);
+    int baseline_y = slot->bitmap_top + (-metrics.descender >> 6);
+    int advance_height = metrics.height >> 6;
 
     // Wrap to a new row if necessary.
     if (col_offset + advance_width > atlas_size_) {
@@ -152,8 +156,7 @@ void Font::buildAtlas() {
 
     // If we've run out of space, double the size of the texture and start over.
     if (row_offset + advance_height > atlas_size_) {
-      std::cout << "ran out of space" << std::endl;
-      atlas_size_ = atlas_size_ << 1;
+      atlas_size_ <<= 1;
       atlas_pixels_ = ImageTensor(atlas_size_, atlas_size_, 4);
       atlas_pixels_.setZero();
       row_offset = 0;
@@ -165,9 +168,8 @@ void Font::buildAtlas() {
     // Copy the bitmap into the texture pixels.
     for (int row = 0; row < slot->bitmap.rows; row += 1) {
       for (int col = 0; col < slot->bitmap.width; col += 1) {
-        int baseline = advance_height - (font_face_->ascender >> 6);
-        int s_y = row_offset + baseline + slot->bitmap_top;
-        int s_x = col_offset + slot->bitmap_left;
+        int s_x = col_offset + baseline_x;
+        int s_y = row_offset + baseline_y;
         uint8_t alpha = slot->bitmap.buffer[row * slot->bitmap.width + col];
         atlas_pixels_(s_y - row - 1, s_x + col, 0) = 255;
         atlas_pixels_(s_y - row - 1, s_x + col, 1) = 255;
