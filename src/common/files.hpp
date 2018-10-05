@@ -9,24 +9,23 @@
 
 namespace tequila {
 
-inline auto pathExists(const char* path) {
+inline auto pathExists(const std::string& path) {
   struct stat info;
-  return !stat(path, &info);
+  return !stat(path.c_str(), &info);
 }
 
-inline auto resolvePathOrThrow(const char* relative_path) {
+inline auto resolvePathOrThrow(const std::string& relative_path) {
   // HACK: As a temporary hack to deal with the bazel run CWD override,
   // we also search the parent directory when resolving relative paths.
-  std::string path(relative_path);
-  if (!pathExists(path.c_str())) {
+  std::string path = relative_path;
+  if (!pathExists(path)) {
     path.insert(0, "../");
   }
-  if (!pathExists(path.c_str())) {
+  if (!pathExists(path)) {
     path.insert(0, "../");
   }
   ENFORCE(
-      pathExists(path.c_str()),
-      format("Unable to resolve path: %1%", relative_path));
+      pathExists(path), format("Unable to resolve path: %1%", relative_path));
   return path;
 }
 

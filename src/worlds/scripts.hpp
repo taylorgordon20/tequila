@@ -10,6 +10,7 @@
 #include "src/common/lua.hpp"
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
+#include "src/common/utils.hpp"
 #include "src/common/window.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/terrain.hpp"
@@ -246,10 +247,23 @@ class ScriptExecutor {
   }
 
  private:
+  // TODO: Instead of a lambda consider passing a custom type with doc.
+  template <typename Return, typename... Args>
+  auto wrapImpl(std::function<Return(Args...)> fn) {
+    return [fn = std::move(fn)](sol::this_state s, const Args&... args) {
+      try {
+        return fn(args...);
+      } catch (const std::exception& e) {
+        lua_State* L = s;
+        luaL_error(L, "Error: %s", e.what());
+        return makeDefault<Return>();
+      }
+    };
+  }
+
   template <typename Function>
   auto wrapFFI(Function&& fn) {
-    // TODO: Add FFI error handling.
-    return make_function(fn);
+    return wrapImpl(make_function(std::forward<Function>(fn)));
   }
 
   void initializeFFI(LuaContext& ctx) {

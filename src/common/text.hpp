@@ -32,7 +32,7 @@ using AtlasIndex = std::unordered_map<char32_t, std::tuple<int, int, int, int>>;
 
 class Font {
  public:
-  Font(const char* font_file, size_t font_size);
+  Font(const std::string& font_file, size_t font_size);
   Text buildText(const std::string& text);
   Text buildText(const std::u32string& text);
   std::shared_ptr<Texture> getTexture();

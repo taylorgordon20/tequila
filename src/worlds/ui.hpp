@@ -25,8 +25,9 @@ struct UIShader {
 };
 
 struct UIFont {
-  auto operator()(const Resources& resources, size_t font_size) {
-    return std::make_shared<Font>("fonts/calibri.ttf", font_size);
+  auto operator()(
+      const Resources& resources, const std::string& style, size_t size) {
+    return std::make_shared<Font>(format("fonts/%1%.ttf", style), size);
   }
 };
 
@@ -127,12 +128,13 @@ struct WorldTextNode {
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
-    auto font = to<size_t>(get_or(ui_node.attr, "font", "20"));
     auto rgba = to<uint32_t>(get_or(ui_node.attr, "color", "0"));
+    auto size = to<size_t>(get_or(ui_node.attr, "size", "20"));
+    auto font = get_or(ui_node.attr, "font", "Roboto/Roboto-Regular");
     auto text = get_or(ui_node.attr, "text", "");
 
     // Build the text mesh.
-    auto node = resources.get<UIFont>(font)->buildText(text);
+    auto node = resources.get<UIFont>(font, size)->buildText(text);
     node.mesh.transform() = glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z));
 
     // Parse out the text's color.

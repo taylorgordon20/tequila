@@ -1,7 +1,7 @@
 local module = {}
 
 local console_cmds = {}
-local console_font = 0.025
+local console_font = 0.015
 local console_size = 0.9
 local console_logs = {}
 local console_text = ""
@@ -38,6 +38,11 @@ function module:log(line)
   table.remove(console_logs)
 end
 
+function module:clear()
+  for i = 1, #console_logs do console_logs[i] = "" end
+  self:update_console()
+end
+
 function module:create_command(name, callback)
   console_cmds[name] = callback
 end
@@ -68,16 +73,15 @@ function module:execute_command(command)
   -- Add help function to the environment.
   env.help = function(symbol)
     if not symbol then
-      print("Available symbols: ")
+      self:log("Available symbols: ")
       symbols = {}
       for name, _ in pairs(env) do table.insert(symbols, name) end
       table.sort(symbols)
-      for i, name in ipairs(symbols) do print("\t" .. name) end
+      for i, name in ipairs(symbols) do self:log("  " .. name) end
     else
       value = __ffi[symbol] or env[symbol]
-      print("Type of symbol '" .. symbol .. "' = " .. tostring(value))
+      self:log("Type of symbol '" .. symbol .. "' = " .. tostring(value))
     end
-    return "Check stdout for help information"
   end
 
   function eval()
@@ -87,7 +91,7 @@ function module:execute_command(command)
   local okay, ret = pcall(eval)
   if not okay then
     self:log("error: " .. tostring(ret))
-  else
+  elseif ret ~= nil then
     self:log(tostring(ret))
   end
 end
@@ -113,7 +117,7 @@ function module:update_console()
       z = 1,
       text = ">>> " .. console_text,
       color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00),
-      font = math.ceil(console_font * window_h),
+      size = math.ceil(console_font * window_h),
     }
   )
   for i = 1, #console_logs do
@@ -126,7 +130,7 @@ function module:update_console()
         z = i + 1,
         text = console_logs[i],
         color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00),
-        font = math.ceil(console_font * window_h),
+        size = math.ceil(console_font * window_h),
       }
     )
   end
@@ -142,9 +146,13 @@ function module:on_init()
   for i = 1, #console_logs do
     create_ui_node("console_logs_" .. i, "text", {})
   end
+
+  self:create_command("clear", function() self:clear() end)
 end
 
 function module:on_done()
+  self:delete_command("clear")
+
   for i = 1, #console_logs do 
     delete_ui_node("console_logs_" .. i)
   end

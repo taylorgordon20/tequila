@@ -7,8 +7,6 @@
 namespace tequila {
 
 constexpr auto kScript1 = R"lua(
-string = require("string")
-
 local module = {}
 
 function module:foo()

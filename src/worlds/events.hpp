@@ -35,9 +35,7 @@ class EventHandler {
     // Register key event callback.
     window_->on<glfwSetKeyCallback>(
         [&](int key, int scancode, int action, int mods) {
-          if (key == GLFW_KEY_ESCAPE) {
-            window_->close();
-          } else if (key == GLFW_KEY_F1) {
+          if (key == GLFW_KEY_F1) {
             gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_FILL);
           } else if (key == GLFW_KEY_F2) {
             gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_LINE);

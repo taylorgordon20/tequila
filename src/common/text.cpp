@@ -38,7 +38,7 @@ FT_Face loadFreeTypeFace(const std::string& filename, size_t size) {
 
 }  // anonymous namespace
 
-Font::Font(const char* font_file, size_t font_size)
+Font::Font(const std::string& font_file, size_t font_size)
     : font_face_(loadFreeTypeFace(resolvePathOrThrow(font_file), font_size)),
       atlas_size_(kInitialAtlasSize) {
   ENFORCE(font_size <= 256)

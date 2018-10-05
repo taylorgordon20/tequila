@@ -184,9 +184,9 @@ end
 function module:on_update(dt)
   -- Apply delayed voxel edits.
   edit_delay_s = edit_delay_s + dt
-  if is_mouse_pressed(0) and edit_delay_s > 0.15 then
+  if is_mouse_pressed(0) and edit_delay_s > 0.25 then
     self:insert_voxel()
-  elseif is_mouse_pressed(1) and edit_delay_s > 0.15 then
+  elseif is_mouse_pressed(1) and edit_delay_s > 0.25 then
     self:remove_voxel()
   end
 end
