@@ -11,9 +11,11 @@
 #include "src/common/lua.hpp"
 #include "src/common/opengl.hpp"
 #include "src/common/resources.hpp"
+#include "src/common/stats.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/events.hpp"
 #include "src/worlds/scripts.hpp"
+#include "src/worlds/styles.hpp"
 #include "src/worlds/terrain.hpp"
 #include "src/worlds/ui.hpp"
 
@@ -72,6 +74,7 @@ void run() {
       RegistryBuilder()
           .bind<Window>(app.makeWindow(1024, 768, "Tequila!", nullptr, nullptr))
           .bind<Resources>(makeWorldResources(world_name))
+          .bind<Stats>(std::make_shared<Stats>())
           .bindToDefaultFactory<EventHandler>()
           .bindToDefaultFactory<RectUIRenderer>()
           .bindToDefaultFactory<ScriptExecutor>()

@@ -58,17 +58,25 @@ auto texCoordMat() {
 }  // anonymous namespace
 
 VoxelArray::VoxelArray()
-    : voxels_(kVoxelArraySize, 0), transform_(glm::mat4(1.0f)) {}
+    : voxel_count_(0),
+      voxels_(kVoxelArraySize, 0),
+      transform_(glm::mat4(1.0f)) {}
 
 bool VoxelArray::has(int x, int y, int z) const {
   return voxels_.get(x, y, z);
 }
 
 void VoxelArray::del(int x, int y, int z) {
-  voxels_.set(x, y, z, 0);
+  if (has(x, y, z)) {
+    voxel_count_ -= 1;
+    voxels_.set(x, y, z, 0);
+  }
 }
 
 void VoxelArray::set(int x, int y, int z, uint32_t value) {
+  if (!has(x, y, z)) {
+    voxel_count_ += 1;
+  }
   voxels_.set(x, y, z, value);
 }
 
@@ -88,8 +96,96 @@ void VoxelArray::scale(float x, float y, float z) {
   transform_ = glm::scale(transform_, glm::vec3(x, y, z));
 }
 
+size_t VoxelArray::count() const {
+  return voxel_count_;
+}
+
+size_t VoxelArray::size() const {
+  return voxels_.size();
+}
+
 const glm::mat4& VoxelArray::transform() const {
   return transform_;
+}
+
+std::vector<std::tuple<int, int, int>> VoxelArray::surfaceVoxels() const {
+  static const std::vector<std::tuple<int, int, int>> kOffsets = {
+      {-1, 0, 0},
+      {1, 0, 0},
+      {0, -1, 0},
+      {0, 1, 0},
+      {0, 0, -1},
+      {0, 0, 1},
+  };
+
+  std::vector<std::tuple<int, int, int>> ret;
+
+  // If the entire voxel array is empty, return empty surface vector.
+  if (!count()) {
+    return ret;
+  }
+
+  // Compute the boundary surface voxels.
+  int size = this->size();
+  bool is_full = count() == size * size * size;
+  ret.reserve(2 * size * size - 12 * size + 8);
+  for (int z = 0; z < size; z += 1) {
+    for (int y = 0; y < size; y += 1) {
+      if (is_full || has(0, y, z)) {
+        ret.emplace_back(0, y, z);
+      }
+      if (is_full || has(size - 1, y, z)) {
+        ret.emplace_back(size - 1, y, z);
+      }
+    }
+  }
+  for (int z = 0; z < size; z += 1) {
+    for (int x = 1; x < size - 1; x += 1) {
+      if (is_full || has(x, 0, z)) {
+        ret.emplace_back(x, 0, z);
+      }
+      if (is_full || has(x, size - 1, z)) {
+        ret.emplace_back(x, size - 1, z);
+      }
+    }
+  }
+  for (int y = 1; y < size - 1; y += 1) {
+    for (int x = 1; x < size - 1; x += 1) {
+      if (is_full || has(x, y, 0)) {
+        ret.emplace_back(x, y, 0);
+      }
+      if (is_full || has(x, y, size - 1)) {
+        ret.emplace_back(x, y, size - 1);
+      }
+    }
+  }
+
+  // If the entire voxel array is set, return outer surface vector.
+  if (count() == size * size * size) {
+    return ret;
+  }
+
+  // Handle the typical case.
+  // TODO: Make this much faster by using a sub-cell mask.
+  for (int z = 1; z < size - 1; z += 1) {
+    for (int y = 1; y < size - 1; y += 1) {
+      for (int x = 1; x < size - 1; x += 1) {
+        if (auto value = voxels_.get(x, y, z)) {
+          for (int i = 0; i < kOffsets.size(); i += 1) {
+            int ox = x + std::get<0>(kOffsets.at(i));
+            int oy = y + std::get<1>(kOffsets.at(i));
+            int oz = z + std::get<2>(kOffsets.at(i));
+            if (!voxels_.get(ox, oy, oz)) {
+              ret.emplace_back(x, y, z);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return ret;
 }
 
 Mesh VoxelArray::toMesh() const {
@@ -138,27 +234,22 @@ Mesh VoxelArray::toMesh() const {
 
   // Generate a vector with every face.
   std::vector<std::tuple<float, float, float, Dir, int32_t>> faces;
-  for (int z = 0; z < voxels_.depth(); z += 1) {
-    for (int y = 0; y < voxels_.height(); y += 1) {
-      for (int x = 0; x < voxels_.width(); x += 1) {
-        if (auto color = voxels_.get(x, y, z)) {
-          for (int i = 0; i < kOffsets.size(); i += 1) {
-            int ox = x + std::get<0>(kOffsets.at(i));
-            int oy = y + std::get<1>(kOffsets.at(i));
-            int oz = z + std::get<2>(kOffsets.at(i));
-            bool a = ox < 0 || ox >= voxels_.width();
-            bool b = oy < 0 || oy >= voxels_.height();
-            bool c = oz < 0 || oz >= voxels_.depth();
-            if (a || b || c || !voxels_.get(ox, oy, oz)) {
-              faces.emplace_back(
-                  static_cast<float>(x),
-                  static_cast<float>(y),
-                  static_cast<float>(z),
-                  static_cast<Dir>(i),
-                  color);
-            }
-          }
-        }
+  for (auto [x, y, z] : surfaceVoxels()) {
+    auto color = get(x, y, z);
+    for (int i = 0; i < kOffsets.size(); i += 1) {
+      int ox = x + std::get<0>(kOffsets.at(i));
+      int oy = y + std::get<1>(kOffsets.at(i));
+      int oz = z + std::get<2>(kOffsets.at(i));
+      bool a = ox < 0 || ox >= voxels_.width();
+      bool b = oy < 0 || oy >= voxels_.height();
+      bool c = oz < 0 || oz >= voxels_.depth();
+      if (a || b || c || !get(ox, oy, oz)) {
+        faces.emplace_back(
+            static_cast<float>(x),
+            static_cast<float>(y),
+            static_cast<float>(z),
+            static_cast<Dir>(i),
+            color);
       }
     }
   }

@@ -7,12 +7,17 @@ function module:on_init()
   create_ui_node(
     "camera",
     "text",
-    {x = 10, y = 40, color = 0xFFFFFFFF, text = "Pos: ..."}
+    {x = 10, y = 25, color = 0xFFFFFFFF, text = "Pos: ...", size = 16}
   )
   create_ui_node(
     "fps",
     "text",
-    {x = 10, y = 10, color = 0xFFFFFFFF, text = "FPS: ..."}
+    {x = 10, y = 5, color = 0xFFFFFFFF, text = "FPS: ...", size = 16}
+  )
+  create_ui_node(
+    "terrain_slices",
+    "text",
+    {x = 10, y = 45, color = 0xFFFFFFFF, text = "Terrain Meshes: ...", size = 16}
   )
 end
 
@@ -23,7 +28,7 @@ end
 
 function module:on_update(dt)
   -- Update FPS counter.
-  dt_mean = 0.1 * dt + 0.9 * dt_mean
+  dt_mean = 0.01 * dt + 0.99 * dt_mean
 
   -- Update the debug UI every second.
   delay_s = delay_s + dt
@@ -33,9 +38,17 @@ function module:on_update(dt)
       "camera",
       {text = string.format("Pos: %.2f, %.2f, %.2f", cx, cy, cz)}
     )
+
+    local fps = 1 / dt_mean
     update_ui_node(
       "fps",
-      {text = string.format("FPS: %.2f", 1 / dt_mean)}
+      {text = string.format("FPS: %.2f", fps)}
+    )
+
+    local terrain_slices = get_stat_average("slices_count") or 0
+    update_ui_node(
+      "terrain_slices",
+      {text = string.format("Terrain Meshes: %.2f", terrain_slices)}
     )
     delay_s = 0.0
   end

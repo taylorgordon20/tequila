@@ -147,11 +147,13 @@ function module:on_init()
     create_ui_node("console_logs_" .. i, "text", {})
   end
 
+  self:create_command("quit", function() exit() end)
   self:create_command("clear", function() self:clear() end)
 end
 
 function module:on_done()
   self:delete_command("clear")
+  self:delete_command("quit")
 
   for i = 1, #console_logs do 
     delete_ui_node("console_logs_" .. i)

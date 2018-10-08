@@ -24,6 +24,25 @@ class Texture {
   friend class TextureBinding;
 };
 
+class TextureArray {
+ public:
+  TextureArray(const std::vector<ImageTensor>& pixels);
+  ~TextureArray();
+
+  // Add explicit move constructor and assignment operator
+  TextureArray(TextureArray&& other);
+  TextureArray& operator=(TextureArray&& other);
+
+  // Delete copy constructor and assignment operator
+  TextureArray(const TextureArray&) = delete;
+  TextureArray& operator=(const TextureArray&) = delete;
+
+ private:
+  gl::GLuint texture_;
+
+  friend class TextureArrayBinding;
+};
+
 class TextureBinding {
  public:
   TextureBinding(Texture& texture, int location);
@@ -33,6 +52,18 @@ class TextureBinding {
 
  private:
   Texture& texture_;
+  int location_;
+};
+
+class TextureArrayBinding {
+ public:
+  TextureArrayBinding(TextureArray& texture, int location);
+  ~TextureArrayBinding() noexcept;
+
+  int location() const;
+
+ private:
+  TextureArray& texture_;
   int location_;
 };
 

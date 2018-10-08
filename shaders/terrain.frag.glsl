@@ -17,12 +17,9 @@ const vec3 fog_color = vec3(0.62, 0.66, 0.8);
 const float fog_start = 200.0;
 const float fog_rate = 0.1;
 
-// Geometric uniforms.
-uniform mat3 normal_matrix;
-
 // Texture uniforms.
-uniform sampler2D normal_map; 
-uniform float uv_scale; 
+uniform sampler2DArray color_map; 
+uniform sampler2DArray normal_map; 
 
 // Interpolated vertex input.
 in vec3 _normal; 
@@ -30,9 +27,10 @@ in vec3 _tangent;
 in vec3 _cotangent; 
 in vec3 _light;
 in vec3 _eye;
-in vec3 _color;
 in vec2 _tex_coord;
 in float _depth; 
+in float _color_layer; 
+in float _normal_layer; 
 
 // Output fragment color.
 out vec4 color;
@@ -60,19 +58,22 @@ vec3 applyFog(vec3 color, float depth) {
 
 void main() {
   // Sample the normal map.
-  vec3 texture_normal = normalize(2.0 * texture(normal_map, uv_scale * _tex_coord).xyz - 1.0);
+  vec3 idx_color = vec3(_tex_coord.xy, _color_layer);
+  vec3 idx_normal = vec3(_tex_coord.xy, _normal_layer);
+  vec3 t_color = texture(color_map, idx_color).xyz;
+  vec3 t_normal = normalize(2.0 * texture(normal_map, idx_normal).xyz - 1.0);
+  float t_occlusion = pow(max(0, dot(vec3(0, 0, 1), t_normal)), mat_occlusion_exp);
 
   // Compute light component vectors.
-  float occlusion = pow(max(0, dot(vec3(0, 0, 1), texture_normal)), mat_occlusion_exp);
-  vec3 normal = normalize(mat3(_tangent, _cotangent, _normal) * texture_normal);
+  vec3 normal = normalize(mat3(_tangent, _cotangent, _normal) * t_normal);
   vec3 light = normalize(_light);
   vec3 halfv = normalize(0.5 * (_eye + _light));
 
   // Compute lighting components.
-  vec3 A = getAmbientComponent(occlusion);
+  vec3 A = getAmbientComponent(t_occlusion);
   vec3 D = getDiffuseComponent(normal, light);
   vec3 S = getSpecularComponent(normal, light, halfv);
 
   // Compute the pixel color.
-  color = vec4(applyFog(_color * (A + D) + S, _depth), 1.0);
+  color = vec4(applyFog(t_color * (A + D) + S, _depth), 1.0);
 }     

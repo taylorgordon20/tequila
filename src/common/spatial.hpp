@@ -59,6 +59,20 @@ class CompactVector {
     }
   }
 
+  template <typename Function>
+  void forRanges(Function&& fn) const {
+    flush();
+    for (int i = 0; i < ranges_.size(); i += 1) {
+      const auto& pair = ranges_.at(i);
+      int start = pair.first;
+      int end = std::numeric_limits<int>::max();
+      if (i + 1 < ranges_.size()) {
+        end = ranges_.at(i + 1).first;
+      }
+      fn(std::make_tuple(pair.second, start, end - start));
+    }
+  }
+
   template <typename Archive>
   void save(Archive& archive) const {
     archive(ranges_, buffer_);
@@ -151,12 +165,26 @@ class SquareStore {
     return cv_.get(toIndex(x, y));
   }
 
+  size_t size() const {
+    return size_;
+  }
+
   size_t width() const {
     return size_;
   }
 
   size_t height() const {
     return size_;
+  }
+
+  template <typename Function>
+  void forRanges(Function&& fn) const {
+    cv_.forRanges([fn = std::forward<Function>(fn)](auto range) {
+      int index = std::get<1>(range);
+      int x = index % size_;
+      int y = index / size_;
+      fn(std::make_tuple(std::get<0>(range), x, y, std::get<2>(range)));
+    });
   }
 
   template <typename Archive>
@@ -194,6 +222,10 @@ class CubeStore {
     return cv_.get(toIndex(x, y, z));
   }
 
+  size_t size() const {
+    return size_;
+  }
+
   size_t width() const {
     return size_;
   }
@@ -204,6 +236,17 @@ class CubeStore {
 
   size_t depth() const {
     return size_;
+  }
+
+  template <typename Function>
+  void forRanges(Function&& fn) const {
+    cv_.forRanges([fn = std::forward<Function>(fn)](auto range) {
+      int index = std::get<1>(range);
+      int x = index % size_;
+      int y = (index / size_) % size_;
+      int z = (index / size_ / size_);
+      fn(std::make_tuple(std::get<0>(range), x, y, z, std::get<2>(range)));
+    });
   }
 
   template <typename Archive>

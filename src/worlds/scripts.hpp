@@ -47,6 +47,20 @@ auto FFI_get_module(std::shared_ptr<Resources>& resources) {
   };
 }
 
+auto FFI_get_stats(std::shared_ptr<Stats>& stats) {
+  return [stats] { return join(*stats, ","); };
+}
+
+auto FFI_get_stat_average(std::shared_ptr<Stats>& stats) {
+  return [stats](const std::string& stat) {
+    sol::optional<float> ret;
+    if (stats->has(stat)) {
+      ret = stats->getAverage(stat);
+    }
+    return ret;
+  };
+}
+
 auto FFI_get_light_dir(std::shared_ptr<Resources>& resources) {
   return [resources] {
     auto light = resources->get<WorldLight>();
@@ -207,8 +221,12 @@ class ScriptExecutor {
   ScriptExecutor(
       std::shared_ptr<Window> window,
       std::shared_ptr<Resources> resources,
-      std::shared_ptr<TerrainUtil> terrain_util)
-      : window_(window), resources_(resources), terrain_util_(terrain_util) {}
+      std::shared_ptr<TerrainUtil> terrain_util,
+      std::shared_ptr<Stats> stats)
+      : window_(window),
+        resources_(resources),
+        terrain_util_(terrain_util),
+        stats_(stats) {}
 
   template <typename... Args>
   void delegate(const std::string& event, Args&&... args) {
@@ -271,6 +289,8 @@ class ScriptExecutor {
     ctx.set("exit", wrapFFI(FFI_exit(window_)));
     ctx.set("reload", wrapFFI(FFI_reload(resources_)));
     ctx.set("get_module", wrapFFI(FFI_get_module(resources_)));
+    ctx.set("get_stats", wrapFFI(FFI_get_stats(stats_)));
+    ctx.set("get_stat_average", wrapFFI(FFI_get_stat_average(stats_)));
     ctx.set("get_light_dir", wrapFFI(FFI_get_light_dir(resources_)));
     ctx.set("set_light_dir", wrapFFI(FFI_set_light_dir(resources_)));
     ctx.set("get_camera_pos", wrapFFI(FFI_get_camera_pos(resources_)));
@@ -295,6 +315,7 @@ class ScriptExecutor {
   std::shared_ptr<Window> window_;
   std::shared_ptr<Resources> resources_;
   std::shared_ptr<TerrainUtil> terrain_util_;
+  std::shared_ptr<Stats> stats_;
 };
 
 template <>
@@ -302,7 +323,8 @@ std::shared_ptr<ScriptExecutor> gen(const Registry& registry) {
   return std::make_shared<ScriptExecutor>(
       registry.get<Window>(),
       registry.get<Resources>(),
-      registry.get<TerrainUtil>());
+      registry.get<TerrainUtil>(),
+      registry.get<Stats>());
 }
 
 }  // namespace tequila

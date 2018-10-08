@@ -1,0 +1,76 @@
+{
+  "styles": [
+    {
+      "key": 1,
+      "value": {
+        "name": "unknown",
+        "color_map": "images/color_map_question.png",
+        "normal_map": "images/normal_map_fabric.png"
+      }
+    },
+    {
+      "key": 2,
+      "value": {
+        "name": "grass",
+        "color_map": "images/color_map_grass.png",
+        "normal_map": "images/normal_map_grain.png"
+      }
+    },
+    {
+      "key": 3,
+      "value": {
+        "name": "dirt",
+        "color_map": "images/color_map_dirt.png",
+        "normal_map": "images/normal_map_grain.png"
+      }
+    },
+    {
+      "key": 4,
+      "value": {
+        "name": "rock",
+        "color_map": "images/color_map_rock.png",
+        "normal_map": "images/normal_map_rock.png"
+      }
+    },
+    {
+      "key": 5,
+      "value": {
+        "name": "crate",
+        "color_map": "images/color_map_dirt.png",
+        "normal_map": "images/normal_map_crate.png"
+      }
+    },
+    {
+      "key": 6,
+      "value": {
+        "name": "mud",
+        "color_map": "images/color_map_dirt.png",
+        "normal_map": "images/normal_map_rock.png"
+      }
+    },
+    {
+      "key": 7,
+      "value": {
+        "name": "sand",
+        "color_map": "images/color_map_sand.png",
+        "normal_map": "images/normal_map_fabric.png"
+      }
+    },
+    {
+      "key": 8,
+      "value": {
+        "name": "clay",
+        "color_map": "images/color_map_clay.png",
+        "normal_map": "images/normal_map_fabric.png"
+      }
+    },
+    {
+      "key": 9,
+      "value": {
+        "name": "brick",
+        "color_map": "images/color_map_clay.png",
+        "normal_map": "images/normal_map_brick.png"
+      }
+    }
+  ]
+}

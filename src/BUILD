@@ -4,6 +4,7 @@ load("//:data.bzl", "static_files")
 static_files(
   name = "static_files",
   srcs = [
+    "//configs:files",
     "//data:files",
     "//fonts:files",
     "//scripts:files",

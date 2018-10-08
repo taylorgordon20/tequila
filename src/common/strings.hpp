@@ -27,4 +27,16 @@ inline auto to(Args&&... args) {
   return boost::lexical_cast<Ret>(concat(std::forward<Args>(args)...));
 }
 
+template <typename Range, typename Separator>
+inline auto join(Range&& range, Separator&& separator) {
+  std::stringstream ss;
+  for (auto iter = range.begin(); iter != range.end();) {
+    ss << *iter;
+    if (++iter != range.end()) {
+      ss << separator;
+    }
+  }
+  return ss.str();
+}
+
 }  // namespace tequila

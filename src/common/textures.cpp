@@ -1,5 +1,7 @@
 #include "src/common/textures.hpp"
 
+#include <boost/integer/integer_log2.hpp>
+
 #include "src/common/images.hpp"
 #include "src/common/opengl.hpp"
 
@@ -50,6 +52,64 @@ Texture& Texture::operator=(Texture&& other) {
   return *this;
 }
 
+TextureArray::TextureArray(const std::vector<ImageTensor>& pixels) {
+  ENFORCE(pixels.size());
+  size_t height = pixels.front().dimension(0);
+  size_t width = pixels.front().dimension(1);
+  size_t levels = boost::integer_log2(std::max(width, height));
+
+  // Create texture object and allocate storage.
+  glGenTextures(1, &texture_);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, texture_);
+  glTexStorage3D(
+      GL_TEXTURE_2D_ARRAY, levels, GL_RGBA8, width, height, pixels.size());
+
+  // Set texture filter options.
+  glTexParameteri(
+      GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  // Set the texture pixel data.
+  for (int i = 0; i < pixels.size(); i += 1) {
+    ENFORCE(pixels.at(i).dimension(0) == height);
+    ENFORCE(pixels.at(i).dimension(1) == width);
+    glTexSubImage3D(
+        GL_TEXTURE_2D_ARRAY,
+        0,
+        0,
+        0,
+        i,
+        width,
+        height,
+        1,
+        pixels.at(i).dimension(2) == 4 ? GL_RGBA : GL_RGB,
+        GL_UNSIGNED_BYTE,
+        pixels.at(i).data());
+  }
+
+  // Generate mipmaps.
+  glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+  glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
+
+TextureArray::~TextureArray() {
+  if (texture_) {
+    glDeleteTextures(1, &texture_);
+  }
+}
+
+TextureArray::TextureArray(TextureArray&& other) : texture_(0) {
+  *this = std::move(other);
+}
+
+TextureArray& TextureArray::operator=(TextureArray&& other) {
+  std::swap(texture_, other.texture_);
+  return *this;
+}
+
 TextureBinding::TextureBinding(Texture& texture, int location)
     : texture_(texture), location_(location) {
   glActiveTexture(GL_TEXTURE0 + location_);
@@ -62,6 +122,21 @@ TextureBinding::~TextureBinding() noexcept {
 }
 
 int TextureBinding::location() const {
+  return location_;
+}
+
+TextureArrayBinding::TextureArrayBinding(TextureArray& texture, int location)
+    : texture_(texture), location_(location) {
+  glActiveTexture(GL_TEXTURE0 + location_);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, texture_.texture_);
+}
+
+TextureArrayBinding::~TextureArrayBinding() noexcept {
+  glActiveTexture(GL_TEXTURE0 + location_);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
+
+int TextureArrayBinding::location() const {
   return location_;
 }
 

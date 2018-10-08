@@ -8,20 +8,22 @@
 
 namespace tequila {
 
-inline auto loadPng(const char* path) {
+inline auto loadPng(const std::string& path) {
   boost::gil::rgb8_image_t image;
   boost::gil::read_and_convert_image(
       resolvePathOrThrow(path).c_str(), image, boost::gil::png_tag());
   return image;
 }
 
-inline void savePng(const char* path, const boost::gil::rgb8_image_t& image) {
-  boost::gil::write_view(path, const_view(image), boost::gil::png_tag());
+inline void savePng(
+    const std::string& path, const boost::gil::rgb8_image_t& image) {
+  boost::gil::write_view(
+      path.c_str(), const_view(image), boost::gil::png_tag());
 }
 
 using ImageTensor = Eigen::Tensor<uint8_t, 3, Eigen::RowMajor>;
 
-inline auto loadPngToTensor(const char* path) {
+inline auto loadPngToTensor(const std::string& path) {
   auto image = loadPng(path);
   auto image_view = const_view(image);
   ImageTensor pixels(image.height(), image.width(), 3);
@@ -36,7 +38,8 @@ inline auto loadPngToTensor(const char* path) {
   return pixels;
 }
 
-inline auto saveTensorToPng(const char* path, const ImageTensor& tensor) {
+inline auto saveTensorToPng(
+    const std::string& path, const ImageTensor& tensor) {
   boost::gil::rgb8_image_t image(tensor.dimension(1), tensor.dimension(0));
   auto image_view = view(image);
   for (auto row = 0; row < image.height(); row += 1) {

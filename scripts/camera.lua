@@ -6,11 +6,12 @@ local orientation_angles = {0, 0}
 local physics = {
   enabled = false,
   velocity = {0, 0, 0},
-  resistance_force = {-0.5, -0.001, -0.5},
+  resistance_force = {-0.2, -0.001, -0.2},
   gravity_force = -0.4,
-  jump_force = 12.0,
-  walk_force = 10.0,
-  run_force = 50.0,
+  jump_force = 10.0,
+  walk_force = 2.0,
+  run_force = 5.0,
+  fly_force = 4.0,
 }
 
 function module:clamp_movement(from, move, dim)
@@ -32,7 +33,7 @@ end
 
 function module:get_flying_movement(dt)
   local move = {0, 0, 0}
-  local force = switch(
+  local force = physics.fly_force * switch(
       is_key_pressed(KEYS.left_shift),
       physics.run_force,
       physics.walk_force
@@ -176,7 +177,7 @@ function module:on_key(key, scancode, action, mods)
     orientation_angles = {0, 0}
     self:update_camera_view()
   elseif key == KEYS.space and action == 1 then
-    physics.velocity = {0, physics.jump_force, 0}
+    physics.velocity[2] = physics.jump_force
   end
 end
 

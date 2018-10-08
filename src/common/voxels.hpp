@@ -5,7 +5,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <array>
+#include <tuple>
 #include <unordered_map>
+#include <vector>
 
 #include "src/common/meshes.hpp"
 #include "src/common/spatial.hpp"
@@ -27,17 +29,25 @@ class VoxelArray {
   void rotate(float x, float y, float z, float angle);
   void scale(float x, float y, float z);
 
+  // Returns the coordinates of each surface voxel.
+  std::vector<std::tuple<int, int, int>> surfaceVoxels() const;
+
+  size_t count() const;
+  size_t size() const;
+
   const glm::mat4& transform() const;
   Mesh toMesh() const;
 
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(
+        voxel_count_,
         voxels_,
         cereal::binary_data(glm::value_ptr(transform_), 4 * 4 * sizeof(float)));
   }
 
  private:
+  size_t voxel_count_;
   CubeStore<uint32_t> voxels_;
   glm::mat4 transform_;
 };
