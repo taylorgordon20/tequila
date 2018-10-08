@@ -29,6 +29,8 @@ void main() {
   if (use_normal_map_array) {
     vec3 normal_map_coords = vec3(_tex_coord, normal_map_array_index);
     vec3 normal = 2 * texture(normal_map_array, normal_map_coords).xyz - 1;
-    color += pow(dot(vec3(0, 0, 1), normal), 2.0) - 0.8;
+    color.x = mix(color.x, pow(dot(vec3(0, 0, 1), normal), 4.0), 0.5);
+    color.y = mix(color.y, pow(dot(vec3(0, 0, 1), normal), 4.0), 0.5);
+    color.z = mix(color.z, pow(dot(vec3(0, 0, 1), normal), 4.0), 0.5);
   }
 }     
