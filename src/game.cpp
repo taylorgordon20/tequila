@@ -29,7 +29,7 @@ auto getScriptContext() {
 
 auto getWorldCamera() {
   auto camera = std::make_shared<Camera>();
-  camera->position = glm::vec3(0.0f, 0.0f, 0.0f);
+  camera->position = glm::vec3(50.0f, 50.0f, 50.0f);
   camera->view = glm::normalize(glm::vec3(1.0f, 0.0f, 1.0f));
   camera->fov = glm::radians(45.0f);
   camera->aspect = 4.0f / 3.0f;
@@ -81,6 +81,7 @@ void run() {
           .bindToDefaultFactory<TerrainRenderer>()
           .bindToDefaultFactory<TerrainUtil>()
           .bindToDefaultFactory<TextUIRenderer>()
+          .bindToDefaultFactory<StyleUIRenderer>()
           .bindToDefaultFactory<UIRenderer>()
           .build();
 

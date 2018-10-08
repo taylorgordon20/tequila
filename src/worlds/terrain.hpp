@@ -345,8 +345,8 @@ class TerrainRenderer {
         // Define texture uniforms.
         TextureArrayBinding color_map(*slice->color_map, 0);
         TextureArrayBinding normal_map(*slice->normal_map, 1);
-        shader->uniform("color_map", 0);
-        shader->uniform("normal_map", 1);
+        shader->uniform("color_map", color_map.location());
+        shader->uniform("normal_map", normal_map.location());
 
         // Draw the mesh.
         slice->mesh.draw(*shader);

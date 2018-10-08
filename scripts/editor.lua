@@ -1,5 +1,5 @@
 local module = {
-  palette_colors = {},
+  palette_styles = {},
   palette_selection = 1,
 }
 
@@ -23,21 +23,14 @@ local for_camera_ray_voxels = function(voxel_fn)
   end
 end
 
-local random_color = function()
-  local r = math.random(0, 255) << 24;
-  local g = math.random(0, 255) << 16;
-  local b = math.random(0, 255) << 8;
-  return r + g + b + 255;
-end
-
 function module:set_palette_index(index)
   self.palette_selection = index
   self:update_ui()
   return true
 end
 
-function module:set_palette_color(index, color)
-  self.palette_colors[index] = color
+function module:set_palette_style(index, style)
+  self.palette_styles[index] = style
   self:update_ui()
   return true
 end
@@ -58,15 +51,15 @@ function module:update_ui()
       }
   )
 
-  -- Position the color palette centered in the bottom of the screen.
+  -- Position the style palette centered in the bottom of the screen.
   local palette_size = window_h * 0.05
   local palette_padding = window_h * 0.02
   local palette_shift = (window_w - 8 * (palette_size + palette_padding)) / 2
   local palette_x = function(index)
     return index * palette_padding + (index - 1) * palette_size + palette_shift
   end
-  for i = 1, #self.palette_colors do
-    local alpha = switch(i == self.palette_selection, 255, 100)    
+  for i = 1, #self.palette_styles do
+    local alpha = switch(i == self.palette_selection, 0xFF, 0xAA)    
     update_ui_node(
         "palette_" .. i,
         {          
@@ -75,7 +68,8 @@ function module:update_ui()
           z = 1,
           width = palette_size,
           height = palette_size,
-          color = (self.palette_colors[i] & ~255) + alpha,
+          color = 0xffffff00 + alpha,
+          style = self.palette_styles[i]
         }
     )    
   end
@@ -100,8 +94,8 @@ function module:insert_voxel()
   for_camera_ray_voxels(function(x, y, z, distance)
     if get_voxel(x, y, z) ~= 0 then
       if pred then
-        local color = self.palette_colors[self.palette_selection]
-        set_voxel(pred[1], pred[2], pred[3], color)
+        local style = self.palette_styles[self.palette_selection]
+        set_voxel(pred[1], pred[2], pred[3], style)
         edit_delay_s = 0
       end
       return true
@@ -123,21 +117,21 @@ function module:remove_voxel()
 end
 
 function module:on_init()
-  -- Registry a console command to set palette colors.
+  -- Registry a console command to set palette styles.
   get_module("console"):create_command(
-      "set_palette",
-      function(index, color)
-        self:set_palette_color(index, color)
+      "set_style",
+      function(index, style)
+        self:set_palette_style(index, style)
       end
   )
 
   -- Create a crosshair that remains centered in the screen.
   create_ui_node("crosshair", "rect", {})
 
-  -- Assign the initial palette colors and create the UI.
+  -- Assign the initial palette styles and create the UI.
   for i = 1, 8 do
-    self.palette_colors[i] = random_color()
-    create_ui_node("palette_" .. i, "rect", {})
+    self.palette_styles[i] = i + 1
+    create_ui_node("palette_" .. i, "style", {})
   end
   create_ui_node("palette_selection", "rect", {})
   self.palette_selection = 1
@@ -148,13 +142,13 @@ end
 
 function module:on_done()
   delete_ui_node("palette_selection")
-  for i = 1, #self.palette_colors do
+  for i = 1, #self.palette_styles do
     delete_ui_node("palette_" .. i)
   end
   delete_ui_node("crosshair")
 
   -- Unregister console commands.
-  get_module("console"):delete_command("set_palette")
+  get_module("console"):delete_command("set_style")
 end
 
 function module:on_resize(width, height)
