@@ -230,6 +230,11 @@ struct WorldStyleNode {
     auto style = to<uint32_t>(get_or(ui_node.attr, "style", "1"));
     auto rgba = to<uint32_t>(get_or(ui_node.attr, "color", "0"));
 
+    // Parse out the style data.
+    const auto& styles = resources.get<TerrainStyles>()->styles;
+    auto color_maps = resources.get<TerrainStylesColorMap>();
+    auto normal_maps = resources.get<TerrainStylesNormalMap>();
+
     // Parse out the rect's geometry.
     Eigen::Matrix<float, 3, 6> positions;
     positions.row(0) << 0, w, w, w, 0, 0;
@@ -237,19 +242,17 @@ struct WorldStyleNode {
     positions.row(2) << 0, 0, 0, 0, 0, 0;
 
     // Parse out the rect's color.
-    auto color = glm::vec4(
-        (rgba >> 24 & 0xFF) / 255.0f,
-        (rgba >> 16 & 0xFF) / 255.0f,
-        (rgba >> 8 & 0xFF) / 255.0f,
-        (rgba & 0xFF) / 255.0f);
+    auto color = styles.at(style).colorVec();
+    color[0] *= (rgba >> 24 & 0xFF) / 255.0f;
+    color[1] *= (rgba >> 16 & 0xFF) / 255.0f;
+    color[2] *= (rgba >> 8 & 0xFF) / 255.0f;
+    color[3] *= (rgba & 0xFF) / 255.0f;
 
     // Parse out the texture coordinates.
     Eigen::Matrix<float, 2, 6> tex_coords;
     tex_coords.row(0) << 0, 1, 1, 1, 0, 0;
     tex_coords.row(1) << 0, 0, 1, 1, 1, 0;
 
-    auto color_maps = resources.get<TerrainStylesColorMap>();
-    auto normal_maps = resources.get<TerrainStylesNormalMap>();
     return std::make_shared<StyleNode>(
         MeshBuilder()
             .setPositions(std::move(positions))

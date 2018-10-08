@@ -11,6 +11,7 @@ uniform vec3 cotangent;
 
 // Vertex attributes.
 in vec3 position;
+in vec3 color;
 in vec2 tex_coord;
 
 // Varying output to the fragment shader. All of the spatial outputs
@@ -20,6 +21,7 @@ out vec3 _tangent;
 out vec3 _cotangent; 
 out vec3 _light;
 out vec3 _eye;
+out vec3 _color;
 out vec2 _tex_coord;
 out float _depth; 
 out float _color_layer;
@@ -39,6 +41,7 @@ void main() {
   _eye = -normalize(view_position.xyz);
 
   // Set surface texture / color outputs.
+  _color = color;
   _tex_coord.x = dot(tangent, position);
   _tex_coord.y = dot(cotangent, position);
   _color_layer = tex_coord.x;

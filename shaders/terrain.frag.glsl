@@ -27,6 +27,7 @@ in vec3 _tangent;
 in vec3 _cotangent; 
 in vec3 _light;
 in vec3 _eye;
+in vec3 _color;
 in vec2 _tex_coord;
 in float _depth; 
 in float _color_layer; 
@@ -75,5 +76,5 @@ void main() {
   vec3 S = getSpecularComponent(normal, light, halfv);
 
   // Compute the pixel color.
-  color = vec4(applyFog(t_color * (A + D) + S, _depth), 1.0);
+  color = vec4(applyFog(_color * t_color * (A + D) + S, _depth), 1.0);
 }     

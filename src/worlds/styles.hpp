@@ -20,21 +20,32 @@
 
 namespace tequila {
 
-struct TerrainStyle {
+struct TerrainStyleConfig {
   std::string name;
+  std::string color;
   std::string color_map;
   std::string normal_map;
+
+  auto colorVec() const {
+    uint32_t rgb = std::stoul(color, nullptr, 16);
+    return glm::vec4(
+        ((rgb >> 16) & 0xFF) / 255.0f,
+        ((rgb >> 8) & 0xFF) / 255.0f,
+        (rgb & 0xFF) / 255.0f,
+        1.0f);
+  }
 
   template <typename Archive>
   void serialize(Archive& ar) {
     ar(cereal::make_nvp("name", name),
+       cereal::make_nvp("color", color),
        cereal::make_nvp("color_map", color_map),
        cereal::make_nvp("normal_map", normal_map));
   }
 };
 
 struct TerrainStyleIndex {
-  std::unordered_map<int64_t, TerrainStyle> styles;
+  std::unordered_map<int64_t, TerrainStyleConfig> styles;
 
   template <typename Archive>
   void serialize(Archive& ar) {

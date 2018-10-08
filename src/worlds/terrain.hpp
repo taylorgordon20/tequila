@@ -242,6 +242,7 @@ struct TerrainSlice {
 
     // Look up the texture maps for this face since we need to specify vertex
     // attributes to point each face to its corresponding texture map indices.
+    const auto& styles = resources.get<TerrainStyles>()->styles;
     auto color_maps = resources.get<TerrainStylesColorMap>();
     auto normal_maps = resources.get<TerrainStylesNormalMap>();
 
@@ -267,6 +268,7 @@ struct TerrainSlice {
 
     // Construct the mesh's vertex attribute array.
     Eigen::Matrix<float, 3, Eigen::Dynamic> positions(3, 6 * faces->size());
+    Eigen::Matrix<float, 3, Eigen::Dynamic> colors(3, 6 * faces->size());
     Eigen::Matrix<float, 2, Eigen::Dynamic> indices(2, 6 * faces->size());
     for (int i = 0; i < faces->size(); i += 1) {
       auto [fx, fy, fz, style] = faces->at(i);
@@ -276,7 +278,13 @@ struct TerrainSlice {
       positions.row(1).segment(6 * i, 6) = fy * ones_row + dir_face.row(1);
       positions.row(2).segment(6 * i, 6) = fz * ones_row + dir_face.row(2);
 
-      // Texture indices.
+      // Colors.
+      auto rgba = styles.at(style).colorVec();
+      colors.row(0).segment(6 * i, 6) = rgba[0] * ones_row;
+      colors.row(1).segment(6 * i, 6) = rgba[1] * ones_row;
+      colors.row(2).segment(6 * i, 6) = rgba[2] * ones_row;
+
+      // Texture map layer indices.
       // HACK: These indices are inappropriately shoved into texture coords.
       // TODO: Refactor mesh library into vertex buffer wrapper that supports
       // arbitrarily packed and typed vertex attributes.
@@ -290,6 +298,7 @@ struct TerrainSlice {
     return std::make_shared<TerrainSliceData>(
         MeshBuilder()
             .setPositions(std::move(positions))
+            .setColors(std::move(colors))
             .setTexCoords(std::move(indices))
             .build(),
         std::move(nor),
