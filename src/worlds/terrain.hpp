@@ -326,6 +326,9 @@ class TerrainRenderer {
 
   void draw() const {
     StatsUpdate stats(stats_);
+    Timer timer("render_terrain", [&](const std::string& msg, double duration) {
+      stats[msg] = duration;
+    });
 
     // Fetch globals needed to render terrain.
     auto light = resources_->get<WorldLight>();

@@ -32,7 +32,6 @@ class VoxelArray {
   // Returns the coordinates of each surface voxel.
   std::vector<std::tuple<int, int, int>> surfaceVoxels() const;
 
-  size_t count() const;
   size_t size() const;
 
   const glm::mat4& transform() const;
@@ -41,14 +40,16 @@ class VoxelArray {
   template <typename Archive>
   void serialize(Archive& archive) {
     archive(
-        voxel_count_,
         voxels_,
+        surface_voxels_,
         cereal::binary_data(glm::value_ptr(transform_), 4 * 4 * sizeof(float)));
   }
 
  private:
-  size_t voxel_count_;
+  void updateSurfaceVoxels(int x, int y, int z);
+
   CubeStore<uint32_t> voxels_;
+  CubeStore<bool> surface_voxels_;
   glm::mat4 transform_;
 };
 

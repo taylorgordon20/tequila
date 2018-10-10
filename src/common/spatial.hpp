@@ -60,7 +60,7 @@ class CompactVector {
   }
 
   template <typename Function>
-  void forRanges(Function&& fn) const {
+  void forRanges(Function&& fn) {
     flush();
     for (int i = 0; i < ranges_.size(); i += 1) {
       const auto& pair = ranges_.at(i);
@@ -69,7 +69,7 @@ class CompactVector {
       if (i + 1 < ranges_.size()) {
         end = ranges_.at(i + 1).first;
       }
-      fn(std::make_tuple(pair.second, start, end - start));
+      fn(pair.second, start, end - start);
     }
   }
 
@@ -178,12 +178,11 @@ class SquareStore {
   }
 
   template <typename Function>
-  void forRanges(Function&& fn) const {
-    cv_.forRanges([fn = std::forward<Function>(fn)](auto range) {
-      int index = std::get<1>(range);
-      int x = index % size_;
-      int y = index / size_;
-      fn(std::make_tuple(std::get<0>(range), x, y, std::get<2>(range)));
+  void forRanges(Function&& fn) {
+    cv_.forRanges([&](auto value, int i, int n) {
+      int x = i % size_;
+      int y = i / size_;
+      fn(value, x, y, n);
     });
   }
 
@@ -239,13 +238,12 @@ class CubeStore {
   }
 
   template <typename Function>
-  void forRanges(Function&& fn) const {
-    cv_.forRanges([fn = std::forward<Function>(fn)](auto range) {
-      int index = std::get<1>(range);
-      int x = index % size_;
-      int y = (index / size_) % size_;
-      int z = (index / size_ / size_);
-      fn(std::make_tuple(std::get<0>(range), x, y, z, std::get<2>(range)));
+  void forRanges(Function&& fn) {
+    cv_.forRanges([&](auto value, int i, int n) {
+      int x = i % size_;
+      int y = (i / size_) % size_;
+      int z = (i / size_ / size_);
+      fn(value, x, y, z, n);
     });
   }
 
