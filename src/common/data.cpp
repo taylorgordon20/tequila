@@ -7,6 +7,7 @@
 
 #include "src/common/errors.hpp"
 #include "src/common/files.hpp"
+#include "src/common/timers.hpp"
 
 namespace tequila {
 
@@ -18,7 +19,7 @@ auto tablePath(const std::string& table_name) {
 
 auto compress(const std::string& src) {
   std::vector<char> dst(ZSTD_compressBound(src.size()), '\0');
-  auto csize = ZSTD_compress(dst.data(), dst.size(), src.data(), src.size(), 1);
+  auto csize = ZSTD_compress(dst.data(), dst.size(), src.data(), src.size(), 7);
   ENFORCE(
       !ZSTD_isError(csize),
       format("ZSTD_compress error: %1%", ZSTD_getErrorName(csize)));
@@ -33,7 +34,11 @@ auto decompress(const std::vector<char>& src) {
   auto status = ZSTD_decompress(dst.data(), dst.size(), src.data(), src.size());
   ENFORCE(
       !ZSTD_isError(status),
-      format("ZSTD_decompress error: %1%", ZSTD_getErrorName(status)));
+      format(
+          "ZSTD_decompress error: %1% (src.size()=%2%, dsize=%3%)",
+          ZSTD_getErrorName(status),
+          src.size(),
+          dsize));
   return dst;
 }
 }  // namespace

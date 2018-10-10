@@ -100,7 +100,7 @@ function module:insert_voxel()
       end
       return true
     end
-    if distance > 0.2 then
+    if distance > 1.0 then
       pred = {x, y, z}
     end
   end)
