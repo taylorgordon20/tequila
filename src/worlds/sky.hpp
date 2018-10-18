@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <memory>
 #include <string>
@@ -18,22 +19,27 @@ namespace tequila {
 struct SkyData {
   Mesh mesh;
   std::shared_ptr<TextureCube> texture;
-  SkyData(Mesh mesh, std::shared_ptr<TextureCube> texture)
-      : mesh(std::move(mesh)), texture(std::move(texture)) {}
+  glm::mat4 transform;
+  SkyData(Mesh mesh, std::shared_ptr<TextureCube> texture, glm::mat4 transform)
+      : mesh(std::move(mesh)),
+        texture(std::move(texture)),
+        transform(std::move(transform)) {}
 };
 
 struct SkyMap {
   auto operator()(const Resources& resources) {
     auto pixels = loadPngToTensor("images/sky_map_clouds.png");
-    std::vector<ImageTensor> faces(6);
     int h = pixels.dimension(0) / 3;
     int w = pixels.dimension(1) / 4;
-    faces[0] = subImage(pixels, 2 * w, h, w, h);
-    faces[1] = subImage(pixels, 0, h, w, h);
-    faces[2] = subImage(pixels, w, 0, w, h);
-    faces[3] = subImage(pixels, w, 2 * h, w, h);
-    faces[4] = subImage(pixels, w, h, w, h);
-    faces[5] = subImage(pixels, 3 * w, h, w, h);
+
+    // NOTE: We need to invert every face due to OpenGL cube map inconsistency.
+    std::vector<ImageTensor> faces(6);
+    faces[0] = invertY(subImage(pixels, 2 * w, h, w, h));
+    faces[1] = invertY(subImage(pixels, 0, h, w, h));
+    faces[2] = invertY(subImage(pixels, w, 2 * h, w, h));
+    faces[3] = invertY(subImage(pixels, w, 0, w, h));
+    faces[4] = invertY(subImage(pixels, w, h, w, h));
+    faces[5] = invertY(subImage(pixels, 3 * w, h, w, h));
     return std::make_shared<TextureCube>(std::move(faces));
   }
 };
@@ -48,9 +54,15 @@ struct Sky {
       return ret;
     }();
 
+    // Compute a rotation based on the current light location. We assume that
+    // the sky map's light is directed positively along x in the xz-plane.
+    const auto& light = *resources.get<WorldLight>();
+    auto angle = std::atan2(-light[2], light[0]);
+
     return std::make_shared<SkyData>(
         MeshBuilder().setPositions(kPositions).build(),
-        resources.get<SkyMap>());
+        resources.get<SkyMap>(),
+        glm::rotate(glm::mat4(1), angle, glm::vec3(0.0f, 1.0f, 0.0f)));
   }
 };
 
@@ -73,7 +85,7 @@ class SkyRenderer {
     auto shader = resources_->get<SkyShader>();
     shader->run([&] {
       // Set uniforms.
-      shader->uniform("view_matrix", camera->viewMatrix());
+      shader->uniform("view_matrix", camera->viewMatrix() * sky->transform);
       shader->uniform("projection_matrix", camera->projectionMatrix());
 
       // Bind the sky's cube map texture.

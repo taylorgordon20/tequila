@@ -59,4 +59,15 @@ inline auto subImage(
   return tensor.slice(offset_slice, size_slice);
 }
 
+inline auto invertY(const ImageTensor& tensor) {
+  auto h = tensor.dimension(0);
+  auto w = tensor.dimension(1);
+  auto d = tensor.dimension(2);
+  ImageTensor ret(h, w, d);
+  for (int row = 0; row < h; row += 1) {
+    ret.chip(row, 0) = tensor.chip(h - row - 1, 0);
+  }
+  return ret;
+}
+
 }  // namespace tequila
