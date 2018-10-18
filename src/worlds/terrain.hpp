@@ -361,7 +361,9 @@ class TerrainRenderer {
         shader->uniform("normal_map", normal_map.location());
 
         // Draw the mesh.
+        gl::glEnable(gl::GL_DEPTH_TEST);
         slice->mesh.draw(*shader);
+        gl::glDisable(gl::GL_DEPTH_TEST);
 
         // Update stats.
         stats["slices_count"] += 1;

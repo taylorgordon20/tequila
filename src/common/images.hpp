@@ -52,4 +52,11 @@ inline auto saveTensorToPng(
   savePng(path, image);
 }
 
+inline auto subImage(
+    const ImageTensor& tensor, int x, int y, size_t w, size_t h) {
+  Eigen::DSizes<ptrdiff_t, 3> offset_slice(y, x, 0);
+  Eigen::DSizes<ptrdiff_t, 3> size_slice(h, w, tensor.dimension(2));
+  return tensor.slice(offset_slice, size_slice);
+}
+
 }  // namespace tequila

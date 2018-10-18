@@ -61,7 +61,6 @@ const glm::mat4x4& Mesh::transform() const {
 }
 
 void Mesh::draw(ShaderProgram& shader) const {
-  glEnable(GL_DEPTH_TEST);
   glBindVertexArray(vao_);
   glBindBuffer(GL_ARRAY_BUFFER, vbo_);
 

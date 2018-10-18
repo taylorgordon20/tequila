@@ -15,6 +15,7 @@
 #include "src/worlds/core.hpp"
 #include "src/worlds/events.hpp"
 #include "src/worlds/scripts.hpp"
+#include "src/worlds/sky.hpp"
 #include "src/worlds/styles.hpp"
 #include "src/worlds/terrain.hpp"
 #include "src/worlds/ui.hpp"
@@ -81,6 +82,7 @@ void run() {
           .bindToDefaultFactory<TerrainRenderer>()
           .bindToDefaultFactory<TerrainUtil>()
           .bindToDefaultFactory<TextUIRenderer>()
+          .bindToDefaultFactory<SkyRenderer>()
           .bindToDefaultFactory<StyleUIRenderer>()
           .bindToDefaultFactory<UIRenderer>()
           .build();
@@ -93,6 +95,7 @@ void run() {
     // Render the scene to a new frame.
     gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
+    registry.get<SkyRenderer>()->draw();
     registry.get<TerrainRenderer>()->draw();
     registry.get<UIRenderer>()->draw();
   });

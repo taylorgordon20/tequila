@@ -110,6 +110,53 @@ TextureArray& TextureArray::operator=(TextureArray&& other) {
   return *this;
 }
 
+TextureCube::TextureCube(const std::vector<ImageTensor>& pixels) {
+  ENFORCE(pixels.size() == 6);
+
+  // Create texture object.
+  glGenTextures(1, &texture_);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_);
+
+  // Set texture filter options.
+  // TODO: Consider adding mipmapping by default.
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+  // Set the texture pixel data.
+  for (int i = 0; i < pixels.size(); i += 1) {
+    glTexImage2D(
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+        0,
+        GL_RGB,
+        pixels.at(i).dimension(1),
+        pixels.at(i).dimension(0),
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        pixels.at(i).data());
+  }
+
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
+TextureCube::~TextureCube() {
+  if (texture_) {
+    glDeleteTextures(1, &texture_);
+  }
+}
+
+TextureCube::TextureCube(TextureCube&& other) : texture_(0) {
+  *this = std::move(other);
+}
+
+TextureCube& TextureCube::operator=(TextureCube&& other) {
+  std::swap(texture_, other.texture_);
+  return *this;
+}
+
 TextureBinding::TextureBinding(Texture& texture, int location)
     : texture_(texture), location_(location) {
   glActiveTexture(GL_TEXTURE0 + location_);
@@ -137,6 +184,21 @@ TextureArrayBinding::~TextureArrayBinding() noexcept {
 }
 
 int TextureArrayBinding::location() const {
+  return location_;
+}
+
+TextureCubeBinding::TextureCubeBinding(TextureCube& texture, int location)
+    : texture_(texture), location_(location) {
+  glActiveTexture(GL_TEXTURE0 + location_);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, texture_.texture_);
+}
+
+TextureCubeBinding::~TextureCubeBinding() noexcept {
+  glActiveTexture(GL_TEXTURE0 + location_);
+  glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
+int TextureCubeBinding::location() const {
   return location_;
 }
 
