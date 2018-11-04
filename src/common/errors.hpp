@@ -33,4 +33,8 @@ template <typename StringType, typename... Args>
 
 #define LOGV(expr) std::cout << #expr << "=" << (expr) << std::endl;
 
+#define LOG_ERROR(msg) \
+  std::cout << "ERROR[" << __FILE__ << ":" << __LINE__ << "]: " \
+            << (msg) << std::endl;
+
 }  // namespace tequila

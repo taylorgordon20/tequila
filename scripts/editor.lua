@@ -1,6 +1,7 @@
 local module = {
   palette_styles = {},
   palette_selection = 1,
+  palette_count = 10,
 }
 
 local crosshair_size = 0.005
@@ -54,7 +55,7 @@ function module:update_ui()
   -- Position the style palette centered in the bottom of the screen.
   local palette_size = window_h * 0.05
   local palette_padding = window_h * 0.02
-  local palette_shift = (window_w - 8 * (palette_size + palette_padding)) / 2
+  local palette_shift = (window_w - self.palette_count * (palette_size + palette_padding)) / 2
   local palette_x = function(index)
     return index * palette_padding + (index - 1) * palette_size + palette_shift
   end
@@ -129,7 +130,7 @@ function module:on_init()
   create_ui_node("crosshair", "rect", {})
 
   -- Assign the initial palette styles and create the UI.
-  for i = 1, 8 do
+  for i = 1, self.palette_count do
     self.palette_styles[i] = i + 1
     create_ui_node("palette_" .. i, "style", {})
   end
@@ -156,13 +157,13 @@ function module:on_resize(width, height)
 end
 
 function module:on_scroll(x_offset, y_offset)
-  self.palette_selection = math.floor(self.palette_selection - 1 - y_offset) % 8 + 1
+  self.palette_selection = math.floor(self.palette_selection - 1 - y_offset) % self.palette_count + 1
   self:update_ui()
 end
 
 function module:on_key(key, scancode, action, mods)
   if key == KEYS.tab and action == 1 then
-    self.palette_selection = self.palette_selection % 8 + 1
+    self.palette_selection = self.palette_selection % self.palette_count + 1
     self:update_ui()
   end
 end

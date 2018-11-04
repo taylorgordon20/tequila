@@ -48,17 +48,6 @@ auto getWorldUI() {
   return std::make_shared<UITree>();
 }
 
-auto makeWorldResources(const std::string& world_name) {
-  return std::make_shared<Resources>(
-      ResourcesBuilder()
-          .withSeed<ScriptContext>(getScriptContext())
-          .withSeed<WorldCamera>(getWorldCamera())
-          .withSeed<WorldLight>(getWorldLight())
-          .withSeed<WorldName>(world_name)
-          .withSeed<WorldUI>(getWorldUI())
-          .build());
-}
-
 void run() {
   // Figure out which world to load.
   std::string world_name;
@@ -69,22 +58,34 @@ void run() {
     world_name = "octree_world";
   }
 
+  auto resources_factory = [world_name](const Registry& registry) {
+    return std::make_shared<Resources>(
+        ResourcesBuilder()
+            .withSeed<WorldRegistry>(&registry)
+            .withSeed<ScriptContext>(getScriptContext())
+            .withSeed<WorldCamera>(getWorldCamera())
+            .withSeed<WorldLight>(getWorldLight())
+            .withSeed<WorldName>(world_name)
+            .withSeed<WorldUI>(getWorldUI())
+            .build());
+  };
+
   // Initialize game registry.
   Application app;
   Registry registry =
       RegistryBuilder()
           .bind<Window>(app.makeWindow(1024, 768, "Tequila!", nullptr, nullptr))
-          .bind<Resources>(makeWorldResources(world_name))
+          .bind<Resources>(resources_factory)
           .bind<Stats>(std::make_shared<Stats>())
           .bindToDefaultFactory<EventHandler>()
           .bindToDefaultFactory<RectUIRenderer>()
           .bindToDefaultFactory<ScriptExecutor>()
           .bindToDefaultFactory<TerrainRenderer>()
-          .bindToDefaultFactory<TerrainUtil>()
           .bindToDefaultFactory<TextUIRenderer>()
           .bindToDefaultFactory<SkyRenderer>()
           .bindToDefaultFactory<StyleUIRenderer>()
           .bindToDefaultFactory<UIRenderer>()
+          .bindToDefaultFactory<VoxelsUtil>()
           .build();
 
   // Enter the game loop.

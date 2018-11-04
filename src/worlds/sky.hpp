@@ -27,7 +27,7 @@ struct SkyData {
 };
 
 struct SkyMap {
-  auto operator()(const Resources& resources) {
+  auto operator()(const ResourceDeps& deps) {
     auto pixels = loadPngToTensor("images/sky_map_clouds.png");
     int h = pixels.dimension(0) / 3;
     int w = pixels.dimension(1) / 4;
@@ -45,7 +45,7 @@ struct SkyMap {
 };
 
 struct Sky {
-  auto operator()(const Resources& resources) {
+  auto operator()(const ResourceDeps& deps) {
     static auto kPositions = [] {
       Eigen::Matrix3Xf ret(3, 6);
       ret.setZero();
@@ -56,18 +56,18 @@ struct Sky {
 
     // Compute a rotation based on the current light location. We assume that
     // the sky map's light is directed positively along x in the xz-plane.
-    const auto& light = *resources.get<WorldLight>();
+    const auto& light = *deps.get<WorldLight>();
     auto angle = std::atan2(-light[2], light[0]);
 
     return std::make_shared<SkyData>(
         MeshBuilder().setPositions(kPositions).build(),
-        resources.get<SkyMap>(),
+        deps.get<SkyMap>(),
         glm::rotate(glm::mat4(1), angle, glm::vec3(0.0f, 1.0f, 0.0f)));
   }
 };
 
 struct SkyShader {
-  auto operator()(const Resources& resources) {
+  auto operator()(const ResourceDeps& deps) {
     return std::make_shared<ShaderProgram>(std::vector<ShaderSource>{
         makeVertexShader(loadFile("shaders/sky.vert.glsl")),
         makeFragmentShader(loadFile("shaders/sky.frag.glsl")),

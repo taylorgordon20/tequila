@@ -119,6 +119,61 @@ std::vector<std::tuple<int, int, int>> VoxelArray::surfaceVoxels() const {
   return ret;
 }
 
+std::vector<std::tuple<int, int, int>> VoxelArray::surfaceVertices() const {
+  auto to_index = [&](int x, int y, int z) -> int {
+    return x + y * size() + z * size() * size();
+  };
+
+  std::unordered_set<int> vertex_set;
+  for (auto [x, y, z] : surfaceVoxels()) {
+    if (x == 0 || !get(x - 1, y, z)) {
+      vertex_set.emplace(to_index(x, y, z));
+      vertex_set.emplace(to_index(x, y + 1, z));
+      vertex_set.emplace(to_index(x, y, z + 1));
+      vertex_set.emplace(to_index(x, y + 1, z + 1));
+    }
+    if (x == size() - 1 || !get(x + 1, y, z)) {
+      vertex_set.emplace(to_index(x + 1, y, z));
+      vertex_set.emplace(to_index(x + 1, y + 1, z));
+      vertex_set.emplace(to_index(x + 1, y, z + 1));
+      vertex_set.emplace(to_index(x + 1, y + 1, z + 1));
+    }
+    if (y == 0 || !get(x, y - 1, z)) {
+      vertex_set.emplace(to_index(x, y, z));
+      vertex_set.emplace(to_index(x + 1, y, z));
+      vertex_set.emplace(to_index(x, y, z + 1));
+      vertex_set.emplace(to_index(x + 1, y, z + 1));
+    }
+    if (y == size() - 1 || !get(x, y + 1, z)) {
+      vertex_set.emplace(to_index(x, y + 1, z));
+      vertex_set.emplace(to_index(x + 1, y + 1, z));
+      vertex_set.emplace(to_index(x, y + 1, z + 1));
+      vertex_set.emplace(to_index(x + 1, y + 1, z + 1));
+    }
+    if (z == 0 || !get(x, y, z - 1)) {
+      vertex_set.emplace(to_index(x, y, z));
+      vertex_set.emplace(to_index(x + 1, y, z));
+      vertex_set.emplace(to_index(x, y + 1, z));
+      vertex_set.emplace(to_index(x + 1, y + 1, z));
+    }
+    if (z == size() - 1 || !get(x, y, z + 1)) {
+      vertex_set.emplace(to_index(x, y, z + 1));
+      vertex_set.emplace(to_index(x + 1, y, z + 1));
+      vertex_set.emplace(to_index(x, y + 1, z + 1));
+      vertex_set.emplace(to_index(x + 1, y + 1, z + 1));
+    }
+  }
+
+  std::vector<std::tuple<int, int, int>> ret;
+  for (auto index : vertex_set) {
+    int x = index % size();
+    int y = (index / size()) % size();
+    int z = index / size() / size();
+    ret.emplace_back(x, y, z);
+  }
+  return ret;
+}
+
 void VoxelArray::updateSurfaceVoxels(int x, int y, int z) {
   int lbound = 0, ubound = size() - 1;
   auto test = [&](int x, int y, int z) {

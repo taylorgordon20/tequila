@@ -86,7 +86,25 @@
       "value": {
         "name": "blue_brick",
         "color": "3333FF",
-        "color_map": "images/color_map_clay.png",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_brick.png"
+      }
+    },
+    {
+      "key": 11,
+      "value": {
+        "name": "cyan_brick",
+        "color": "33FFFF",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_brick.png"
+      }
+    },
+    {
+      "key": 12,
+      "value": {
+        "name": "red_brick",
+        "color": "FF3333",
+        "color_map": "images/color_map_shale.png",
         "normal_map": "images/normal_map_brick.png"
       }
     }

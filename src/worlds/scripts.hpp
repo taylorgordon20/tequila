@@ -22,10 +22,10 @@ struct ScriptContext
     : SeedResource<ScriptContext, std::shared_ptr<LuaContext>> {};
 
 struct ScriptModule {
-  auto operator()(const Resources& resources, const std::string& name) {
+  auto operator()(const ResourceDeps& deps, const std::string& name) {
     try {
       auto code = loadFile(format("scripts/%1%.lua", name).c_str());
-      return std::make_shared<LuaModule>(*resources.get<ScriptContext>(), code);
+      return std::make_shared<LuaModule>(*deps.get<ScriptContext>(), code);
     } catch (const LuaError& error) {
       std::cout << "Error parsing script: " << name << ".lua" << std::endl;
       throw;
@@ -152,20 +152,20 @@ auto FFI_get_window_size(std::shared_ptr<Window>& window) {
   };
 }
 
-auto FFI_get_voxel(std::shared_ptr<TerrainUtil>& terrain_util) {
-  return [terrain_util](float x, float y, float z) {
-    return terrain_util->getVoxel(x, y, z);
+auto FFI_get_voxel(std::shared_ptr<VoxelsUtil>& voxels_util) {
+  return [voxels_util](float x, float y, float z) {
+    return voxels_util->getVoxel(x, y, z);
   };
 }
 
-auto FFI_set_voxel(std::shared_ptr<TerrainUtil>& terrain_util) {
-  return [terrain_util](float x, float y, float z, uint32_t value) {
-    terrain_util->setVoxel(x, y, z, value);
+auto FFI_set_voxel(std::shared_ptr<VoxelsUtil>& voxels_util) {
+  return [voxels_util](float x, float y, float z, uint32_t value) {
+    voxels_util->setVoxel(x, y, z, value);
   };
 }
 
-auto FFI_get_ray_voxels(std::shared_ptr<TerrainUtil>& terrain_util) {
-  return [terrain_util](
+auto FFI_get_ray_voxels(std::shared_ptr<VoxelsUtil>& voxels_util) {
+  return [voxels_util](
              float start_x,
              float start_y,
              float start_z,
@@ -174,12 +174,13 @@ auto FFI_get_ray_voxels(std::shared_ptr<TerrainUtil>& terrain_util) {
              float dir_z,
              float distance) {
     std::vector<std::vector<int>> results;
-    terrain_util->marchVoxels(
+    voxels_util->marchVoxels(
         glm::vec3(start_x, start_y, start_z),
         glm::vec3(dir_x, dir_y, dir_z),
         distance,
         [&](int ix, int iy, int iz) {
           results.emplace_back(std::vector<int>{ix, iy, iz});
+          return true;
         });
     return results;
   };
@@ -221,11 +222,11 @@ class ScriptExecutor {
   ScriptExecutor(
       std::shared_ptr<Window> window,
       std::shared_ptr<Resources> resources,
-      std::shared_ptr<TerrainUtil> terrain_util,
+      std::shared_ptr<VoxelsUtil> voxels_util,
       std::shared_ptr<Stats> stats)
       : window_(window),
         resources_(resources),
-        terrain_util_(terrain_util),
+        voxels_util_(voxels_util),
         stats_(stats) {}
 
   template <typename... Args>
@@ -303,9 +304,9 @@ class ScriptExecutor {
     ctx.set("set_cursor_pos", wrapFFI(FFI_set_cursor_pos(window_)));
     ctx.set("show_cursor", wrapFFI(FFI_show_cursor(window_)));
     ctx.set("get_window_size", wrapFFI(FFI_get_window_size(window_)));
-    ctx.set("get_voxel", wrapFFI(FFI_get_voxel(terrain_util_)));
-    ctx.set("set_voxel", wrapFFI(FFI_set_voxel(terrain_util_)));
-    ctx.set("get_ray_voxels", wrapFFI(FFI_get_ray_voxels(terrain_util_)));
+    ctx.set("get_voxel", wrapFFI(FFI_get_voxel(voxels_util_)));
+    ctx.set("set_voxel", wrapFFI(FFI_set_voxel(voxels_util_)));
+    ctx.set("get_ray_voxels", wrapFFI(FFI_get_ray_voxels(voxels_util_)));
     ctx.set("create_ui_node", wrapFFI(FFI_create_ui_node(resources_)));
     ctx.set("update_ui_node", wrapFFI(FFI_update_ui_node(resources_)));
     ctx.set("delete_ui_node", wrapFFI(FFI_delete_ui_node(resources_)));
@@ -314,7 +315,7 @@ class ScriptExecutor {
 
   std::shared_ptr<Window> window_;
   std::shared_ptr<Resources> resources_;
-  std::shared_ptr<TerrainUtil> terrain_util_;
+  std::shared_ptr<VoxelsUtil> voxels_util_;
   std::shared_ptr<Stats> stats_;
 };
 
@@ -323,7 +324,7 @@ std::shared_ptr<ScriptExecutor> gen(const Registry& registry) {
   return std::make_shared<ScriptExecutor>(
       registry.get<Window>(),
       registry.get<Resources>(),
-      registry.get<TerrainUtil>(),
+      registry.get<VoxelsUtil>(),
       registry.get<Stats>());
 }
 

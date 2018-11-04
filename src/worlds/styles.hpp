@@ -54,7 +54,7 @@ struct TerrainStyleIndex {
 };
 
 struct TerrainStyles {
-  auto operator()(const Resources& resources) {
+  auto operator()(const ResourceDeps& deps) {
     std::stringstream ss;
     ss << loadFile("configs/terrain.json");
     cereal::JSONInputArchive archive(ss);
@@ -74,12 +74,12 @@ struct TerrainStylesColorMapIndex {
 };
 
 struct TerrainStylesColorMap {
-  auto operator()(const Resources& resources) {
+  auto operator()(const ResourceDeps& deps) {
     // Build the color map index.
     std::vector<std::string> color_maps;
     std::unordered_map<int64_t, int> style_index;
     std::unordered_map<std::string, int> color_map_index;
-    for (const auto& style_pair : resources.get<TerrainStyles>()->styles) {
+    for (const auto& style_pair : deps.get<TerrainStyles>()->styles) {
       const auto& color_map = style_pair.second.color_map;
       if (!color_map_index.count(color_map)) {
         color_map_index[color_map] = color_maps.size();
@@ -109,12 +109,12 @@ struct TerrainStylesNormalMapIndex {
 };
 
 struct TerrainStylesNormalMap {
-  auto operator()(const Resources& resources) {
+  auto operator()(const ResourceDeps& deps) {
     // Build the normal map index.
     std::vector<std::string> normal_maps;
     std::unordered_map<int64_t, int> style_index;
     std::unordered_map<std::string, int> normal_map_index;
-    for (const auto& style_pair : resources.get<TerrainStyles>()->styles) {
+    for (const auto& style_pair : deps.get<TerrainStyles>()->styles) {
       const auto& normal_map = style_pair.second.normal_map;
       if (!normal_map_index.count(normal_map)) {
         normal_map_index[normal_map] = normal_maps.size();

@@ -28,6 +28,15 @@ cc_binary(
 )
 
 cc_binary(
+  name = "concurrency_test",
+  srcs = ["concurrency_test.cpp"],
+  deps = [
+    "//src/common:lib",
+    "//third_party:lib",
+  ],
+)
+
+cc_binary(
   name = "hello_world",
   srcs = ["hello_world.cpp"],
   deps = [

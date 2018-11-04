@@ -29,6 +29,7 @@ in vec3 _light;
 in vec3 _eye;
 in vec3 _color;
 in vec2 _tex_coord;
+in float _occlusion; 
 in float _depth; 
 in float _color_layer; 
 in float _normal_layer; 
@@ -71,9 +72,9 @@ void main() {
   vec3 halfv = normalize(0.5 * (_eye + _light));
 
   // Compute lighting components.
-  vec3 A = getAmbientComponent(t_occlusion);
-  vec3 D = getDiffuseComponent(normal, light);
-  vec3 S = getSpecularComponent(normal, light, halfv);
+  vec3 A = _occlusion * getAmbientComponent(t_occlusion);
+  vec3 D = _occlusion * getDiffuseComponent(normal, light);
+  vec3 S = _occlusion * getSpecularComponent(normal, light, halfv);
 
   // Compute the pixel color.
   color = vec4(applyFog(_color * t_color * (A + D) + S, _depth), 1.0);

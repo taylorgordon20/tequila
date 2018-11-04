@@ -182,8 +182,7 @@ Mesh MeshBuilder::build() {
     mesh_data.block(offset, 0, tex_coords_.rows(), cols) = tex_coords_;
     offset += tex_coords_.rows();
   }
-  return Mesh(
-      std::move(mesh_data), std::move(attributes), std::move(transform_));
+  return Mesh(std::move(mesh_data), std::move(attributes), transform_);
 }
 
 }  // namespace tequila

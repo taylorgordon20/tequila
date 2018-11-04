@@ -31,6 +31,7 @@ class VoxelArray {
 
   // Returns the coordinates of each surface voxel.
   std::vector<std::tuple<int, int, int>> surfaceVoxels() const;
+  std::vector<std::tuple<int, int, int>> surfaceVertices() const;
 
   size_t size() const;
 

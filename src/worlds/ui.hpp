@@ -17,7 +17,7 @@
 namespace tequila {
 
 struct UIShader {
-  auto operator()(const Resources& resources) {
+  auto operator()(const ResourceDeps& deps) {
     return std::make_shared<ShaderProgram>(std::vector<ShaderSource>{
         makeVertexShader(loadFile("shaders/ui.vert.glsl")),
         makeFragmentShader(loadFile("shaders/ui.frag.glsl")),
@@ -27,7 +27,7 @@ struct UIShader {
 
 struct UIFont {
   auto operator()(
-      const Resources& resources, const std::string& style, size_t size) {
+      const ResourceDeps& deps, const std::string& style, size_t size) {
     return std::make_shared<Font>(format("fonts/%1%.ttf", style), size);
   }
 };
@@ -52,8 +52,8 @@ struct RectNode {
 
 // Builds the ready-to-render format of a rect node.
 struct WorldRectNode {
-  auto operator()(const Resources& resources, const std::string& id) {
-    const auto& ui_node = resources.get<WorldUI>()->nodes.at(id);
+  auto operator()(const ResourceDeps& deps, const std::string& id) {
+    const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
@@ -86,8 +86,8 @@ struct WorldRectNode {
 // A resource to index the IDs of all "rect" nodes.
 struct WorldRectNodes {
   std::shared_ptr<std::vector<std::string>> operator()(
-      const Resources& resources) {
-    auto ui = resources.get<WorldUI>();
+      const ResourceDeps& deps) {
+    auto ui = deps.get<WorldUI>();
     auto ret = std::make_shared<std::vector<std::string>>();
     for (const auto& pair : ui->nodes) {
       if (pair.second.kind == "rect") {
@@ -126,8 +126,8 @@ std::shared_ptr<RectUIRenderer> gen(const Registry& registry) {
 
 // Builds the ready-to-render format of a text node.
 struct WorldTextNode {
-  auto operator()(const Resources& resources, const std::string& id) {
-    const auto& ui_node = resources.get<WorldUI>()->nodes.at(id);
+  auto operator()(const ResourceDeps& deps, const std::string& id) {
+    const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
@@ -137,7 +137,7 @@ struct WorldTextNode {
     auto text = get_or(ui_node.attr, "text", "");
 
     // Build the text mesh.
-    auto node = resources.get<UIFont>(font, size)->buildText(text);
+    auto node = deps.get<UIFont>(font, size)->buildText(text);
     node.mesh.transform() = glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z));
 
     // Parse out the text's color.
@@ -155,8 +155,8 @@ struct WorldTextNode {
 // A resource to index the IDs of all "text" nodes.
 struct WorldTextNodes {
   std::shared_ptr<std::vector<std::string>> operator()(
-      const Resources& resources) {
-    auto ui = resources.get<WorldUI>();
+      const ResourceDeps& deps) {
+    auto ui = deps.get<WorldUI>();
     auto ret = std::make_shared<std::vector<std::string>>();
     for (const auto& pair : ui->nodes) {
       if (pair.second.kind == "text") {
@@ -220,8 +220,8 @@ struct StyleNode {
 
 // Builds the ready-to-render format of a style node.
 struct WorldStyleNode {
-  auto operator()(const Resources& resources, const std::string& id) {
-    const auto& ui_node = resources.get<WorldUI>()->nodes.at(id);
+  auto operator()(const ResourceDeps& deps, const std::string& id) {
+    const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
@@ -231,9 +231,9 @@ struct WorldStyleNode {
     auto rgba = to<uint32_t>(get_or(ui_node.attr, "color", "0"));
 
     // Parse out the style data.
-    const auto& styles = resources.get<TerrainStyles>()->styles;
-    auto color_maps = resources.get<TerrainStylesColorMap>();
-    auto normal_maps = resources.get<TerrainStylesNormalMap>();
+    const auto& styles = deps.get<TerrainStyles>()->styles;
+    auto color_maps = deps.get<TerrainStylesColorMap>();
+    auto normal_maps = deps.get<TerrainStylesNormalMap>();
 
     // Parse out the rect's geometry.
     Eigen::Matrix<float, 3, 6> positions;
@@ -270,8 +270,8 @@ struct WorldStyleNode {
 // A resource to index the IDs of all "style" nodes.
 struct WorldStyleNodes {
   std::shared_ptr<std::vector<std::string>> operator()(
-      const Resources& resources) {
-    auto ui = resources.get<WorldUI>();
+      const ResourceDeps& deps) {
+    auto ui = deps.get<WorldUI>();
     auto ret = std::make_shared<std::vector<std::string>>();
     for (const auto& pair : ui->nodes) {
       if (pair.second.kind == "style") {
