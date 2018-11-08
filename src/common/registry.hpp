@@ -77,7 +77,7 @@ class Registry {
     try {
       auto provider = providers_.at(instanceKey<InstanceType>()).get();
       return static_cast<Provider<InstanceType>*>(provider)->get(*this);
-    } catch (const std::exception& e) {
+    } catch (...) {
       throwInstanceError<InstanceType>("Unbound registry key");
       return nullptr;
     }

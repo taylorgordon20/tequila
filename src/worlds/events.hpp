@@ -76,7 +76,7 @@ class EventHandler {
 };
 
 template <>
-std::shared_ptr<EventHandler> gen(const Registry& registry) {
+inline std::shared_ptr<EventHandler> gen(const Registry& registry) {
   return std::make_shared<EventHandler>(
       registry.get<Window>(),
       registry.get<ScriptExecutor>(),

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+#include <string>
+
 #include "src/common/strings.hpp"
 
 namespace tequila {
@@ -8,6 +11,8 @@ template <typename StringType, typename... Args>
 [[noreturn]] inline void throwError(StringType fmt, Args&&... args) {
   throw std::runtime_error(format(fmt, std::forward<Args>(args)...).c_str());
 }
+
+void logError(const std::string& message);
 
 #define __ENFORCE_1(cond)                                                \
   if (!(cond)) {                                                         \
@@ -31,10 +36,9 @@ template <typename StringType, typename... Args>
   __MSVC_EXPAND(     \
       __WHICH_ENFORCE(__VA_ARGS__, __ENFORCE_2, __ENFORCE_1)(__VA_ARGS__))
 
-#define LOGV(expr) std::cout << #expr << "=" << (expr) << std::endl;
-
 #define LOG_ERROR(msg) \
-  std::cout << "ERROR[" << __FILE__ << ":" << __LINE__ << "]: " \
-            << (msg) << std::endl;
+  logError(concat("ERROR[", __FILE__, ":", __LINE__, "]: ", msg));
+
+#define LOGV(expr) LOG_ERROR(concat(#expr, "=", expr));
 
 }  // namespace tequila

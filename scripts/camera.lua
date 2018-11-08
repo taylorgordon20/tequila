@@ -201,11 +201,15 @@ function module:on_update(dt)
     -- Update the camera orientation based on cursor movement.
     local speed = 0.1 * dt
     local theta, phi = table.unpack(orientation_angles)
-    orientation_angles = {
-      theta + speed * math.floor(0.5 * ww - mx),
-      clamp(phi + speed * math.floor(0.5 * wh - my), -0.48 * PI, 0.48 * PI),
-    }
-    self:update_camera_view()
+    local delta_x = math.floor(0.5 * ww - mx)
+    local delta_y = math.floor(0.5 * wh - my)
+    if math.abs(delta_x) > 0 or math.abs(delta_y) > 0 then
+      orientation_angles = {
+        theta + speed * delta_x,
+        clamp(phi + speed * delta_y, -0.48 * PI, 0.48 * PI),
+      }
+      self:update_camera_view()
+    end
 
     -- Reset the cursor back to the center of the screen.
     set_cursor_pos(0.5 * ww, 0.5 * wh)

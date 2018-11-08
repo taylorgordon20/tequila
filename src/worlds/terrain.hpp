@@ -21,6 +21,7 @@
 #include "src/common/voxels.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/lights.hpp"
+#include "src/worlds/opengl.hpp"
 #include "src/worlds/styles.hpp"
 #include "src/worlds/terrain.hpp"
 #include "src/worlds/voxels.hpp"
@@ -129,60 +130,9 @@ inline auto terrainSliceVertexOffsets(TerrainSliceDir dir) {
 using TerrainSliceKey = std::tuple<int64_t, TerrainSliceDir>;
 using TerrainSliceFace = std::tuple<int, int, int, int64_t>;
 
-// Generates the keys of the terrain slices that should be rendered.
-struct TerrainSliceKeys {
-  auto operator()(const ResourceDeps& deps) {
-    auto octree = deps.get<WorldOctree>();
-
-    // Compute the depth of the voxel arrays.
-    // TODO: Move this into an offline terrain config computation.
-    auto voxel_level = 0;
-    octree->search([&](int64_t cell) {
-      auto voxel_keys = deps.get<VoxelKeys>(cell);
-      ENFORCE(voxel_keys->size() >= 1);
-      if (voxel_keys->size() == 1) {
-        voxel_level = octree->cellLevel(cell);
-        return false;
-      }
-      return true;
-    });
-
-    // Compute all visible cells at the level of the voxel arrays.
-    std::unordered_set<int64_t> voxel_cells;
-    auto cells = *deps.get<VisibleCells>();
-    for (int i = 0; i < cells.size(); i += 1) {
-      auto cell = cells.at(i);
-      if (octree->cellLevel(cell) < voxel_level) {
-        for (int j = 0; j < 8; j += 1) {
-          cells.push_back(8 * cell + 1 + j);
-        }
-      } else if (octree->cellLevel(cell) > voxel_level) {
-        cells.push_back(octree->cellParent(cell));
-      } else {
-        voxel_cells.insert(cell);
-      }
-    }
-
-    // Output all relevant slices for the given cells.
-    // TODO: Do back-face culling of slices here.
-    // auto camera = resources.get<WorldCamera>();
-    auto ret = std::make_shared<std::vector<TerrainSliceKey>>();
-    for (auto cell : voxel_cells) {
-      // auto [x0, y0, z0, x1, y1, z1] = octree->cellBox(cell);
-      ret->emplace_back(cell, LEFT);
-      ret->emplace_back(cell, RIGHT);
-      ret->emplace_back(cell, DOWN);
-      ret->emplace_back(cell, UP);
-      ret->emplace_back(cell, BACK);
-      ret->emplace_back(cell, FRONT);
-    }
-    return ret;
-  }
-};
-
 // Maps a terrain slice to its corresponding voxel array.
 struct TerrainSliceVoxels {
-  auto operator()(const ResourceDeps& deps, int64_t cell) {
+  auto operator()(ResourceDeps& deps, int64_t cell) {
     auto voxel_keys = deps.get<VoxelKeys>(cell);
     ENFORCE(voxel_keys->size() == 1);
     return deps.get<Voxels>(voxel_keys->front());
@@ -191,7 +141,7 @@ struct TerrainSliceVoxels {
 
 // Maps a terrain slice to its corresponding surface voxel array.
 struct TerrainSliceSurfaceVoxels {
-  auto operator()(const ResourceDeps& deps, int64_t cell) {
+  auto operator()(ResourceDeps& deps, int64_t cell) {
     auto voxel_keys = deps.get<VoxelKeys>(cell);
     ENFORCE(voxel_keys->size() == 1);
     return deps.get<SurfaceVoxels>(voxel_keys->front());
@@ -200,7 +150,7 @@ struct TerrainSliceSurfaceVoxels {
 
 // Maps a terrain slice to its corresponding light map.
 struct TerrainSliceVertexLights {
-  auto operator()(const ResourceDeps& deps, int64_t cell) {
+  auto operator()(ResourceDeps& deps, int64_t cell) {
     auto voxel_keys = deps.get<VoxelKeys>(cell);
     ENFORCE(voxel_keys->size() == 1);
     return deps.get<VertexLights>(voxel_keys->front());
@@ -209,7 +159,9 @@ struct TerrainSliceVertexLights {
 
 // Computes all faces.
 struct TerrainSliceFaces {
-  auto operator()(const ResourceDeps& deps, TerrainSliceKey key) {
+  auto operator()(ResourceDeps& deps, TerrainSliceKey key) {
+    WORLD_TIMER(deps, "terrain_slice_faces");
+
     auto cell = std::get<0>(key);
     auto sdir = std::get<1>(key);
 
@@ -233,6 +185,7 @@ struct TerrainSliceFaces {
         faces->emplace_back(x0 + x, y0 + y, z0 + z, voxels->get(x, y, z));
       }
     }
+
     return faces;
   }
 };
@@ -270,14 +223,14 @@ struct TerrainSliceData {
 
 // Creates the mesh of a terrain slice at a given size.
 struct TerrainSlice {
-  auto operator()(const ResourceDeps& deps, TerrainSliceKey key) {
+  auto operator()(ResourceDeps& deps, TerrainSliceKey key) {
     // Load the faces for this slice.
     auto faces = deps.get<TerrainSliceFaces>(key);
     if (faces->empty()) {
-      return std::shared_ptr<TerrainSliceData>(nullptr);
+      return std::shared_ptr<TerrainSliceData>();
     }
 
-    RESOURCE_TIMER(deps, "terrain_slice");
+    WORLD_TIMER(deps, "terrain_slice");
 
     // Look up the texture maps for this face since we need to specify
     // vertex attributes to point each face to its corresponding texture
@@ -357,10 +310,9 @@ struct TerrainSlice {
       lights(0, 6 * i + 5) = light_00.global_occlusion;
 
       // Texture map layer indices.
-      // HACK: These indices are inappropriately shoved into texture
-      // coords.
-      // TODO: Refactor mesh library into vertex buffer wrapper that
-      // supports arbitrarily packed and typed vertex attributes.
+      // HACK: These indices are inappropriately shoved into texture coords.
+      // TODO: Refactor mesh library into vertex buffer wrapper that supports
+      // arbitrarily packed and typed vertex attributes.
       auto color_index = get_or(color_maps->index, style, 0);
       auto normal_index = get_or(normal_maps->index, style, 0);
       indices.row(0).segment(6 * i, 6) = color_index * ones_row;
@@ -368,26 +320,110 @@ struct TerrainSlice {
     }
 
     // Set the final slice data.
-    return std::make_shared<TerrainSliceData>(
-        MeshBuilder()
-            .setPositions(std::move(positions))
-            .setColors(std::move(colors))
-            .setTexCoords(std::move(indices))
-            .setNormals(std::move(lights))
-            .build(),
-        std::move(nor),
-        std::move(tan),
-        std::move(cot),
-        color_maps->texture_array,
-        normal_maps->texture_array);
+    // NOTE: We need to execute this within the OpenGL context.
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new TerrainSliceData(
+          MeshBuilder()
+              .setPositions(std::move(positions))
+              .setColors(std::move(colors))
+              .setTexCoords(std::move(indices))
+              .setNormals(std::move(lights))
+              .build(),
+          std::move(nor),
+          std::move(tan),
+          std::move(cot),
+          color_maps->texture_array,
+          normal_maps->texture_array);
+    });
+  }
+};
+
+struct TerrainShardData {
+  std::vector<std::shared_ptr<TerrainSliceData>> slices;
+};
+
+// A collection of terrain slices to render. It's important to aggregate slices
+// into a shard so that we can cull slices facing away from the camera and to
+// ensure that all slices within a shard display updates atomically.
+struct TerrainShard {
+  auto operator()(ResourceDeps& deps, int64_t key) {
+    WORLD_TIMER(deps, "terrain_shard");
+
+    // Output all relevant slices for the given shard.
+    // TODO: Do back-face culling of slices here.
+    auto ret = std::make_shared<TerrainShardData>();
+    if (auto slice = deps.get<TerrainSlice>(TerrainSliceKey(key, LEFT))) {
+      ret->slices.push_back(slice);
+    }
+    if (auto slice = deps.get<TerrainSlice>(TerrainSliceKey(key, RIGHT))) {
+      ret->slices.push_back(slice);
+    }
+    if (auto slice = deps.get<TerrainSlice>(TerrainSliceKey(key, DOWN))) {
+      ret->slices.push_back(slice);
+    }
+    if (auto slice = deps.get<TerrainSlice>(TerrainSliceKey(key, UP))) {
+      ret->slices.push_back(slice);
+    }
+    if (auto slice = deps.get<TerrainSlice>(TerrainSliceKey(key, BACK))) {
+      ret->slices.push_back(slice);
+    }
+    if (auto slice = deps.get<TerrainSlice>(TerrainSliceKey(key, FRONT))) {
+      ret->slices.push_back(slice);
+    }
+    return ret;
+  }
+};
+
+// Returns the keys for the terrain shards that should be rendered.
+struct TerrainShardKeys {
+  auto operator()(ResourceDeps& deps) {
+    WORLD_TIMER(deps, "terrain_shard_keys");
+
+    auto octree = deps.get<WorldOctree>();
+
+    // Compute the depth of the voxel arrays.
+    // TODO: Move this into an offline terrain config computation.
+    auto voxel_level = 0;
+    octree->search([&](int64_t cell) {
+      auto voxel_keys = deps.get<VoxelKeys>(cell);
+      ENFORCE(voxel_keys->size() >= 1);
+      if (voxel_keys->size() == 1) {
+        voxel_level = octree->cellLevel(cell);
+        return false;
+      }
+      return true;
+    });
+
+    // Compute all visible cells at the level of the voxel arrays.
+    std::unordered_set<int64_t> voxel_cells;
+    auto cells = *deps.get<VisibleCells>();
+    for (int i = 0; i < cells.size(); i += 1) {
+      auto cell = cells.at(i);
+      if (octree->cellLevel(cell) < voxel_level) {
+        for (int j = 0; j < 8; j += 1) {
+          cells.push_back(8 * cell + 1 + j);
+        }
+      } else if (octree->cellLevel(cell) > voxel_level) {
+        cells.push_back(octree->cellParent(cell));
+      } else {
+        voxel_cells.insert(cell);
+      }
+    }
+
+    // Return the octree cell keys identifying each terrain shard.
+    auto ret = std::make_shared<std::vector<uint64_t>>();
+    ret->insert(ret->end(), voxel_cells.begin(), voxel_cells.end());
+    return ret;
   }
 };
 
 struct TerrainShader {
-  auto operator()(const ResourceDeps& deps) {
-    return std::make_shared<ShaderProgram>(std::vector<ShaderSource>{
-        makeVertexShader(loadFile("shaders/terrain.vert.glsl")),
-        makeFragmentShader(loadFile("shaders/terrain.frag.glsl")),
+  auto operator()(ResourceDeps& deps) {
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new ShaderProgram(std::vector<ShaderSource>{
+          makeVertexShader(loadFile("shaders/terrain.vert.glsl")),
+          makeFragmentShader(loadFile("shaders/terrain.frag.glsl")),
+      });
     });
   }
 };
@@ -395,14 +431,15 @@ struct TerrainShader {
 class TerrainRenderer {
  public:
   TerrainRenderer(
-      std::shared_ptr<Resources> resources, std::shared_ptr<Stats> stats)
-      : resources_(resources), stats_(stats) {}
+      std::shared_ptr<Resources> resources,
+      std::shared_ptr<AsyncResources> async_resources,
+      std::shared_ptr<Stats> stats)
+      : resources_(resources),
+        async_resources_(async_resources),
+        stats_(stats) {}
 
   void draw() const {
     StatsUpdate stats(stats_);
-    Timer timer("render_terrain", [&](const std::string& msg, double duration) {
-      stats[msg] = duration;
-    });
 
     // Fetch globals needed to render terrain.
     auto light = resources_->get<WorldLight>();
@@ -410,50 +447,59 @@ class TerrainRenderer {
     auto shader = resources_->get<TerrainShader>();
 
     shader->run([&] {
+      // Configure OpenGL pipeline state.
+      gl::glEnable(gl::GL_DEPTH_TEST);
+      Finally finally([&] { gl::glDisable(gl::GL_DEPTH_TEST); });
+
+      // Set scene uniforms.
       shader->uniform("light", *light);
       shader->uniform("projection_matrix", camera->projectionMatrix());
 
-      // Remder the terrain slices visible to the currewnt camera.
-      auto slice_keys = resources_->get<TerrainSliceKeys>();
-      for (const auto& key : *slice_keys) {
-        auto slice = resources_->get<TerrainSlice>(key);
-        if (!slice) {
+      // Render the terrain slices visible to the current camera.
+      auto shard_keys = resources_->get<TerrainShardKeys>();
+      for (auto key : *shard_keys) {
+        auto shard_opt = async_resources_->get_opt<TerrainShard>(key);
+        if (!shard_opt) {
           continue;
         }
 
-        // Define geometric uniforms.
-        shader->uniform("modelview_matrix", slice->modelViewMatrix(*camera));
-        shader->uniform("normal_matrix", slice->normalMatrix(*camera));
-        shader->uniform("slice_normal", slice->normal);
-        shader->uniform("slice_tangent", slice->tangent);
-        shader->uniform("slice_cotangent", slice->cotangent);
+        for (auto slice : shard_opt.get()->slices) {
+          // Set geometry uniforms.
+          shader->uniform("modelview_matrix", slice->modelViewMatrix(*camera));
+          shader->uniform("normal_matrix", slice->normalMatrix(*camera));
+          shader->uniform("slice_normal", slice->normal);
+          shader->uniform("slice_tangent", slice->tangent);
+          shader->uniform("slice_cotangent", slice->cotangent);
 
-        // Define texture uniforms.
-        TextureArrayBinding color_map(*slice->color_map, 0);
-        TextureArrayBinding normal_map(*slice->normal_map, 1);
-        shader->uniform("color_map", color_map.location());
-        shader->uniform("normal_map", normal_map.location());
+          // Set texture uniforms.
+          TextureArrayBinding color_map(*slice->color_map, 0);
+          TextureArrayBinding normal_map(*slice->normal_map, 1);
+          shader->uniform("color_map", color_map.location());
+          shader->uniform("normal_map", normal_map.location());
 
-        // Draw the mesh.
-        gl::glEnable(gl::GL_DEPTH_TEST);
-        slice->mesh.draw(*shader);
-        gl::glDisable(gl::GL_DEPTH_TEST);
+          // Draw the mesh.
+          slice->mesh.draw(*shader);
 
-        // Update stats.
-        stats["slices_count"] += 1;
+          // Update stats.
+          stats["terrain_slices_count"] += 1;
+        }
+        stats["terrain_shards_count"] += 1;
       }
     });
   }
 
  private:
   std::shared_ptr<Resources> resources_;
+  std::shared_ptr<AsyncResources> async_resources_;
   std::shared_ptr<Stats> stats_;
 };
 
 template <>
-std::shared_ptr<TerrainRenderer> gen(const Registry& registry) {
+inline std::shared_ptr<TerrainRenderer> gen(const Registry& registry) {
   return std::make_shared<TerrainRenderer>(
-      registry.get<Resources>(), registry.get<Stats>());
+      registry.get<Resources>(),
+      registry.get<AsyncResources>(),
+      registry.get<Stats>());
 }
 
 }  // namespace tequila

@@ -17,17 +17,18 @@
 namespace tequila {
 
 struct UIShader {
-  auto operator()(const ResourceDeps& deps) {
-    return std::make_shared<ShaderProgram>(std::vector<ShaderSource>{
-        makeVertexShader(loadFile("shaders/ui.vert.glsl")),
-        makeFragmentShader(loadFile("shaders/ui.frag.glsl")),
+  auto operator()(ResourceDeps& deps) {
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new ShaderProgram(std::vector<ShaderSource>{
+          makeVertexShader(loadFile("shaders/ui.vert.glsl")),
+          makeFragmentShader(loadFile("shaders/ui.frag.glsl")),
+      });
     });
   }
 };
 
 struct UIFont {
-  auto operator()(
-      const ResourceDeps& deps, const std::string& style, size_t size) {
+  auto operator()(ResourceDeps& deps, const std::string& style, size_t size) {
     return std::make_shared<Font>(format("fonts/%1%.ttf", style), size);
   }
 };
@@ -52,7 +53,7 @@ struct RectNode {
 
 // Builds the ready-to-render format of a rect node.
 struct WorldRectNode {
-  auto operator()(const ResourceDeps& deps, const std::string& id) {
+  auto operator()(ResourceDeps& deps, const std::string& id) {
     const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
@@ -74,19 +75,20 @@ struct WorldRectNode {
         (rgba >> 8 & 0xFF) / 255.0f,
         (rgba & 0xFF) / 255.0f);
 
-    return std::make_shared<RectNode>(
-        MeshBuilder()
-            .setPositions(std::move(positions))
-            .setTransform(glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z)))
-            .build(),
-        std::move(color));
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new RectNode(
+          MeshBuilder()
+              .setPositions(std::move(positions))
+              .setTransform(glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z)))
+              .build(),
+          std::move(color));
+    });
   }
 };
 
 // A resource to index the IDs of all "rect" nodes.
 struct WorldRectNodes {
-  std::shared_ptr<std::vector<std::string>> operator()(
-      const ResourceDeps& deps) {
+  std::shared_ptr<std::vector<std::string>> operator()(ResourceDeps& deps) {
     auto ui = deps.get<WorldUI>();
     auto ret = std::make_shared<std::vector<std::string>>();
     for (const auto& pair : ui->nodes) {
@@ -100,33 +102,39 @@ struct WorldRectNodes {
 
 class RectUIRenderer {
  public:
-  RectUIRenderer(std::shared_ptr<Resources> resources)
+  RectUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
   void draw(ShaderProgram& shader) {
-    auto node_ids = resources_->get<WorldRectNodes>();
-    for (const auto& node_id : *node_ids) {
-      auto rect = resources_->get<WorldRectNode>(node_id);
+    auto node_ids = resources_->get_opt<WorldRectNodes>();
+    if (!node_ids) {
+      return;
+    }
+    for (const auto& node_id : *node_ids.get()) {
+      auto rect = resources_->get_opt<WorldRectNode>(node_id);
+      if (!rect) {
+        continue;
+      }
       shader.uniform("use_color_map", false);
       shader.uniform("use_color_map_array", false);
       shader.uniform("use_normal_map_array", false);
-      shader.uniform("model_matrix", rect->mesh.transform());
-      shader.uniform("base_color", rect->color);
-      rect->mesh.draw(shader);
+      shader.uniform("model_matrix", rect.get()->mesh.transform());
+      shader.uniform("base_color", rect.get()->color);
+      rect.get()->mesh.draw(shader);
     }
   }
 
  private:
-  std::shared_ptr<Resources> resources_;
+  std::shared_ptr<AsyncResources> resources_;
 };
 
 template <>
 std::shared_ptr<RectUIRenderer> gen(const Registry& registry) {
-  return std::make_shared<RectUIRenderer>(registry.get<Resources>());
+  return std::make_shared<RectUIRenderer>(registry.get<AsyncResources>());
 }
 
 // Builds the ready-to-render format of a text node.
 struct WorldTextNode {
-  auto operator()(const ResourceDeps& deps, const std::string& id) {
+  auto operator()(ResourceDeps& deps, const std::string& id) {
     const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
@@ -136,10 +144,6 @@ struct WorldTextNode {
     auto font = get_or(ui_node.attr, "font", "Roboto/Roboto-Regular");
     auto text = get_or(ui_node.attr, "text", "");
 
-    // Build the text mesh.
-    auto node = deps.get<UIFont>(font, size)->buildText(text);
-    node.mesh.transform() = glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z));
-
     // Parse out the text's color.
     auto color = glm::vec4(
         (rgba >> 24 & 0xFF) / 255.0f,
@@ -147,15 +151,20 @@ struct WorldTextNode {
         (rgba >> 8 & 0xFF) / 255.0f,
         (rgba & 0xFF) / 255.0f);
 
-    return std::make_shared<Text>(
-        std::move(node.mesh), std::move(node.texture), std::move(color));
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      // Build the text mesh.
+      auto node = deps.get<UIFont>(font, size)->buildText(text);
+      node.mesh.transform() =
+          glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z));
+      return new Text(
+          std::move(node.mesh), std::move(node.texture), std::move(color));
+    });
   }
 };
 
 // A resource to index the IDs of all "text" nodes.
 struct WorldTextNodes {
-  std::shared_ptr<std::vector<std::string>> operator()(
-      const ResourceDeps& deps) {
+  std::shared_ptr<std::vector<std::string>> operator()(ResourceDeps& deps) {
     auto ui = deps.get<WorldUI>();
     auto ret = std::make_shared<std::vector<std::string>>();
     for (const auto& pair : ui->nodes) {
@@ -169,30 +178,36 @@ struct WorldTextNodes {
 
 class TextUIRenderer {
  public:
-  TextUIRenderer(std::shared_ptr<Resources> resources)
+  TextUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
   void draw(ShaderProgram& shader) {
-    auto node_ids = resources_->get<WorldTextNodes>();
-    for (const auto& node_id : *node_ids) {
-      auto text = resources_->get<WorldTextNode>(node_id);
-      TextureBinding tb(*text->texture, 0);
+    auto node_ids = resources_->get_opt<WorldTextNodes>();
+    if (!node_ids) {
+      return;
+    }
+    for (const auto& node_id : *node_ids.get()) {
+      auto text = resources_->get_opt<WorldTextNode>(node_id);
+      if (!text) {
+        continue;
+      }
+      TextureBinding tb(*text.get()->texture, 0);
       shader.uniform("color_map", tb.location());
       shader.uniform("use_color_map", true);
       shader.uniform("use_color_map_array", false);
       shader.uniform("use_normal_map_array", false);
-      shader.uniform("model_matrix", text->mesh.transform());
-      shader.uniform("base_color", text->color);
-      text->mesh.draw(shader);
+      shader.uniform("model_matrix", text.get()->mesh.transform());
+      shader.uniform("base_color", text.get()->color);
+      text.get()->mesh.draw(shader);
     }
   }
 
  private:
-  std::shared_ptr<Resources> resources_;
+  std::shared_ptr<AsyncResources> resources_;
 };
 
 template <>
-std::shared_ptr<TextUIRenderer> gen(const Registry& registry) {
-  return std::make_shared<TextUIRenderer>(registry.get<Resources>());
+inline std::shared_ptr<TextUIRenderer> gen(const Registry& registry) {
+  return std::make_shared<TextUIRenderer>(registry.get<AsyncResources>());
 }
 
 struct StyleNode {
@@ -220,7 +235,7 @@ struct StyleNode {
 
 // Builds the ready-to-render format of a style node.
 struct WorldStyleNode {
-  auto operator()(const ResourceDeps& deps, const std::string& id) {
+  auto operator()(ResourceDeps& deps, const std::string& id) {
     const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
@@ -253,24 +268,25 @@ struct WorldStyleNode {
     tex_coords.row(0) << 0, 1, 1, 1, 0, 0;
     tex_coords.row(1) << 0, 0, 1, 1, 1, 0;
 
-    return std::make_shared<StyleNode>(
-        MeshBuilder()
-            .setPositions(std::move(positions))
-            .setTexCoords(std::move(tex_coords))
-            .setTransform(glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z)))
-            .build(),
-        std::move(color),
-        color_maps->index.at(style),
-        normal_maps->index.at(style),
-        color_maps->texture_array,
-        normal_maps->texture_array);
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new StyleNode(
+          MeshBuilder()
+              .setPositions(std::move(positions))
+              .setTexCoords(std::move(tex_coords))
+              .setTransform(glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z)))
+              .build(),
+          std::move(color),
+          color_maps->index.at(style),
+          normal_maps->index.at(style),
+          color_maps->texture_array,
+          normal_maps->texture_array);
+    });
   }
 };
 
 // A resource to index the IDs of all "style" nodes.
 struct WorldStyleNodes {
-  std::shared_ptr<std::vector<std::string>> operator()(
-      const ResourceDeps& deps) {
+  std::shared_ptr<std::vector<std::string>> operator()(ResourceDeps& deps) {
     auto ui = deps.get<WorldUI>();
     auto ret = std::make_shared<std::vector<std::string>>();
     for (const auto& pair : ui->nodes) {
@@ -284,34 +300,39 @@ struct WorldStyleNodes {
 
 class StyleUIRenderer {
  public:
-  StyleUIRenderer(std::shared_ptr<Resources> resources)
+  StyleUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
   void draw(ShaderProgram& shader) {
-    auto node_ids = resources_->get<WorldStyleNodes>();
-    for (const auto& node_id : *node_ids) {
-      auto node = resources_->get<WorldStyleNode>(node_id);
-      TextureArrayBinding color_map_array(*node->color_map, 0);
-      TextureArrayBinding normal_map_array(*node->normal_map, 1);
-      shader.uniform("use_color_map", false);
-      shader.uniform("use_color_map_array", true);
-      shader.uniform("use_normal_map_array", true);
-      shader.uniform("color_map_array", color_map_array.location());
-      shader.uniform("color_map_array_index", node->color_map_index);
-      shader.uniform("normal_map_array", normal_map_array.location());
-      shader.uniform("normal_map_array_index", node->normal_map_index);
-      shader.uniform("base_color", node->color);
-      shader.uniform("model_matrix", node->mesh.transform());
-      node->mesh.draw(shader);
+    auto node_ids = resources_->get_opt<WorldStyleNodes>();
+    if (!node_ids) {
+      return;
+    }
+    for (const auto& node_id : *node_ids.get()) {
+      if (auto node_opt = resources_->get_opt<WorldStyleNode>(node_id)) {
+        auto node = node_opt.get();
+        TextureArrayBinding color_map_array(*node->color_map, 0);
+        TextureArrayBinding normal_map_array(*node->normal_map, 1);
+        shader.uniform("use_color_map", false);
+        shader.uniform("use_color_map_array", true);
+        shader.uniform("use_normal_map_array", true);
+        shader.uniform("color_map_array", color_map_array.location());
+        shader.uniform("color_map_array_index", node->color_map_index);
+        shader.uniform("normal_map_array", normal_map_array.location());
+        shader.uniform("normal_map_array_index", node->normal_map_index);
+        shader.uniform("base_color", node->color);
+        shader.uniform("model_matrix", node->mesh.transform());
+        node->mesh.draw(shader);
+      }
     }
   }
 
  private:
-  std::shared_ptr<Resources> resources_;
+  std::shared_ptr<AsyncResources> resources_;
 };
 
 template <>
-std::shared_ptr<StyleUIRenderer> gen(const Registry& registry) {
-  return std::make_shared<StyleUIRenderer>(registry.get<Resources>());
+inline std::shared_ptr<StyleUIRenderer> gen(const Registry& registry) {
+  return std::make_shared<StyleUIRenderer>(registry.get<AsyncResources>());
 }
 
 class UIRenderer {
@@ -356,7 +377,7 @@ class UIRenderer {
 };
 
 template <>
-std::shared_ptr<UIRenderer> gen(const Registry& registry) {
+inline std::shared_ptr<UIRenderer> gen(const Registry& registry) {
   return std::make_shared<UIRenderer>(
       registry.get<Window>(),
       registry.get<Resources>(),

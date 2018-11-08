@@ -1,13 +1,16 @@
 #pragma once
 
+#include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace tequila {
 
 class Stats {
  public:
   void set(const std::string& key, float value) {
+    std::lock_guard lock(mutex_);
     if (stats_.insert(key).second) {
       averages_[key] = value;
     } else {
@@ -16,22 +19,22 @@ class Stats {
   }
 
   bool has(const std::string& key) {
+    std::lock_guard lock(mutex_);
     return stats_.count(key);
   }
 
   float getAverage(const std::string& key) {
+    std::lock_guard lock(mutex_);
     return averages_.at(key);
   }
 
-  auto begin() const {
-    return stats_.begin();
-  };
-
-  auto end() const {
-    return stats_.end();
+  std::unordered_set<std::string> keys() {
+    std::lock_guard lock(mutex_);
+    return stats_;
   };
 
  private:
+  std::mutex mutex_;
   std::unordered_set<std::string> stats_;
   std::unordered_map<std::string, float> averages_;
 };

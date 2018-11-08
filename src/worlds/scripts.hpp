@@ -22,7 +22,7 @@ struct ScriptContext
     : SeedResource<ScriptContext, std::shared_ptr<LuaContext>> {};
 
 struct ScriptModule {
-  auto operator()(const ResourceDeps& deps, const std::string& name) {
+  auto operator()(ResourceDeps& deps, const std::string& name) {
     try {
       auto code = loadFile(format("scripts/%1%.lua", name).c_str());
       return std::make_shared<LuaModule>(*deps.get<ScriptContext>(), code);
@@ -48,7 +48,7 @@ auto FFI_get_module(std::shared_ptr<Resources>& resources) {
 }
 
 auto FFI_get_stats(std::shared_ptr<Stats>& stats) {
-  return [stats] { return join(*stats, ","); };
+  return [stats] { return joinRange(", ", stats->keys()); };
 }
 
 auto FFI_get_stat_average(std::shared_ptr<Stats>& stats) {
@@ -189,7 +189,7 @@ auto FFI_get_ray_voxels(std::shared_ptr<VoxelsUtil>& voxels_util) {
 auto FFI_create_ui_node(std::shared_ptr<Resources>& resources) {
   return [resources](std::string id, std::string kind, const sol::table& attr) {
     ResourceMutation<WorldUI> ui(*resources);
-    ENFORCE(!ui->nodes.count(id));
+    ENFORCE(!ui->nodes.count(id), concat("ID already exists: ", id));
     auto& node = ui->nodes[id];
     node.kind = std::move(kind);
     auto lua = resources->get<ScriptContext>();
@@ -320,7 +320,7 @@ class ScriptExecutor {
 };
 
 template <>
-std::shared_ptr<ScriptExecutor> gen(const Registry& registry) {
+inline std::shared_ptr<ScriptExecutor> gen(const Registry& registry) {
   return std::make_shared<ScriptExecutor>(
       registry.get<Window>(),
       registry.get<Resources>(),

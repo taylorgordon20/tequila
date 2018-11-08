@@ -8,6 +8,7 @@
 #include <string>
 
 #include "src/common/camera.hpp"
+#include "src/common/concurrency.hpp"
 #include "src/common/data.hpp"
 #include "src/common/errors.hpp"
 #include "src/common/registry.hpp"
@@ -16,7 +17,13 @@
 
 namespace tequila {
 
-struct WorldRegistry : public SeedResource<WorldRegistry, const Registry*> {};
+struct StaticContext {
+  const Registry* registry;
+};
+
+struct WorldStaticContext
+    : public SeedResource<WorldStaticContext, std::shared_ptr<StaticContext>> {
+};
 
 struct WorldName : public SeedResource<WorldName, std::string> {};
 
@@ -27,13 +34,13 @@ struct WorldLight
     : public SeedResource<WorldLight, std::shared_ptr<glm::vec3>> {};
 
 struct WorldTable {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
     return std::make_shared<Table>(deps.get<WorldName>());
   }
 };
 
 struct WorldOctree {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
     auto json_config = deps.get<WorldTable>()->getJson("octree_config");
     return std::make_shared<Octree>(
         json_config.get<size_t>("leaf_size"),
@@ -42,7 +49,7 @@ struct WorldOctree {
 };
 
 struct VisibleCells {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
     auto octree = deps.get<WorldOctree>();
     auto camera = deps.get<WorldCamera>();
     auto cells = computeVisibleCells(*camera, *octree);
@@ -51,13 +58,13 @@ struct VisibleCells {
 };
 
 // Convenience method to make it easier to get registry objects while generating
-// a resource (i.e. inside its factory).
-template <typename Type>
-inline auto registryGet(const ResourceDeps& deps) {
-  return deps.get<WorldRegistry>()->get<Type>();
+// a resource (e.g. inside its factory).
+template <typename Type, typename Resources>
+inline auto registryGet(Resources& resources) {
+  return resources.get<WorldStaticContext>()->registry->get<Type>();
 }
 
-#define RESOURCE_TIMER(deps, msg)                                       \
+#define WORLD_TIMER(deps, msg)                                          \
   StatsUpdate __stats(registryGet<Stats>(deps));                        \
   Timer __timer(msg, [&](const std::string& message, double duration) { \
     __stats[message] = duration;                                        \

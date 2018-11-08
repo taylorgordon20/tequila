@@ -27,7 +27,9 @@ struct SkyData {
 };
 
 struct SkyMap {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
+    WORLD_TIMER(deps, "sky_map");
+
     auto pixels = loadPngToTensor("images/sky_map_clouds.png");
     int h = pixels.dimension(0) / 3;
     int w = pixels.dimension(1) / 4;
@@ -45,7 +47,7 @@ struct SkyMap {
 };
 
 struct Sky {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
     static auto kPositions = [] {
       Eigen::Matrix3Xf ret(3, 6);
       ret.setZero();
@@ -59,18 +61,22 @@ struct Sky {
     const auto& light = *deps.get<WorldLight>();
     auto angle = std::atan2(-light[2], light[0]);
 
-    return std::make_shared<SkyData>(
-        MeshBuilder().setPositions(kPositions).build(),
-        deps.get<SkyMap>(),
-        glm::rotate(glm::mat4(1), angle, glm::vec3(0.0f, 1.0f, 0.0f)));
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new SkyData(
+          MeshBuilder().setPositions(kPositions).build(),
+          deps.get<SkyMap>(),
+          glm::rotate(glm::mat4(1), angle, glm::vec3(0.0f, 1.0f, 0.0f)));
+    });
   }
 };
 
 struct SkyShader {
-  auto operator()(const ResourceDeps& deps) {
-    return std::make_shared<ShaderProgram>(std::vector<ShaderSource>{
-        makeVertexShader(loadFile("shaders/sky.vert.glsl")),
-        makeFragmentShader(loadFile("shaders/sky.frag.glsl")),
+  auto operator()(ResourceDeps& deps) {
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new ShaderProgram(std::vector<ShaderSource>{
+          makeVertexShader(loadFile("shaders/sky.vert.glsl")),
+          makeFragmentShader(loadFile("shaders/sky.frag.glsl")),
+      });
     });
   }
 };
@@ -104,7 +110,7 @@ class SkyRenderer {
 };
 
 template <>
-std::shared_ptr<SkyRenderer> gen(const Registry& registry) {
+inline std::shared_ptr<SkyRenderer> gen(const Registry& registry) {
   return std::make_shared<SkyRenderer>(registry.get<Resources>());
 }
 

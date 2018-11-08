@@ -24,13 +24,12 @@ def mirror_tree(src, dst, pattern):
 
 def main():
   # Build the binary files.
-  copt = "/std:c++17" if os.name == "nt" else "-std=c++17"
   subprocess.check_call(
       [
           "bazel",
           "build",
-          "--compilation_mode=opt",
-          f"--copt={copt}",
+          "--copt=/std:c++17",
+          "--copt=/DEBUG",
           "//src:game",
       ],
       stdout = sys.stdout,
@@ -38,15 +37,15 @@ def main():
   )
 
   # Copy the files into the bin directory.
-  mirror_tree("bazel-bin/src/", "bin/", "*.exe")
-  mirror_tree("bazel-bin/src/", "bin/", "*.pdb")
-  mirror_tree("bazel-bin/src/", "bin/", "game")
-  mirror_tree("bazel-bin/src/", "bin/", "*.dll")
-  mirror_tree("bazel-bin/src/", "bin/", "scripts/*.lua")
-  mirror_tree("bazel-bin/src/", "bin/", "scripts/*.js")
-  mirror_tree("bazel-bin/src/", "bin/", "shaders/*.glsl")
-  mirror_tree("bazel-bin/src/", "bin/", "images/*.png")
-  mirror_tree("bazel-bin/src/", "bin/", "data/*.db")
+  mirror_tree("bazel-bin/src/", "dbg/", "*.exe")
+  mirror_tree("bazel-bin/src/", "dbg/", "*.pdb")
+  mirror_tree("bazel-bin/src/", "dbg/", "game")
+  mirror_tree("bazel-bin/src/", "dbg/", "*.dll")
+  mirror_tree("bazel-bin/src/", "dbg/", "scripts/*.lua")
+  mirror_tree("bazel-bin/src/", "dbg/", "scripts/*.js")
+  mirror_tree("bazel-bin/src/", "dbg/", "shaders/*.glsl")
+  mirror_tree("bazel-bin/src/", "dbg/", "images/*.png")
+  mirror_tree("bazel-bin/src/", "dbg/", "data/*.db")
 
 
 if __name__ == "__main__":

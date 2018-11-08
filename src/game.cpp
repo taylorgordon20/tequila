@@ -14,6 +14,7 @@
 #include "src/common/stats.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/events.hpp"
+#include "src/worlds/opengl.hpp"
 #include "src/worlds/scripts.hpp"
 #include "src/worlds/sky.hpp"
 #include "src/worlds/styles.hpp"
@@ -58,16 +59,31 @@ void run() {
     world_name = "octree_world";
   }
 
-  auto resources_factory = [world_name](const Registry& registry) {
+  // Define a resource to store the static registry.
+  auto static_context = std::make_shared<StaticContext>();
+
+  // Define a factory to build the global asychronous task executor.
+  auto executor_factory = [](const Registry& registry) {
+    return std::make_shared<QueueExecutor>(10);
+  };
+
+  // Define a factory to build the world resources.
+  auto resources_factory = [&](const Registry& registry) {
     return std::make_shared<Resources>(
         ResourcesBuilder()
-            .withSeed<WorldRegistry>(&registry)
             .withSeed<ScriptContext>(getScriptContext())
             .withSeed<WorldCamera>(getWorldCamera())
             .withSeed<WorldLight>(getWorldLight())
             .withSeed<WorldName>(world_name)
+            .withSeed<WorldStaticContext>(static_context)
             .withSeed<WorldUI>(getWorldUI())
             .build());
+  };
+
+  // Define a factory to build the asynchronous interface to world resources.
+  auto async_resources_factory = [world_name](const Registry& registry) {
+    return std::make_shared<AsyncResources>(
+        registry.get<Resources>(), registry.get<QueueExecutor>());
   };
 
   // Initialize game registry.
@@ -75,8 +91,11 @@ void run() {
   Registry registry =
       RegistryBuilder()
           .bind<Window>(app.makeWindow(1024, 768, "Tequila!", nullptr, nullptr))
+          .bind<AsyncResources>(async_resources_factory)
+          .bind<QueueExecutor>(executor_factory)
           .bind<Resources>(resources_factory)
           .bind<Stats>(std::make_shared<Stats>())
+          .bindToDefaultFactory<OpenGLContextExecutor>()
           .bindToDefaultFactory<EventHandler>()
           .bindToDefaultFactory<RectUIRenderer>()
           .bindToDefaultFactory<ScriptExecutor>()
@@ -88,10 +107,22 @@ void run() {
           .bindToDefaultFactory<VoxelsUtil>()
           .build();
 
+  // Update registry pointer inside resources.
+  static_context->registry = &registry;
+
   // Enter the game loop.
   std::cout << "Entering game loop." << std::endl;
   registry.get<Window>()->loop([&](float dt) {
+    // Asynchronously execute the game update loop.
+    // auto update_future = registry.get<QueueExecutor>()->schedule(
+    //    [&] { registry.get<EventHandler>()->update(dt); });
     registry.get<EventHandler>()->update(dt);
+
+    // Process OpenGL updates while waiting for the update loop to complete.
+    // spin(update_future, [&] {
+    //  registry.get<OpenGLContextExecutor>()->process();
+    //});
+    registry.get<OpenGLContextExecutor>()->process();
 
     // Render the scene to a new frame.
     gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
@@ -105,11 +136,12 @@ void run() {
 }  // namespace tequila
 
 int main() {
+  using namespace tequila;
   try {
-    tequila::run();
+    run();
     return 0;
   } catch (const std::exception& e) {
-    std::cout << "Exception: " << e.what() << std::endl;
+    LOG_ERROR(concat("Uncaught exception: ", e.what()));
     return 1;
   }
 }

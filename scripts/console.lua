@@ -115,9 +115,10 @@ function module:update_console()
       x = 0,
       y = (1 - console_size) * window_h,
       z = 1,
-      text = ">>> " .. console_text,
+      text = ">> " .. console_text,
       color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00),
       size = math.ceil(console_font * window_h),
+      font = "Roboto_Mono/RobotoMono-Regular",
     }
   )
   for i = 1, #console_logs do
@@ -131,6 +132,7 @@ function module:update_console()
         text = console_logs[i],
         color = switch(console_open, 0xFFFFFFFF, 0xFFFFFF00),
         size = math.ceil(console_font * window_h),
+        font = "Roboto_Mono/RobotoMono-Regular",
       }
     )
   end
@@ -182,7 +184,7 @@ function module:on_key(key, scancode, action, mods)
     self:update_console()
   elseif console_open and key == KEYS.enter and action == 1 then
     local command = console_text
-    self:log(">>> " .. command)
+    self:log(">> " .. command)
     history:push(command)
     console_text = ""
     self:execute_command(command)

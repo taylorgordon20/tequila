@@ -27,8 +27,27 @@ inline auto to(Args&&... args) {
   return boost::lexical_cast<Ret>(concat(std::forward<Args>(args)...));
 }
 
-template <typename Range, typename Separator>
-inline auto join(Range&& range, Separator&& separator) {
+template <typename Separator>
+inline auto join(const Separator& sep) {
+  return "";
+}
+
+template <typename Separator, typename T>
+inline auto join(const Separator& sep, T&& t) {
+  return concat(std::forward<T>(t));
+}
+
+template <typename Separator, typename T1, typename T2, typename... Args>
+inline auto join(const Separator& sep, T1&& t1, T2&& t2, Args&&... args) {
+  return join(
+      sep,
+      concat(std::forward<T1>(t1), sep),
+      std::forard<T2>(t2),
+      std::forward<Args>(args)...);
+}
+
+template <typename Separator, typename Range>
+inline auto joinRange(Separator&& separator, Range&& range) {
   std::stringstream ss;
   for (auto iter = range.begin(); iter != range.end();) {
     ss << *iter;

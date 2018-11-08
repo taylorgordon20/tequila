@@ -19,7 +19,7 @@
 namespace tequila {
 
 struct VoxelKeys {
-  auto operator()(const ResourceDeps& deps, int64_t cell) {
+  auto operator()(ResourceDeps& deps, int64_t cell) {
     auto world_db = deps.get<WorldTable>();
     auto json = world_db->getJson(format("cell_config/%1%/voxels", cell));
     return std::make_shared<std::vector<std::string>>(
@@ -28,7 +28,7 @@ struct VoxelKeys {
 };
 
 struct Voxels {
-  auto operator()(const ResourceDeps& deps, const std::string& voxel_key) {
+  auto operator()(ResourceDeps& deps, const std::string& voxel_key) {
     auto world_db = deps.get<WorldTable>();
     return std::make_shared<VoxelArray>(
         world_db->getObject<VoxelArray>(voxel_key));
@@ -36,7 +36,7 @@ struct Voxels {
 };
 
 struct SurfaceVoxels {
-  auto operator()(const ResourceDeps& deps, const std::string& voxel_key) {
+  auto operator()(ResourceDeps& deps, const std::string& voxel_key) {
     auto voxels = deps.get<Voxels>(voxel_key);
     using SurfaceVoxels = decltype(voxels->surfaceVoxels());
     return std::make_shared<SurfaceVoxels>(voxels->surfaceVoxels());
@@ -44,7 +44,7 @@ struct SurfaceVoxels {
 };
 
 struct SurfaceVertices {
-  auto operator()(const ResourceDeps& deps, const std::string& voxel_key) {
+  auto operator()(ResourceDeps& deps, const std::string& voxel_key) {
     auto voxels = deps.get<Voxels>(voxel_key);
     using SurfaceVertices = decltype(voxels->surfaceVertices());
     return std::make_shared<SurfaceVertices>(voxels->surfaceVertices());
@@ -160,7 +160,7 @@ class VoxelsUtil {
 };
 
 template <>
-std::shared_ptr<VoxelsUtil> gen(const Registry& registry) {
+inline std::shared_ptr<VoxelsUtil> gen(const Registry& registry) {
   return std::make_shared<VoxelsUtil>(registry.get<Resources>());
 }
 

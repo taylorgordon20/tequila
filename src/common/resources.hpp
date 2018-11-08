@@ -30,8 +30,8 @@ template <
     typename Return,
     typename... Args>
 auto resourceTuple(
-    Return (Resource::*factory_fn)(const ResourceDeps&, Args...),
-    const Keys&... keys) -> std::tuple<std::type_index, std::decay_t<Args>...> {
+    Return (Resource::*factory_fn)(ResourceDeps&, Args...), const Keys&... keys)
+    -> std::tuple<std::type_index, std::decay_t<Args>...> {
   return std::tuple<std::type_index, std::decay_t<Args>...>(
       std::type_index(typeid(Resource)), keys...);
 }
@@ -43,7 +43,7 @@ template <
     typename Return,
     typename... Args>
 auto resourceTuple(
-    Return (Resource::*factory_fn)(const ResourceDeps&, Args...) const,
+    Return (Resource::*factory_fn)(ResourceDeps&, Args...) const,
     const Keys&... keys) -> std::tuple<std::type_index, std::decay_t<Args>...> {
   return std::tuple<std::type_index, std::decay_t<Args>...>(
       std::type_index(typeid(Resource)), keys...);
@@ -63,6 +63,9 @@ class ResourceGeneratorBase {
   // Returns key uniquely identifying this generator.
   virtual uint64_t key() = 0;
 
+  // Returns the resource type of this generator.
+  virtual const std::type_info& type() = 0;
+
   // Atomically removes the resource with the given key as a subscriber.
   virtual void unsubscribe(uint64_t resource_key) = 0;
 
@@ -76,10 +79,11 @@ class ResourceGeneratorBase {
   virtual std::unordered_set<uint64_t> dependencies() = 0;
 
   // Builds the resource version and returns the current subscribers.
-  virtual void build() = 0;
-
   // Clears the resource version and returns the current subscribers.
   virtual void clear() = 0;
+
+  // Returns true if the currently cached value is stale.
+  virtual bool stale() = 0;
 };
 
 // Reduced interface exposed to resource factories allowing dependency injection
@@ -90,11 +94,22 @@ class ResourceDeps {
       : resources_(resources), resource_key_(resource_key) {}
 
   template <typename Resource, typename... Keys>
-  auto get(const Keys&... keys) const {
-    auto generator = resources_.generator<Resource>(keys...);
-    generator->subscribe(resource_key_);
-    deps_.emplace(resourceHash<Resource>(keys...), generator);
-    return generator->get();
+  auto get(const Keys&... keys) {
+    try {
+      auto generator = resources_.generator<Resource>(keys...);
+      generator->subscribe(resource_key_);
+      deps_.emplace(resourceHash<Resource>(keys...), generator);
+      return generator->get();
+    } catch (const std::exception& e) {
+      LOG_ERROR(format(
+          "Resource \"%1%\" exception: %2%",
+          typeid(Resource).name(),
+          e.what()));
+      throw;
+    } catch (...) {
+      LOG_ERROR(format("Resource \"%1%\" exception.", typeid(Resource).name()));
+      throw;
+    }
   }
 
   auto& deps() {
@@ -106,54 +121,61 @@ class ResourceDeps {
 
   Resources& resources_;
   uint64_t resource_key_;
-  mutable std::unordered_map<uint64_t, DepPtr> deps_;
+  std::unordered_map<uint64_t, DepPtr> deps_;
 };
 
 // The wrapper type stored in the resource cache that manages the life cycle
 // of a resource as well as its subscribers and dependencies.
-template <typename Resource, typename... Keys>
+template <typename Resource>
 class ResourceGenerator : public ResourceGeneratorBase {
-  using Value = decltype(
-      Resource()(std::declval<ResourceDeps>(), std::declval<Keys>()...));
+  using Value =
+      typename decltype(make_function(&Resource::operator()))::result_type;
 
  public:
   template <typename Function, typename... Keys>
-  ResourceGenerator(Resources& resources, Function&& fn, const Keys&... keys)
-      : key_(resourceHash<Resource>(keys...)), version_(0) {
-    generator_ =
-        [&, fn = std::forward<Function>(fn), keys = std::make_tuple(keys...)] {
-          uint64_t version = ++version_;
+  ResourceGenerator(Resources& resources, Function fn, const Keys&... keys)
+      : resources_(resources),
+        key_(resourceHash<Resource>(keys...)),
+        version_(0),
+        requested_version_(1) {
+    generator_ = [this, fn = std::move(fn), keys = std::make_tuple(keys...)] {
+      std::lock_guard<std::mutex> generator_lock(generator_mutex_);
 
-          // Build a new value version.
-          ResourceDeps deps(resources, key_);
-          auto value = std::apply(
-              [&](const auto&... keys) {
-                return std::make_shared<Value>(fn(deps, keys...));
-              },
-              keys);
+      // Return if the current version is up to date.
+      ENFORCE(version_ <= requested_version_);
+      if (version_ == requested_version_) {
+        return *get_ptr();
+      }
 
-          // Update the value to the new version if its the latest and make sure
-          // that dependency subscription lists match the latest version.
-          std::lock_guard lock(mutex_);
-          if (version_ == version) {
-            auto& new_deps = deps.deps();
-            for (const auto& pair : deps_) {
-              if (!new_deps.count(pair.first)) {
-                pair.second->unsubscribe(key_);
-              }
-            }
-            deps_.swap(new_deps);
-            value_.swap(value);
-          } else {
-            for (const auto& pair : deps.deps()) {
-              if (!deps_.count(pair.first)) {
-                pair.second->unsubscribe(key_);
-              }
-            }
+      // Build a new version.
+      version_ = requested_version_.load();
+      ResourceDeps deps(resources_, key_);
+      auto value = std::apply(
+          [&](const auto&... keys) {
+            return std::make_shared<Value>(fn(deps, keys...));
+          },
+          keys);
+
+      // We need to make sure that the old value isn't destroyed under the
+      // mutex otherwise we could deadlock.
+      auto old_value = value_;
+
+      // Update the value to the new version if its the latest and make sure
+      // that dependency subscription lists match the latest version.
+      if (version_ == requested_version_) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::atomic_store(&value_, value);
+        auto& new_deps = deps.deps();
+        for (const auto& pair : deps_) {
+          if (!new_deps.count(pair.first)) {
+            pair.second->unsubscribe(key_);
           }
+        }
+        deps_.swap(new_deps);
+      }
 
-          return *value_;
-        };
+      return *get_ptr();
+    };
   }
 
   ~ResourceGenerator() {
@@ -163,18 +185,29 @@ class ResourceGenerator : public ResourceGeneratorBase {
     }
   }
 
+  // Returns a pointer to the currently cached value atomically.
+  auto get_ptr() {
+    return std::atomic_load(&value_);
+  }
+
   // Returns the value atomically with caching.
   auto get() {
-    if (auto ptr = std::atomic_load(&value_)) {
-      return *ptr;
-    } else {
-      return generator_();
+    if (auto ptr = get_ptr()) {
+      if (!stale()) {
+        return *ptr;
+      }
     }
+    return generator_();
   }
 
   // Returns key uniquely identifying this generator.
   uint64_t key() override {
     return key_;
+  }
+
+  // Returns the resource type of this generator.
+  const std::type_info& type() override {
+    return typeid(Resource);
   }
 
   // Atomically removes the resource with the given key as a subscriber.
@@ -205,27 +238,27 @@ class ResourceGenerator : public ResourceGeneratorBase {
     return deps;
   }
 
-  // Update the resource version and returns the current subscribers.
-  void build() override {
-    generator_();
+  // Deletes the resource version and returns the current subscribers.
+  void clear() override {
+    requested_version_++;
   }
 
   // Deletes the resource version and returns the current subscribers.
-  void clear() override {
-    std::lock_guard lock(mutex_);
-    value_ = nullptr;
-    deps_.clear();
-    version_++;
+  bool stale() override {
+    return version_ < requested_version_;
   }
 
  private:
+  Resources& resources_;
   uint64_t key_;
-  std::function<Value()> generator_;
   std::atomic<uint64_t> version_;
+  std::atomic<uint64_t> requested_version_;
+  std::function<Value()> generator_;
   std::shared_ptr<Value> value_;
   std::unordered_map<uint64_t, std::shared_ptr<ResourceGeneratorBase>> deps_;
   std::unordered_set<uint64_t> subs_;
   std::mutex mutex_;
+  std::mutex generator_mutex_;
 };
 
 // TODO: Implement cache eviction.
@@ -244,8 +277,9 @@ class Resources {
     // Return the value from cache immediately if available.
     auto cache_key = resourceHash<Resource>(keys...);
     if (cache_.count(cache_key)) {
-      using GeneratorType = ResourceGenerator<Resource, Keys...>;
-      return std::static_pointer_cast<GeneratorType>(cache_.at(cache_key));
+      auto generator = cache_.at(cache_key);
+      ENFORCE(typeid(Resource) == generator->type());
+      return std::static_pointer_cast<ResourceGenerator<Resource>>(generator);
     }
 
     // Create generator and cache it.
@@ -257,13 +291,6 @@ class Resources {
   template <typename Resource, typename... Keys>
   auto get(const Keys&... keys) {
     return generator<Resource>(keys...)->get();
-  }
-
-  template <typename Resource, typename... Keys>
-  void update(const Keys&... keys) {
-    propagate(resourceHash<Resource>(keys...), [](auto generator) {
-      generator->build();
-    });
   }
 
   template <typename Resource, typename... Keys>
@@ -356,7 +383,7 @@ class Resources {
   template <typename Resource, typename... Keys>
   auto makeGenerator(const Keys&... keys) {
     using Fun = decltype(make_function(&Resource::operator()));
-    using Gen = ResourceGenerator<Resource, Keys...>;
+    using Gen = ResourceGenerator<Resource>;
     auto it = overrides_.find(std::type_index(typeid(Resource)));
     if (it != overrides_.end()) {
       auto fun = boost::any_cast<Fun>(it->second);
@@ -374,7 +401,9 @@ class Resources {
 
 class AsyncResources {
  public:
-  AsyncResources(Resources resources, std::shared_ptr<QueueExecutor> executor)
+  AsyncResources(
+      std::shared_ptr<Resources> resources,
+      std::shared_ptr<QueueExecutor> executor)
       : resources_(std::move(resources)),
         executor_(std::move(executor)),
         semaphore_(0) {}
@@ -385,57 +414,72 @@ class AsyncResources {
     }
   }
 
-  Resources& resources() {
+  std::shared_ptr<Resources> resources() {
     return resources_;
+  }
+
+  template <typename Resource, typename... Keys>
+  auto get_opt(const Keys&... keys) {
+    // If there is a cached value, return it immediately and kick off an
+    // asynchronous update if the cached value is stale.
+    boost::optional<decltype(resources()->get<Resource>(keys...))> ret;
+    auto generator = resources()->generator<Resource>(keys...);
+    if (auto value_ptr = generator->get_ptr()) {
+      ret = *value_ptr;
+    }
+    if (generator->stale()) {
+      get<Resource>(keys...);
+    }
+    return ret;
   }
 
   template <typename Resource, typename... Keys>
   auto get(const Keys&... keys) {
     return schedule(
+        concat("get", describe<Resource>(keys...)),
         [this](const auto&... keys) {
-          return resources().get<Resource>(keys...);
-        },
-        keys...);
-  }
-
-  template <typename Resource, typename... Keys>
-  auto update(const Keys&... keys) {
-    return schedule(
-        [this](const auto&... keys) {
-          return resources().update<Resource>(keys...);
+          return resources()->get<Resource>(keys...);
         },
         keys...);
   }
 
   template <typename Resource, typename... Keys>
   auto invalidate(const Keys&... keys) {
+    // Invalidate the value asynchronously and return a future.
     return schedule(
+        concat("invalidate", describe<Resource>(keys...)),
         [this](const auto&... keys) {
-          return resources().invalidate<Resource>(keys...);
+          return resources()->invalidate<Resource>(keys...);
         },
         keys...);
   }
 
  private:
+  template <typename Resource, typename... Keys>
+  auto describe(const Keys&... keys) {
+    return format("<%1%>(%2%)", typeid(Resource).name(), join(", ", keys...));
+  }
+
   template <typename Function, typename... Keys>
-  auto schedule(Function fn, const Keys&... keys) {
+  auto schedule(const std::string& task, Function fn, const Keys&... keys) {
     semaphore_ += 1;
     return executor_->schedule(
-        [this, fn = std::move(fn), keys = std::make_tuple(keys...)] {
+        [this, task, fn = std::move(fn), keys = std::make_tuple(keys...)] {
           Finally finally([&] { semaphore_ -= 1; });
           try {
             return std::apply(fn, keys);
           } catch (const std::exception& e) {
-            LOG_ERROR(format("Error in async resources = %1%", e.what()));
+            LOG_ERROR(format(
+                "Async resource error:  %1%. Task: %2%", e.what(), task));
             throw;
           }
         });
   }
 
-  Resources resources_;
+  std::shared_ptr<Resources> resources_;
   std::shared_ptr<QueueExecutor> executor_;
   std::atomic<int> semaphore_;
-};
+};  // namespace tequila
 
 class ResourcesBuilder {
  public:
@@ -454,7 +498,7 @@ class ResourcesBuilder {
   ResourcesBuilder& withSeed(ValueType&& value) {
     decltype(make_function(Resource())) fn =
         [value = std::forward<ValueType>(value)](
-            const ResourceDeps& resources, auto... args) {
+            ResourceDeps& resources, auto... args) {
           decltype(Resource()(resources, args...)) ret = value;
           return ret;
         };
@@ -472,7 +516,7 @@ class ResourcesBuilder {
 
 template <typename Resource, typename Value>
 struct SeedResource {
-  Value operator()(const ResourceDeps& deps) {
+  Value operator()(ResourceDeps& deps) {
     throwError("Missing seed resource: %1%", typeid(Resource).name());
   }
 };

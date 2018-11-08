@@ -4,5 +4,6 @@ conaninfo.txt
 bazel-*
 *.pdb
 /bin*
+/dbg*
 /screenshots*
 .DS_Store

@@ -54,7 +54,7 @@ struct TerrainStyleIndex {
 };
 
 struct TerrainStyles {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
     std::stringstream ss;
     ss << loadFile("configs/terrain.json");
     cereal::JSONInputArchive archive(ss);
@@ -74,7 +74,9 @@ struct TerrainStylesColorMapIndex {
 };
 
 struct TerrainStylesColorMap {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
+    WORLD_TIMER(deps, "terrain_color_styles");
+
     // Build the color map index.
     std::vector<std::string> color_maps;
     std::unordered_map<int64_t, int> style_index;
@@ -94,8 +96,10 @@ struct TerrainStylesColorMap {
       pixels.push_back(loadPngToTensor(color_map));
     }
 
-    return std::make_shared<TerrainStylesColorMapIndex>(
-        std::move(style_index), std::make_shared<TextureArray>(pixels));
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new TerrainStylesColorMapIndex(
+          std::move(style_index), std::make_shared<TextureArray>(pixels));
+    });
   }
 };
 
@@ -109,7 +113,9 @@ struct TerrainStylesNormalMapIndex {
 };
 
 struct TerrainStylesNormalMap {
-  auto operator()(const ResourceDeps& deps) {
+  auto operator()(ResourceDeps& deps) {
+    WORLD_TIMER(deps, "terrain_normal_styles");
+
     // Build the normal map index.
     std::vector<std::string> normal_maps;
     std::unordered_map<int64_t, int> style_index;
@@ -129,8 +135,10 @@ struct TerrainStylesNormalMap {
       pixels.push_back(loadPngToTensor(normal_map));
     }
 
-    return std::make_shared<TerrainStylesNormalMapIndex>(
-        std::move(style_index), std::make_shared<TextureArray>(pixels));
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new TerrainStylesNormalMapIndex(
+          std::move(style_index), std::make_shared<TextureArray>(pixels));
+    });
   }
 };
 

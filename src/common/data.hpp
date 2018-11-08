@@ -1,5 +1,7 @@
 #pragma once
 
+#define SQLITE_THREADSAFE = 1
+
 #include <sqlite_modern_cpp.h>
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/json.hpp>

@@ -17,13 +17,14 @@ function module:on_init()
   create_ui_node(
     "terrain_slices",
     "text",
-    {x = 10, y = 45, color = 0xFFFFFFFF, text = "Terrain Meshes: ...", size = 16}
+    {x = 10, y = 45, color = 0xFFFFFFFF, text = "Terrain Slices: ...", size = 16}
   )
 end
 
 function module:on_done()
-  delete_ui_node("camera")
+  delete_ui_node("terrain_slices")
   delete_ui_node("fps")
+  delete_ui_node("camera")
 end
 
 function module:on_update(dt)
@@ -45,7 +46,7 @@ function module:on_update(dt)
       {text = string.format("FPS: %.2f", fps)}
     )
 
-    local terrain_slices = get_stat_average("slices_count") or 0
+    local terrain_slices = get_stat_average("terrain_slices_count") or 0
     update_ui_node(
       "terrain_slices",
       {text = string.format("Terrain Meshes: %.2f", terrain_slices)}

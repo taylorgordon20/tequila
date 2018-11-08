@@ -16,30 +16,110 @@
 
 namespace tequila {
 
+// Returns an optional set to the future's value if and only if it is ready.
+inline bool get_opt(std::future<void>& future) {
+  bool ret = false;
+  if (future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+    ret = true;
+  }
+  return ret;
+}
+
+// Returns an optional set to the future's value if and only if it is ready.
+template <typename Value>
+inline boost::optional<Value> get_opt(std::future<Value>& future) {
+  boost::optional<Value> ret;
+  if (future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+    ret = future.get();
+  }
+  return ret;
+}
+
+// Executes the given function in a loop until the given future is ready.
+template <typename Function>
+inline void spin(std::future<void>& future, Function&& fn) {
+  while (!get_opt(future)) {
+    fn();
+  }
+}
+
+template <typename Future, typename Function>
+inline auto spin(Future& future, Function&& fn) {
+  for (auto ret = get_opt(future); !ret; ret = get_opt(future)) {
+    fn();
+  }
+  return *ret;
+}
+
+template <typename Value>
+class MPMCQueue {
+ public:
+  MPMCQueue() : closed_(false) {}
+
+  bool isOpen() {
+    std::lock_guard lock(mutex_);
+    return !closed_;
+  }
+
+  bool isEmpty() {
+    std::lock_guard lock(mutex_);
+    return queue_.empty();
+  }
+
+  void close() {
+    {
+      std::lock_guard lock(mutex_);
+      closed_ = true;
+    }
+    cv_.notify_all();
+  }
+
+  void push(Value value) {
+    {
+      std::lock_guard lock(mutex_);
+      ENFORCE(!closed_);
+      queue_.push(std::move(value));
+    }
+    cv_.notify_one();
+  }
+
+  boost::optional<Value> pop() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    boost::optional<Value> ret;
+    while (!closed_) {
+      if (!queue_.empty()) {
+        ret = std::move(queue_.front());
+        queue_.pop();
+        break;
+      } else {
+        cv_.wait(lock);
+      }
+    }
+    return ret;
+  }
+
+ private:
+  std::mutex mutex_;
+  std::condition_variable cv_;
+  std::queue<Value> queue_;
+  bool closed_;
+};
+
 class QueueExecutor {
  public:
-  QueueExecutor(size_t thread_count) : running_(true) {
+  QueueExecutor(size_t thread_count) {
     ENFORCE(thread_count > 0);
     for (int i = 0; i < thread_count; i += 1) {
       workers_.emplace_back([&] {
-        while (running_) {
-          std::unique_lock<std::mutex> lock(mutex_);
-          if (!tasks_.empty()) {
-            auto task = tasks_.front();
-            tasks_.pop();
-            lock.unlock();
-            task();
-          } else {
-            cv_.wait(lock);
-          }
+        while (auto task = task_queue_.pop()) {
+          (*task)();
         }
       });
     }
   }
 
   ~QueueExecutor() {
-    running_ = false;
-    cv_.notify_all();
+    task_queue_.close();
     for (auto& worker : workers_) {
       worker.join();
     }
@@ -47,11 +127,9 @@ class QueueExecutor {
 
   template <typename Function>
   auto schedule(Function&& fn) {
-    std::lock_guard<std::mutex> guard(mutex_);
     auto promise = std::make_shared<std::promise<decltype(fn())>>();
     auto ret = promise->get_future();
-    tasks_.push(makeTask(std::forward<Function>(fn), std::move(promise)));
-    cv_.notify_all();
+    task_queue_.push(makeTask(std::forward<Function>(fn), std::move(promise)));
     return ret;
   }
 
@@ -85,11 +163,8 @@ class QueueExecutor {
     };
   }
 
-  bool running_;
   std::vector<std::thread> workers_;
-  std::queue<std::function<void()>> tasks_;
-  std::mutex mutex_;
-  std::condition_variable cv_;
+  MPMCQueue<std::function<void()>> task_queue_;
 };
 
 }  // namespace tequila
