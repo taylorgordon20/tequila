@@ -14,6 +14,7 @@
 #include "src/common/registry.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/spatial.hpp"
+#include "src/common/stats.hpp"
 
 namespace tequila {
 
@@ -64,10 +65,7 @@ inline auto registryGet(Resources& resources) {
   return resources.get<WorldStaticContext>()->registry->get<Type>();
 }
 
-#define WORLD_TIMER(deps, msg)                                          \
-  StatsUpdate __stats(registryGet<Stats>(deps));                        \
-  Timer __timer(msg, [&](const std::string& message, double duration) { \
-    __stats[message] = duration;                                        \
-  });
+#define WORLD_TIMER(deps) \
+  ([&](auto msg) { return StatsTimer(registryGet<Stats>(deps), msg); })
 
 }  // namespace tequila

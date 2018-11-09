@@ -73,12 +73,11 @@ class ResourceGeneratorBase {
   virtual void subscribe(uint64_t resource_key) = 0;
 
   // Atomically returns the resource keys of the current subscribers.
-  virtual std::unordered_set<uint64_t> subscribers() = 0;
+  virtual std::shared_ptr<std::unordered_set<uint64_t>> subscribers() = 0;
 
   // Atomically returns the resource keys of the current dependencies.
-  virtual std::unordered_set<uint64_t> dependencies() = 0;
+  virtual std::shared_ptr<std::unordered_set<uint64_t>> dependencies() = 0;
 
-  // Builds the resource version and returns the current subscribers.
   // Clears the resource version and returns the current subscribers.
   virtual void clear() = 0;
 
@@ -137,7 +136,9 @@ class ResourceGenerator : public ResourceGeneratorBase {
       : resources_(resources),
         key_(resourceHash<Resource>(keys...)),
         version_(0),
-        requested_version_(1) {
+        requested_version_(1),
+        cached_subs_(std::make_shared<std::unordered_set<uint64_t>>()),
+        cached_deps_(std::make_shared<std::unordered_set<uint64_t>>()) {
     generator_ = [this, fn = std::move(fn), keys = std::make_tuple(keys...)] {
       std::lock_guard<std::mutex> generator_lock(generator_mutex_);
 
@@ -172,9 +173,10 @@ class ResourceGenerator : public ResourceGeneratorBase {
           }
         }
         deps_.swap(new_deps);
+        cacheDeps();
       }
 
-      return *get_ptr();
+      return *value;
     };
   }
 
@@ -213,34 +215,36 @@ class ResourceGenerator : public ResourceGeneratorBase {
   // Atomically removes the resource with the given key as a subscriber.
   void unsubscribe(uint64_t resource_key) override {
     std::lock_guard lock(mutex_);
-    subs_.erase(resource_key);
+    if (subs_.count(resource_key)) {
+      subs_.erase(resource_key);
+      cacheSubs();
+    }
   }
 
   // Atomically adds the resource with the given key as a subscriber.
   void subscribe(uint64_t resource_key) override {
     std::lock_guard lock(mutex_);
-    subs_.insert(resource_key);
+    if (!subs_.count(resource_key)) {
+      subs_.insert(resource_key);
+      cacheSubs();
+    }
   }
 
   // Atomically returns the resource keys of the current subscribers.
-  std::unordered_set<uint64_t> subscribers() override {
-    std::lock_guard lock(mutex_);
-    return subs_;
+  std::shared_ptr<std::unordered_set<uint64_t>> subscribers() override {
+    return std::atomic_load(&cached_subs_);
   }
 
   // Atomically returns the resource keys of the current dependencies.
-  std::unordered_set<uint64_t> dependencies() override {
-    std::lock_guard lock(mutex_);
-    std::unordered_set<uint64_t> deps;
-    for (const auto& pair : deps_) {
-      deps.insert(pair.first);
-    }
-    return deps;
+  std::shared_ptr<std::unordered_set<uint64_t>> dependencies() override {
+    return std::atomic_load(&cached_deps_);
   }
 
   // Deletes the resource version and returns the current subscribers.
   void clear() override {
+    std::lock_guard lock(mutex_);
     requested_version_++;
+    subs_.clear();
   }
 
   // Deletes the resource version and returns the current subscribers.
@@ -249,10 +253,26 @@ class ResourceGenerator : public ResourceGeneratorBase {
   }
 
  private:
+  void cacheDeps() {
+    auto cached_deps = std::make_shared<std::unordered_set<uint64_t>>();
+    for (const auto& pair : deps_) {
+      cached_deps->insert(pair.first);
+    }
+    std::atomic_store(&cached_deps_, cached_deps);
+  }
+
+  void cacheSubs() {
+    auto cached_subs = std::make_shared<std::unordered_set<uint64_t>>();
+    *cached_subs = subs_;
+    std::atomic_store(&cached_subs_, cached_subs);
+  }
+
   Resources& resources_;
   uint64_t key_;
   std::atomic<uint64_t> version_;
   std::atomic<uint64_t> requested_version_;
+  std::shared_ptr<std::unordered_set<uint64_t>> cached_subs_;
+  std::shared_ptr<std::unordered_set<uint64_t>> cached_deps_;
   std::function<Value()> generator_;
   std::shared_ptr<Value> value_;
   std::unordered_map<uint64_t, std::shared_ptr<ResourceGeneratorBase>> deps_;
@@ -304,44 +324,8 @@ class Resources {
   template <typename Function>
   void propagate(uint64_t source_key, Function&& fn) {
     auto gens = subscribers(source_key);
-
-    // Compute the dependency subgraph of the generators.
-    std::unordered_map<uint64_t, std::unordered_set<uint64_t>> subs;
-    std::unordered_map<uint64_t, std::unordered_set<uint64_t>> deps;
     for (auto& pair : gens) {
-      for (auto dep : pair.second->dependencies()) {
-        if (gens.count(dep)) {
-          deps[pair.second->key()].insert(dep);
-        }
-      }
-      for (auto sub : pair.second->subscribers()) {
-        if (gens.count(sub)) {
-          subs[pair.second->key()].insert(sub);
-        }
-      }
-    }
-
-    // Propagate to the generators in topological order.
-    std::vector<std::shared_ptr<ResourceGeneratorBase>> srcs;
-    for (const auto& pair : gens) {
-      if (!deps.count(pair.first)) {
-        srcs.push_back(pair.second);
-      }
-    }
-    while (!srcs.empty()) {
-      auto src = srcs.back();
-      srcs.pop_back();
-
-      // Remove this generator as a dependency and update sources.
-      for (auto sub : subs[src->key()]) {
-        deps[sub].erase(src->key());
-        if (deps[sub].empty() && gens.count(sub)) {
-          srcs.push_back(gens.at(sub));
-        }
-      }
-
-      // Propagate the given function on this generator.
-      fn(src);
+      fn(pair.second);
     }
   }
 
@@ -369,7 +353,7 @@ class Resources {
       // Invalidate the generator and add its subs to the stack.
       if (generator) {
         ret[key] = generator;
-        for (auto sub : generator->subscribers()) {
+        for (auto sub : *generator->subscribers()) {
           if (!done_keys.count(sub)) {
             key_stack.push_back(sub);
           }
@@ -404,15 +388,7 @@ class AsyncResources {
   AsyncResources(
       std::shared_ptr<Resources> resources,
       std::shared_ptr<QueueExecutor> executor)
-      : resources_(std::move(resources)),
-        executor_(std::move(executor)),
-        semaphore_(0) {}
-
-  ~AsyncResources() {
-    // Spin until all asynchronous tasks are complete.
-    while (semaphore_ > 0) {
-    }
-  }
+      : resources_(std::move(resources)), executor_(std::move(executor)) {}
 
   std::shared_ptr<Resources> resources() {
     return resources_;
@@ -456,16 +432,20 @@ class AsyncResources {
 
  private:
   template <typename Resource, typename... Keys>
+  bool isBuilding(const Keys&... keys) {
+    std::lock_guard lock(building_mutex_);
+    return building_.count(resourceHash<Resource>(keys...));
+  }
+
+  template <typename Resource, typename... Keys>
   auto describe(const Keys&... keys) {
     return format("<%1%>(%2%)", typeid(Resource).name(), join(", ", keys...));
   }
 
   template <typename Function, typename... Keys>
   auto schedule(const std::string& task, Function fn, const Keys&... keys) {
-    semaphore_ += 1;
     return executor_->schedule(
         [this, task, fn = std::move(fn), keys = std::make_tuple(keys...)] {
-          Finally finally([&] { semaphore_ -= 1; });
           try {
             return std::apply(fn, keys);
           } catch (const std::exception& e) {
@@ -478,7 +458,6 @@ class AsyncResources {
 
   std::shared_ptr<Resources> resources_;
   std::shared_ptr<QueueExecutor> executor_;
-  std::atomic<int> semaphore_;
 };  // namespace tequila
 
 class ResourcesBuilder {

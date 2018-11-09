@@ -54,6 +54,8 @@ struct RectNode {
 // Builds the ready-to-render format of a rect node.
 struct WorldRectNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
+    StatsTimer timer(registryGet<Stats>(deps), "ui.rect_node");
+
     const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
@@ -135,6 +137,8 @@ std::shared_ptr<RectUIRenderer> gen(const Registry& registry) {
 // Builds the ready-to-render format of a text node.
 struct WorldTextNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
+    StatsTimer timer(registryGet<Stats>(deps), "ui.text_node");
+
     const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
@@ -236,6 +240,8 @@ struct StyleNode {
 // Builds the ready-to-render format of a style node.
 struct WorldStyleNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
+    StatsTimer timer(registryGet<Stats>(deps), "ui.style_node");
+
     const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));

@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "src/common/timers.hpp"
+
 namespace tequila {
 
 class Stats {
@@ -55,6 +57,18 @@ class StatsUpdate {
  private:
   std::shared_ptr<Stats> stats_;
   std::unordered_map<std::string, float> values_;
+};
+
+class StatsTimer {
+ public:
+  StatsTimer(std::shared_ptr<Stats> stats, const char* name)
+      : stats_(stats), timer_(name, [this](const auto& msg, auto duration) {
+          stats_[msg] = duration;
+        }) {}
+
+ private:
+  StatsUpdate stats_;
+  Timer timer_;
 };
 
 }  // namespace tequila

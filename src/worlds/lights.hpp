@@ -48,7 +48,7 @@ class VertexLightMap {
 // Maps a voxel array to light rays at each surface vertex.
 struct VertexLights {
   auto operator()(ResourceDeps& deps, const std::string& voxel_key) {
-    WORLD_TIMER(deps, "vertex_lights");
+    StatsTimer timer(registryGet<Stats>(deps), "vertex_lights");
 
     auto voxels_util = registryGet<VoxelsUtil>(deps);
     auto voxels = deps.get<Voxels>(voxel_key);

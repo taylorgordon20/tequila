@@ -160,7 +160,7 @@ struct TerrainSliceVertexLights {
 // Computes all faces.
 struct TerrainSliceFaces {
   auto operator()(ResourceDeps& deps, TerrainSliceKey key) {
-    WORLD_TIMER(deps, "terrain_slice_faces");
+    StatsTimer timer(registryGet<Stats>(deps), "terrain_slice_faces");
 
     auto cell = std::get<0>(key);
     auto sdir = std::get<1>(key);
@@ -230,7 +230,7 @@ struct TerrainSlice {
       return std::shared_ptr<TerrainSliceData>();
     }
 
-    WORLD_TIMER(deps, "terrain_slice");
+    StatsTimer timer(registryGet<Stats>(deps), "terrain_slice");
 
     // Look up the texture maps for this face since we need to specify
     // vertex attributes to point each face to its corresponding texture
@@ -347,7 +347,7 @@ struct TerrainShardData {
 // ensure that all slices within a shard display updates atomically.
 struct TerrainShard {
   auto operator()(ResourceDeps& deps, int64_t key) {
-    WORLD_TIMER(deps, "terrain_shard");
+    StatsTimer timer(registryGet<Stats>(deps), "terrain_shard");
 
     // Output all relevant slices for the given shard.
     // TODO: Do back-face culling of slices here.
@@ -377,7 +377,7 @@ struct TerrainShard {
 // Returns the keys for the terrain shards that should be rendered.
 struct TerrainShardKeys {
   auto operator()(ResourceDeps& deps) {
-    WORLD_TIMER(deps, "terrain_shard_keys");
+    StatsTimer timer(registryGet<Stats>(deps), "terrain_shard_keys");
 
     auto octree = deps.get<WorldOctree>();
 

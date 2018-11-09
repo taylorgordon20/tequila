@@ -28,7 +28,7 @@ struct SkyData {
 
 struct SkyMap {
   auto operator()(ResourceDeps& deps) {
-    WORLD_TIMER(deps, "sky_map");
+    StatsTimer timer(registryGet<Stats>(deps), "sky_map");
 
     auto pixels = loadPngToTensor("images/sky_map_clouds.png");
     int h = pixels.dimension(0) / 3;

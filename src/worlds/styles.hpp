@@ -75,7 +75,7 @@ struct TerrainStylesColorMapIndex {
 
 struct TerrainStylesColorMap {
   auto operator()(ResourceDeps& deps) {
-    WORLD_TIMER(deps, "terrain_color_styles");
+    StatsTimer timer(registryGet<Stats>(deps), "terrain_color_styles");
 
     // Build the color map index.
     std::vector<std::string> color_maps;
@@ -114,7 +114,7 @@ struct TerrainStylesNormalMapIndex {
 
 struct TerrainStylesNormalMap {
   auto operator()(ResourceDeps& deps) {
-    WORLD_TIMER(deps, "terrain_normal_styles");
+    StatsTimer timer(registryGet<Stats>(deps), "terrain_normal_styles");
 
     // Build the normal map index.
     std::vector<std::string> normal_maps;

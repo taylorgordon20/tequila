@@ -56,6 +56,10 @@ class Window {
     glfwSetWindowShouldClose(window_, true);
   }
 
+  bool inContext() {
+    return glfwGetCurrentContext();
+  }
+
  private:
   GLFWwindow* window_;
   std::unordered_map<intptr_t, boost::any> callbacks_;

@@ -70,6 +70,7 @@ class MPMCQueue {
     {
       std::lock_guard lock(mutex_);
       closed_ = true;
+      queue_.clear();
     }
     cv_.notify_all();
   }
@@ -78,7 +79,7 @@ class MPMCQueue {
     {
       std::lock_guard lock(mutex_);
       ENFORCE(!closed_);
-      queue_.push(std::move(value));
+      queue_.push_back(std::move(value));
     }
     cv_.notify_one();
   }
@@ -89,7 +90,7 @@ class MPMCQueue {
     while (!closed_) {
       if (!queue_.empty()) {
         ret = std::move(queue_.front());
-        queue_.pop();
+        queue_.pop_front();
         break;
       } else {
         cv_.wait(lock);
@@ -101,19 +102,20 @@ class MPMCQueue {
  private:
   std::mutex mutex_;
   std::condition_variable cv_;
-  std::queue<Value> queue_;
+  std::deque<Value> queue_;
   bool closed_;
 };
 
 class QueueExecutor {
  public:
-  QueueExecutor(size_t thread_count) {
+  QueueExecutor(size_t thread_count) : finished_workers_(0) {
     ENFORCE(thread_count > 0);
     for (int i = 0; i < thread_count; i += 1) {
       workers_.emplace_back([&] {
         while (auto task = task_queue_.pop()) {
           (*task)();
         }
+        finished_workers_ += 1;
       });
     }
   }
@@ -125,8 +127,17 @@ class QueueExecutor {
     }
   }
 
+  bool isDone() {
+    return workers_.size() == finished_workers_;
+  }
+
+  void close() {
+    return task_queue_.close();
+  }
+
   template <typename Function>
   auto schedule(Function&& fn) {
+    ENFORCE(task_queue_.isOpen());
     auto promise = std::make_shared<std::promise<decltype(fn())>>();
     auto ret = promise->get_future();
     task_queue_.push(makeTask(std::forward<Function>(fn), std::move(promise)));
@@ -165,6 +176,7 @@ class QueueExecutor {
 
   std::vector<std::thread> workers_;
   MPMCQueue<std::function<void()>> task_queue_;
+  std::atomic<int> finished_workers_;
 };
 
 }  // namespace tequila

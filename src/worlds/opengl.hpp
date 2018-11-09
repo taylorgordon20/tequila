@@ -14,6 +14,9 @@ namespace tequila {
 
 class OpenGLContextExecutor {
  public:
+  OpenGLContextExecutor(std::shared_ptr<Window> window)
+      : window_(std::move(window)) {}
+
   template <typename Function>
   auto manage(Function&& fn) {
     return runInOpenGLContext([&] {
@@ -26,7 +29,7 @@ class OpenGLContextExecutor {
 
   template <typename Function>
   auto runInOpenGLContext(Function&& fn) {
-    if (inContext()) {
+    if (window_->inContext()) {
       return fn();
     } else {
       std::promise<decltype(fn())> promise;
@@ -38,10 +41,14 @@ class OpenGLContextExecutor {
 
   void process() {
     // TODO: Add throttling / time-slicing to obviate frame stalls.
-    ENFORCE(inContext());
+    ENFORCE(window_->inContext());
     while (!queue_.isEmpty()) {
       queue_.pop().get()();
     }
+  }
+
+  bool isEmpty() {
+    return queue_.isEmpty();
   }
 
  private:
@@ -58,16 +65,13 @@ class OpenGLContextExecutor {
     return [&] { promise.set_value(fn()); };
   }
 
-  bool inContext() {
-    return glfwGetCurrentContext();
-  }
-
+  std::shared_ptr<Window> window_;
   MPMCQueue<std::function<void()>> queue_;
 };
 
 template <>
 inline std::shared_ptr<OpenGLContextExecutor> gen(const Registry& registry) {
-  return std::make_shared<OpenGLContextExecutor>();
+  return std::make_shared<OpenGLContextExecutor>(registry.get<Window>());
 }
 
 }  // namespace tequila

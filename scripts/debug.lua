@@ -19,9 +19,30 @@ function module:on_init()
     "text",
     {x = 10, y = 45, color = 0xFFFFFFFF, text = "Terrain Slices: ...", size = 16}
   )
+
+  -- Registry a console command to set palette styles.
+  get_module("console"):create_command(
+      "print_stats",
+      function()
+        local stats = get_stats()
+        local stat_keys = {}
+        for index, key in pairs(stats) do
+          table.insert(stat_keys, key)
+        end
+        table.sort(stat_keys)
+        for index, key in ipairs(stat_keys) do
+          local avg = get_stat_average(key)
+          local line =  string.format("%s\tavg: %.6f", key, avg)
+          get_module("console"):log(line)
+        end
+      end
+  )
 end
 
 function module:on_done()
+  -- Unregister console commands.
+  get_module("console"):delete_command("set_style")
+
   delete_ui_node("terrain_slices")
   delete_ui_node("fps")
   delete_ui_node("camera")

@@ -113,16 +113,14 @@ void run() {
   // Enter the game loop.
   std::cout << "Entering game loop." << std::endl;
   registry.get<Window>()->loop([&](float dt) {
-    // Asynchronously execute the game update loop.
-    // auto update_future = registry.get<QueueExecutor>()->schedule(
-    //    [&] { registry.get<EventHandler>()->update(dt); });
+    // Handle the update game event.
     registry.get<EventHandler>()->update(dt);
 
-    // Process OpenGL updates while waiting for the update loop to complete.
-    // spin(update_future, [&] {
-    //  registry.get<OpenGLContextExecutor>()->process();
-    //});
-    registry.get<OpenGLContextExecutor>()->process();
+    // Process OpenGL updates that are blocking async tasks.
+    if (!registry.get<OpenGLContextExecutor>()->isEmpty()) {
+      StatsTimer timer(registry.get<Stats>(), "process_gl_tasks");
+      registry.get<OpenGLContextExecutor>()->process();
+    }
 
     // Render the scene to a new frame.
     gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
@@ -131,6 +129,13 @@ void run() {
     registry.get<TerrainRenderer>()->draw();
     registry.get<UIRenderer>()->draw();
   });
+
+  // Unblock and wait for any outstanding asynchronous tasks.
+  registry.get<QueueExecutor>()->close();
+  while (!registry.get<QueueExecutor>()->isDone()) {
+    registry.get<OpenGLContextExecutor>()->process();
+  }
+  std::cout << "Shutting down!" << std::endl;
 }
 
 }  // namespace tequila

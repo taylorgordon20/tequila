@@ -48,7 +48,7 @@ auto FFI_get_module(std::shared_ptr<Resources>& resources) {
 }
 
 auto FFI_get_stats(std::shared_ptr<Stats>& stats) {
-  return [stats] { return joinRange(", ", stats->keys()); };
+  return [stats] { return stats->keys(); };
 }
 
 auto FFI_get_stat_average(std::shared_ptr<Stats>& stats) {
