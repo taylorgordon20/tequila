@@ -2,6 +2,11 @@ local module = {}
 
 local dt_mean = 0
 local delay_s = 0
+local day_night = {
+  enabled = false,
+  angle = 0,
+  delay = 0,
+}
 
 function module:on_init()
   create_ui_node(
@@ -37,10 +42,18 @@ function module:on_init()
         end
       end
   )
+
+  get_module("console"):create_command(
+      "toggle_day_night",
+      function()
+        day_night.enabled = not day_night.enabled
+      end
+  )
 end
 
 function module:on_done()
   -- Unregister console commands.
+  get_module("console"):delete_command("toggle_day_night")
   get_module("console"):delete_command("set_style")
 
   delete_ui_node("terrain_slices")
@@ -73,6 +86,17 @@ function module:on_update(dt)
       {text = string.format("Terrain Meshes: %.2f", terrain_slices)}
     )
     delay_s = 0.0
+  end
+
+  -- Simulate day-night.
+  day_night.delay = day_night.delay + dt
+  if day_night.enabled and day_night.delay > 10.0 then
+    day_night.angle = day_night.angle + 0.1
+    x = math.cos(day_night.angle)
+    z = math.cos(day_night.angle)
+    y = math.sin(day_night.angle)
+    set_light_dir(x, y, z)
+    day_night.delay = 0
   end
 end
 
