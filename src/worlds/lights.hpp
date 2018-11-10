@@ -71,7 +71,7 @@ struct VertexLights {
         float cx = vx + 0.5f, cy = vy + 0.5f, cz = vz + 0.5f;
         float proj = glm::dot(dir, glm::vec3(cx, cy, cz) - from);
         if (proj > 0.5f && sampler.getVoxel(cx, cy, cz)) {
-          ret->get(x, y, z).global_occlusion = 0.0f;
+          ret->get(x, y, z).global_occlusion = 0.2f;
           return false;
         }
         return true;
