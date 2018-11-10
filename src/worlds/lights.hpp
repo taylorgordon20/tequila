@@ -67,7 +67,7 @@ struct VertexLights {
       ret->get(x, y, z).global_occlusion = 1.0f;
       auto dir = *global_light;
       auto from = voxels_util->getWorldCoords(*voxels, x, y, z);
-      voxels_util->marchVoxels(from, dir, 10.0, [&](int vx, int vy, int vz) {
+      voxels_util->marchVoxels(from, dir, 100.0, [&](int vx, int vy, int vz) {
         float cx = vx + 0.5f, cy = vy + 0.5f, cz = vz + 0.5f;
         float proj = glm::dot(dir, glm::vec3(cx, cy, cz) - from);
         if (proj > 0.5f && sampler.getVoxel(cx, cy, cz)) {
