@@ -95,15 +95,20 @@ function module:insert_voxel()
   for_camera_ray_voxels(function(x, y, z, distance)
     if get_voxel(x, y, z) ~= 0 then
       if pred then
-        local style = self.palette_styles[self.palette_selection]
-        set_voxel(pred[1], pred[2], pred[3], style)
-        edit_delay_s = 0
+        local cam_x, cam_y, cam_z = table.unpack(get_camera_pos())
+        local px, py, pz = table.unpack(pred)
+        local dx = math.abs(px - cam_x + 0.5)
+        local dy = py - cam_y + 0.5
+        local dz = math.abs(pz - cam_z + 0.5)
+        if dx > 0.9 or dz > 0.9 or dy < -2.1 or dy > 0.8 then
+          local style = self.palette_styles[self.palette_selection]
+          set_voxel(px, py, pz, style)
+          edit_delay_s = 0
+        end
       end
       return true
     end
-    if distance > 1.0 then
-      pred = {x, y, z}
-    end
+    pred = {x, y, z}
   end)
 end
 

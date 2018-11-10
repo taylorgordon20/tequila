@@ -89,33 +89,33 @@ inline auto terrainSliceVertexOffsets(TerrainSliceDir dir) {
   static const std::vector<std::vector<std::tuple<int, int, int>>> kOffsets = {
       {
           std::tuple(0, 0, 0),
-          std::tuple(0, 1, 0),
           std::tuple(0, 0, 1),
+          std::tuple(0, 1, 0),
           std::tuple(0, 1, 1),
       },
       {
-          std::tuple(1, 0, 0),
-          std::tuple(1, 1, 0),
           std::tuple(1, 0, 1),
+          std::tuple(1, 0, 0),
           std::tuple(1, 1, 1),
+          std::tuple(1, 1, 0),
       },
       {
-          std::tuple(0, 0, 0),
-          std::tuple(1, 0, 0),
           std::tuple(0, 0, 1),
+          std::tuple(0, 0, 0),
           std::tuple(1, 0, 1),
+          std::tuple(1, 0, 0),
       },
       {
           std::tuple(0, 1, 0),
-          std::tuple(1, 1, 0),
           std::tuple(0, 1, 1),
+          std::tuple(1, 1, 0),
           std::tuple(1, 1, 1),
       },
       {
-          std::tuple(0, 0, 0),
           std::tuple(1, 0, 0),
-          std::tuple(0, 1, 0),
+          std::tuple(0, 0, 0),
           std::tuple(1, 1, 0),
+          std::tuple(0, 1, 0),
       },
       {
           std::tuple(0, 0, 1),

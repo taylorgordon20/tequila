@@ -55,21 +55,27 @@ struct VertexLights {
     auto surface_vertices = deps.get<SurfaceVertices>(voxel_key);
     auto global_light = deps.get<WorldLight>();
 
+    // Create a sampler to efficiently query voxel values.
+    VoxelsSampler sampler(deps.get<WorldOctree>(), [&](int64_t cell) {
+      auto voxel_keys = deps.get<VoxelKeys>(cell);
+      ENFORCE(voxel_keys->size() == 1);
+      return deps.get<Voxels>(voxel_keys->front());
+    });
+
     auto ret = std::make_shared<VertexLightMap>(voxels->size());
     for (auto [x, y, z] : *surface_vertices) {
       ret->get(x, y, z).global_occlusion = 1.0f;
-      voxels_util->marchVoxels(
-          voxels_util->getWorldCoords(*voxels, x, y, z),
-          *global_light,
-          32.0,
-          [&](int vx, int vy, int vz) {
-            return false;
-            if (voxels_util->getVoxel(vx, vy, vz)) {
-              ret->get(x, y, z).global_occlusion = 0.0f;
-              return false;
-            }
-            return true;
-          });
+      auto dir = *global_light;
+      auto from = voxels_util->getWorldCoords(*voxels, x, y, z);
+      voxels_util->marchVoxels(from, dir, 10.0, [&](int vx, int vy, int vz) {
+        float cx = vx + 0.5f, cy = vy + 0.5f, cz = vz + 0.5f;
+        float proj = glm::dot(dir, glm::vec3(cx, cy, cz) - from);
+        if (proj > 0.5f && sampler.getVoxel(cx, cy, cz)) {
+          ret->get(x, y, z).global_occlusion = 0.0f;
+          return false;
+        }
+        return true;
+      });
     }
     return ret;
   }
