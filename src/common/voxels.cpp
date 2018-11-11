@@ -120,8 +120,9 @@ std::vector<std::tuple<int, int, int>> VoxelArray::surfaceVoxels() const {
 }
 
 std::vector<std::tuple<int, int, int>> VoxelArray::surfaceVertices() const {
+  size_t size_plus_1 = size() + 1;
   auto to_index = [&](int x, int y, int z) -> int {
-    return x + y * size() + z * size() * size();
+    return x + y * size_plus_1 + z * size_plus_1 * size_plus_1;
   };
 
   std::unordered_set<int> vertex_set;
@@ -166,9 +167,9 @@ std::vector<std::tuple<int, int, int>> VoxelArray::surfaceVertices() const {
 
   std::vector<std::tuple<int, int, int>> ret;
   for (auto index : vertex_set) {
-    int x = index % size();
-    int y = (index / size()) % size();
-    int z = index / size() / size();
+    int x = index % size_plus_1;
+    int y = (index / size_plus_1) % size_plus_1;
+    int z = index / size_plus_1 / size_plus_1;
     ret.emplace_back(x, y, z);
   }
   return ret;

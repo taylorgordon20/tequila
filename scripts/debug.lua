@@ -88,10 +88,10 @@ function module:on_update(dt)
     delay_s = 0.0
   end
 
-  -- Simulate day-night.
+  -- Simulate a day-night light cycle.
   day_night.delay = day_night.delay + dt
   if day_night.enabled and day_night.delay > 10.0 then
-    day_night.angle = day_night.angle + 0.1
+    day_night.angle = day_night.angle + 0.02
     x = math.cos(day_night.angle)
     z = math.cos(day_night.angle)
     y = math.sin(day_night.angle)

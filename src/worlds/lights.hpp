@@ -26,7 +26,7 @@ struct VertexLightData {
 
 class VertexLightMap {
  public:
-  VertexLightMap(size_t voxel_size) : size_(voxel_size) {}
+  VertexLightMap(size_t voxel_size) : size_(voxel_size + 1) {}
 
   bool has(int x, int y, int z) {
     return map_.count(x + y * size_ + z * size_ * size_);
@@ -71,7 +71,7 @@ struct VertexLights {
         float cx = vx + 0.5f, cy = vy + 0.5f, cz = vz + 0.5f;
         float proj = glm::dot(dir, glm::vec3(cx, cy, cz) - from);
         if (proj > 0.5f && sampler.getVoxel(cx, cy, cz)) {
-          ret->get(x, y, z).global_occlusion = 0.2f;
+          ret->get(x, y, z).global_occlusion = 0.15f;
           return false;
         }
         return true;

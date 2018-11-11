@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <functional>
 #include <future>
 #include <memory>
@@ -11,6 +12,8 @@
 #include "src/common/registry.hpp"
 
 namespace tequila {
+
+static constexpr auto kProcessThrottleDuration = std::chrono::milliseconds(10);
 
 class OpenGLContextExecutor {
  public:
@@ -40,10 +43,14 @@ class OpenGLContextExecutor {
   }
 
   void process() {
-    // TODO: Add throttling / time-slicing to obviate frame stalls.
     ENFORCE(window_->inContext());
+    auto prev = std::chrono::high_resolution_clock::now();
     while (!queue_.isEmpty()) {
       queue_.pop().get()();
+      auto curr = std::chrono::high_resolution_clock::now();
+      if (curr - prev > kProcessThrottleDuration) {
+        break;
+      }
     }
   }
 
