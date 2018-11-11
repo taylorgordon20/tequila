@@ -175,7 +175,7 @@ class VoxelsUtil {
     int iy = static_cast<int>(from[1]);
     int iz = static_cast<int>(from[2]);
     for (auto march_distance = 0; march_distance < distance;) {
-      if (!voxel_fn(ix, iy, iz)) {
+      if (!voxel_fn(ix, iy, iz, march_distance)) {
         break;
       }
 

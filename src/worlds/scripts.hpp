@@ -178,7 +178,7 @@ auto FFI_get_ray_voxels(std::shared_ptr<VoxelsUtil>& voxels_util) {
         glm::vec3(start_x, start_y, start_z),
         glm::vec3(dir_x, dir_y, dir_z),
         distance,
-        [&](int ix, int iy, int iz) {
+        [&](int ix, int iy, int iz, float distance) {
           results.emplace_back(std::vector<int>{ix, iy, iz});
           return true;
         });
