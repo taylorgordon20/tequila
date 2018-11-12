@@ -6,10 +6,10 @@
 #define GLBINDING_AUTHOR_DOMAIN       "https://github.com/cginternals/glbinding/"
 #define GLBINDING_AUTHOR_MAINTAINER   "opensource@cginternals.com"
 
-#define GLBINDING_VERSION_MAJOR       "2"
-#define GLBINDING_VERSION_MINOR       "1"
-#define GLBINDING_VERSION_PATCH       "1"
-#define GLBINDING_VERSION_REVISION    "000000000000"
+#define GLBINDING_VERSION_MAJOR       "3"
+#define GLBINDING_VERSION_MINOR       "0"
+#define GLBINDING_VERSION_PATCH       "2"
+#define GLBINDING_VERSION_REVISION    "0"
 
-#define GLBINDING_VERSION             "2.1.1"
-#define GLBINDING_NAME_VERSION        "glbinding v2.1.1 (000000000000)"
+#define GLBINDING_VERSION             "3.0.2"
+#define GLBINDING_NAME_VERSION        "glbinding v3.0.2 (0)"

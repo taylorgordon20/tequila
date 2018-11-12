@@ -218,6 +218,14 @@ cc_import(
 
 cc_import(
   name = "glbinding-aux",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/glbinding-aux.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/glbinding-aux.dll",
+    "//conditions:default": None,
+  }),
   static_library = select({
     CONDITION_MAP["x64-osx"]: "x64-osx/lib/libglbinding-aux.a",
     "//conditions:default": None,
