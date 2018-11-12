@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <unordered_map>
 
 #include "src/common/strings.hpp"
 

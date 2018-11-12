@@ -60,12 +60,9 @@ struct VisibleCells {
 
 // Convenience method to make it easier to get registry objects while generating
 // a resource (e.g. inside its factory).
-template <typename Type, typename Resources>
-inline auto registryGet(Resources& resources) {
-  return resources.get<WorldStaticContext>()->registry->get<Type>();
+template <typename Type>
+inline auto registryGet(ResourceDeps& deps) {
+  return deps.get<WorldStaticContext>()->registry->get<Type>();
 }
-
-#define WORLD_TIMER(deps) \
-  ([&](auto msg) { return StatsTimer(registryGet<Stats>(deps), msg); })
 
 }  // namespace tequila

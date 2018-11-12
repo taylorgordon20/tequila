@@ -37,6 +37,10 @@ enum TerrainSliceDir {
   FRONT = 5
 };
 
+inline std::ostream& operator<<(std::ostream& os, TerrainSliceDir& dir) {
+  return os << static_cast<int>(dir);
+}
+
 inline auto terrainSliceOrigin(TerrainSliceDir dir) {
   static const std::vector<glm::vec3> kOrigins = {
       glm::vec3(0.0f, 0.0f, 0.0f),

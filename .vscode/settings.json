@@ -102,6 +102,7 @@
     "mutex": "cpp",
     "scoped_allocator": "cpp",
     "filesystem": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "strstream": "cpp"
   },
 }

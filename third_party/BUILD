@@ -24,6 +24,7 @@ cc_library(
     ":chakracore",
     ":freetype",
     ":glbinding",
+    ":glbinding-aux",
     ":glfw3",
     ":libpng",
     ":lua",
@@ -193,6 +194,10 @@ cc_import(
     CONDITION_MAP["x64-windows"]: "x64-windows/bin/freetype.dll",
     "//conditions:default": None,
   }),
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libfreetype.a",
+    "//conditions:default": None,
+  }),
 )
 
 cc_import(
@@ -207,6 +212,14 @@ cc_import(
   }),
   static_library = select({
     CONDITION_MAP["x64-osx"]: "x64-osx/lib/libglbinding.a",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "glbinding-aux",
+  static_library = select({
+    CONDITION_MAP["x64-osx"]: "x64-osx/lib/libglbinding-aux.a",
     "//conditions:default": None,
   }),
 )

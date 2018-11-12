@@ -1,42 +1,22 @@
 
-#ifndef GLBINDING_API_H
-#define GLBINDING_API_H
+#ifndef GLBINDING_TEMPLATE_API_H
+#define GLBINDING_TEMPLATE_API_H
+
+#include <glbinding/glbinding_export.h>
 
 #ifdef GLBINDING_STATIC_DEFINE
-#  define GLBINDING_API
-#  define GLBINDING_NO_EXPORT
+#  define GLBINDING_TEMPLATE_API
 #else
-#  ifndef GLBINDING_API
-#    ifdef glbinding_EXPORTS
+#  ifndef GLBINDING_TEMPLATE_API
+#    ifdef GLBINDING_EXPORTS
         /* We are building this library */
-#      define GLBINDING_API 
+#      define GLBINDING_TEMPLATE_API __attribute__((visibility("default")))
 #    else
         /* We are using this library */
-#      define GLBINDING_API 
+#      define GLBINDING_TEMPLATE_API __attribute__((visibility("default")))
 #    endif
 #  endif
 
-#  ifndef GLBINDING_NO_EXPORT
-#    define GLBINDING_NO_EXPORT 
-#  endif
 #endif
 
-#ifndef GLBINDING_DEPRECATED
-#  define GLBINDING_DEPRECATED __attribute__ ((__deprecated__))
 #endif
-
-#ifndef GLBINDING_DEPRECATED_EXPORT
-#  define GLBINDING_DEPRECATED_EXPORT GLBINDING_API GLBINDING_DEPRECATED
-#endif
-
-#ifndef GLBINDING_DEPRECATED_NO_EXPORT
-#  define GLBINDING_DEPRECATED_NO_EXPORT GLBINDING_NO_EXPORT GLBINDING_DEPRECATED
-#endif
-
-#if 0 /* DEFINE_NO_DEPRECATED */
-#  ifndef GLBINDING_NO_DEPRECATED
-#    define GLBINDING_NO_DEPRECATED
-#  endif
-#endif
-
-#endif /* GLBINDING_API_H */

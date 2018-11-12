@@ -6,7 +6,7 @@
 namespace tequila {
 
 void run() {
-  Font small_font("fonts/calibri.ttf", 19);
+  Font small_font("fonts/Roboto/Roboto-Regular.ttf", 19);
 
   // Generate an image (copy alpha into RGB for testing purposes).
   auto image_tensor = small_font.getAtlasImage();

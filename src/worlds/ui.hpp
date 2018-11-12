@@ -16,17 +16,6 @@
 
 namespace tequila {
 
-struct UIShader {
-  auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
-      return new ShaderProgram(std::vector<ShaderSource>{
-          makeVertexShader(loadFile("shaders/ui.vert.glsl")),
-          makeFragmentShader(loadFile("shaders/ui.frag.glsl")),
-      });
-    });
-  }
-};
-
 struct UIFont {
   auto operator()(ResourceDeps& deps, const std::string& style, size_t size) {
     return std::make_shared<Font>(format("fonts/%1%.ttf", style), size);
@@ -102,27 +91,40 @@ struct WorldRectNodes {
   }
 };
 
+struct RectUIShader {
+  auto operator()(ResourceDeps& deps) {
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new ShaderProgram(std::vector<ShaderSource>{
+          makeVertexShader(loadFile("shaders/ui.vert.glsl")),
+          makeFragmentShader(loadFile("shaders/ui.rect.frag.glsl")),
+      });
+    });
+  }
+};
+
 class RectUIRenderer {
  public:
   RectUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
-  void draw(ShaderProgram& shader) {
+  void draw(const glm::mat4& projection) {
     auto node_ids = resources_->get_opt<WorldRectNodes>();
     if (!node_ids) {
       return;
     }
-    for (const auto& node_id : *node_ids.get()) {
-      auto rect = resources_->get_opt<WorldRectNode>(node_id);
-      if (!rect) {
-        continue;
+
+    auto shader = resources_->resources()->get<RectUIShader>();
+    shader->run([&] {
+      shader->uniform("projection_matrix", projection);
+      for (const auto& node_id : *node_ids.get()) {
+        auto rect = resources_->get_opt<WorldRectNode>(node_id);
+        if (!rect) {
+          continue;
+        }
+        shader->uniform("model_matrix", rect.get()->mesh.transform());
+        shader->uniform("base_color", rect.get()->color);
+        rect.get()->mesh.draw(*shader);
       }
-      shader.uniform("use_color_map", false);
-      shader.uniform("use_color_map_array", false);
-      shader.uniform("use_normal_map_array", false);
-      shader.uniform("model_matrix", rect.get()->mesh.transform());
-      shader.uniform("base_color", rect.get()->color);
-      rect.get()->mesh.draw(shader);
-    }
+    });
   }
 
  private:
@@ -180,29 +182,42 @@ struct WorldTextNodes {
   }
 };
 
+struct TextUIShader {
+  auto operator()(ResourceDeps& deps) {
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new ShaderProgram(std::vector<ShaderSource>{
+          makeVertexShader(loadFile("shaders/ui.vert.glsl")),
+          makeFragmentShader(loadFile("shaders/ui.text.frag.glsl")),
+      });
+    });
+  }
+};
+
 class TextUIRenderer {
  public:
   TextUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
-  void draw(ShaderProgram& shader) {
+  void draw(const glm::mat4& projection) {
     auto node_ids = resources_->get_opt<WorldTextNodes>();
     if (!node_ids) {
       return;
     }
-    for (const auto& node_id : *node_ids.get()) {
-      auto text = resources_->get_opt<WorldTextNode>(node_id);
-      if (!text) {
-        continue;
+
+    auto shader = resources_->resources()->get<TextUIShader>();
+    shader->run([&] {
+      shader->uniform("projection_matrix", projection);
+      for (const auto& node_id : *node_ids.get()) {
+        auto text = resources_->get_opt<WorldTextNode>(node_id);
+        if (!text) {
+          continue;
+        }
+        TextureBinding tb(*text.get()->texture, 0);
+        shader->uniform("color_map", tb.location());
+        shader->uniform("model_matrix", text.get()->mesh.transform());
+        shader->uniform("base_color", text.get()->color);
+        text.get()->mesh.draw(*shader);
       }
-      TextureBinding tb(*text.get()->texture, 0);
-      shader.uniform("color_map", tb.location());
-      shader.uniform("use_color_map", true);
-      shader.uniform("use_color_map_array", false);
-      shader.uniform("use_normal_map_array", false);
-      shader.uniform("model_matrix", text.get()->mesh.transform());
-      shader.uniform("base_color", text.get()->color);
-      text.get()->mesh.draw(shader);
-    }
+    });
   }
 
  private:
@@ -304,32 +319,45 @@ struct WorldStyleNodes {
   }
 };
 
+struct StyleUIShader {
+  auto operator()(ResourceDeps& deps) {
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new ShaderProgram(std::vector<ShaderSource>{
+          makeVertexShader(loadFile("shaders/ui.vert.glsl")),
+          makeFragmentShader(loadFile("shaders/ui.style.frag.glsl")),
+      });
+    });
+  }
+};
+
 class StyleUIRenderer {
  public:
   StyleUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
-  void draw(ShaderProgram& shader) {
+  void draw(const glm::mat4& projection) {
     auto node_ids = resources_->get_opt<WorldStyleNodes>();
     if (!node_ids) {
       return;
     }
-    for (const auto& node_id : *node_ids.get()) {
-      if (auto node_opt = resources_->get_opt<WorldStyleNode>(node_id)) {
-        auto node = node_opt.get();
-        TextureArrayBinding color_map_array(*node->color_map, 0);
-        TextureArrayBinding normal_map_array(*node->normal_map, 1);
-        shader.uniform("use_color_map", false);
-        shader.uniform("use_color_map_array", true);
-        shader.uniform("use_normal_map_array", true);
-        shader.uniform("color_map_array", color_map_array.location());
-        shader.uniform("color_map_array_index", node->color_map_index);
-        shader.uniform("normal_map_array", normal_map_array.location());
-        shader.uniform("normal_map_array_index", node->normal_map_index);
-        shader.uniform("base_color", node->color);
-        shader.uniform("model_matrix", node->mesh.transform());
-        node->mesh.draw(shader);
+
+    auto shader = resources_->resources()->get<StyleUIShader>();
+    shader->run([&] {
+      shader->uniform("projection_matrix", projection);
+      for (const auto& node_id : *node_ids.get()) {
+        if (auto node_opt = resources_->get_opt<WorldStyleNode>(node_id)) {
+          auto node = node_opt.get();
+          TextureArrayBinding color_map_array(*node->color_map, 0);
+          TextureArrayBinding normal_map_array(*node->normal_map, 1);
+          shader->uniform("color_map_array", color_map_array.location());
+          shader->uniform("color_map_array_index", node->color_map_index);
+          shader->uniform("normal_map_array", normal_map_array.location());
+          shader->uniform("normal_map_array_index", node->normal_map_index);
+          shader->uniform("base_color", node->color);
+          shader->uniform("model_matrix", node->mesh.transform());
+          node->mesh.draw(*shader);
+        }
       }
-    }
+    });
   }
 
  private:
@@ -356,22 +384,24 @@ class UIRenderer {
         style_renderer_(style_renderer) {}
 
   void draw() {
+    // Prepare OpenGL state.
+    gl::glDisable(gl::GL_DEPTH_TEST);
+    gl::glEnable(gl::GL_BLEND);
+    gl::glBlendFunc(gl::GL_SRC_ALPHA, gl::GL_ONE_MINUS_SRC_ALPHA);
+    Finally finally([] {
+      gl::glDisable(gl::GL_BLEND);
+      gl::glEnable(gl::GL_DEPTH_TEST);
+    });
+
+    // Build the orthographic projection martix.
     int width, height;
     window_->call<glfwGetFramebufferSize>(&width, &height);
     auto ortho_mat = glm::ortho<float>(0.0, width, 0.0, height, 0.0, 1000.0);
 
-    auto shader = resources_->get<UIShader>();
-    shader->run([&] {
-      gl::glDisable(gl::GL_DEPTH_TEST);
-      gl::glEnable(gl::GL_BLEND);
-      gl::glBlendFunc(gl::GL_SRC_ALPHA, gl::GL_ONE_MINUS_SRC_ALPHA);
-      shader->uniform("projection_matrix", ortho_mat);
-      rect_renderer_->draw(*shader);
-      text_renderer_->draw(*shader);
-      style_renderer_->draw(*shader);
-      gl::glDisable(gl::GL_BLEND);
-      gl::glEnable(gl::GL_DEPTH_TEST);
-    });
+    // Invoke UI renderers.
+    rect_renderer_->draw(ortho_mat);
+    text_renderer_->draw(ortho_mat);
+    style_renderer_->draw(ortho_mat);
   }
 
  private:

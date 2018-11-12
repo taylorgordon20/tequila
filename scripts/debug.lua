@@ -61,6 +61,8 @@ function module:on_done()
   delete_ui_node("camera")
 end
 
+local previous_time = 0
+
 function module:on_update(dt)
   -- Update FPS counter.
   dt_mean = 0.01 * dt + 0.99 * dt_mean

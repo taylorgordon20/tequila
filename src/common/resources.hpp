@@ -28,12 +28,15 @@ template <
     typename Resource,
     typename... Keys,
     typename Return,
+    typename Class,
     typename... Args>
-auto resourceTuple(
-    Return (Resource::*factory_fn)(ResourceDeps&, Args...), const Keys&... keys)
-    -> std::tuple<std::type_index, std::decay_t<Args>...> {
-  return std::tuple<std::type_index, std::decay_t<Args>...>(
-      std::type_index(typeid(Resource)), keys...);
+auto resourceHashTuple(
+    Return (Class::*factory_fn)(ResourceDeps&, Args...),
+    int seed,
+    const Keys&... keys)
+    -> std::tuple<std::type_index, int, std::decay_t<Args>...> {
+  return std::tuple<std::type_index, int, std::decay_t<Args>...>(
+      std::type_index(typeid(Resource)), seed, keys...);
 }
 
 // Extracts a key tuple for Resources defined with const factories.
@@ -41,25 +44,33 @@ template <
     typename Resource,
     typename... Keys,
     typename Return,
+    typename Class,
     typename... Args>
-auto resourceTuple(
-    Return (Resource::*factory_fn)(ResourceDeps&, Args...) const,
-    const Keys&... keys) -> std::tuple<std::type_index, std::decay_t<Args>...> {
-  return std::tuple<std::type_index, std::decay_t<Args>...>(
-      std::type_index(typeid(Resource)), keys...);
+auto resourceHashTuple(
+    Return (Class::*factory_fn)(ResourceDeps&, Args...) const,
+    int seed,
+    const Keys&... keys)
+    -> std::tuple<std::type_index, int, std::decay_t<Args>...> {
+  return std::tuple<std::type_index, int, std::decay_t<Args>...>(
+      std::type_index(typeid(Resource)), seed, keys...);
 }
 
 // Generates a 64-bit hash of a resource key tuple.
 template <typename Resource, typename... Keys>
-auto resourceHash(const Keys&... keys) {
-  auto key_tuple = resourceTuple<Resource>(&Resource::operator(), keys...);
-  uint64_t lo = boost::hash_value(std::make_pair(1269021407ull, key_tuple));
-  uint64_t hi = boost::hash_value(std::make_pair(2139465699ull, key_tuple));
+uint64_t resourceHash(const Keys&... keys) {
+  auto lo_tuple =
+      resourceHashTuple<Resource>(&Resource::operator(), 1269021407, keys...);
+  auto hi_tuple =
+      resourceHashTuple<Resource>(&Resource::operator(), 2139465699, keys...);
+  uint32_t lo = boost::hash_value(lo_tuple);
+  uint64_t hi = boost::hash_value(hi_tuple);
   return (hi << 32) + lo;
 }
 
 class ResourceGeneratorBase {
  public:
+  virtual ~ResourceGeneratorBase() = default;
+
   // Returns key uniquely identifying this generator.
   virtual uint64_t key() = 0;
 
@@ -85,6 +96,10 @@ class ResourceGeneratorBase {
   virtual bool stale() = 0;
 };
 
+template <typename Resource>
+using ResourceValue =
+    typename decltype(make_function(&Resource::operator()))::result_type;
+
 // Reduced interface exposed to resource factories allowing dependency injection
 // of other resources. The dependencies are tracked to allow update propagation.
 class ResourceDeps {
@@ -93,23 +108,7 @@ class ResourceDeps {
       : resources_(resources), resource_key_(resource_key) {}
 
   template <typename Resource, typename... Keys>
-  auto get(const Keys&... keys) {
-    try {
-      auto generator = resources_.generator<Resource>(keys...);
-      generator->subscribe(resource_key_);
-      deps_.emplace(resourceHash<Resource>(keys...), generator);
-      return generator->get();
-    } catch (const std::exception& e) {
-      LOG_ERROR(format(
-          "Resource \"%1%\" exception: %2%",
-          typeid(Resource).name(),
-          e.what()));
-      throw;
-    } catch (...) {
-      LOG_ERROR(format("Resource \"%1%\" exception.", typeid(Resource).name()));
-      throw;
-    }
-  }
+  ResourceValue<Resource> get(const Keys&... keys);
 
   auto& deps() {
     return deps_;
@@ -127,8 +126,7 @@ class ResourceDeps {
 // of a resource as well as its subscribers and dependencies.
 template <typename Resource>
 class ResourceGenerator : public ResourceGeneratorBase {
-  using Value =
-      typename decltype(make_function(&Resource::operator()))::result_type;
+  using Value = ResourceValue<Resource>;
 
  public:
   template <typename Function, typename... Keys>
@@ -298,7 +296,13 @@ class Resources {
     auto cache_key = resourceHash<Resource>(keys...);
     if (cache_.count(cache_key)) {
       auto generator = cache_.at(cache_key);
-      ENFORCE(typeid(Resource) == generator->type());
+      ENFORCE(
+          typeid(Resource) == generator->type(),
+          concat(
+              "Cache collision ",
+              typeid(Resource).name(),
+              " vs ",
+              generator->type().name()));
       return std::static_pointer_cast<ResourceGenerator<Resource>>(generator);
     }
 
@@ -321,14 +325,6 @@ class Resources {
   }
 
  private:
-  template <typename Function>
-  void propagate(uint64_t source_key, Function&& fn) {
-    auto gens = subscribers(source_key);
-    for (auto& pair : gens) {
-      fn(pair.second);
-    }
-  }
-
   auto subscribers(uint64_t source_key) {
     std::unordered_map<uint64_t, std::shared_ptr<ResourceGeneratorBase>> ret;
 
@@ -364,6 +360,14 @@ class Resources {
     return ret;
   }
 
+  template <typename Function>
+  void propagate(uint64_t source_key, Function&& fn) {
+    auto gens = subscribers(source_key);
+    for (auto& pair : gens) {
+      fn(pair.second);
+    }
+  }
+
   template <typename Resource, typename... Keys>
   auto makeGenerator(const Keys&... keys) {
     using Fun = decltype(make_function(&Resource::operator()));
@@ -382,6 +386,23 @@ class Resources {
   std::unordered_map<std::type_index, boost::any> overrides_;
   std::unordered_map<uint64_t, std::shared_ptr<ResourceGeneratorBase>> cache_;
 };
+
+template <typename Resource, typename... Keys>
+ResourceValue<Resource> ResourceDeps::get(const Keys&... keys) {
+  try {
+    auto generator = resources_.generator<Resource>(keys...);
+    generator->subscribe(resource_key_);
+    deps_.emplace(resourceHash<Resource>(keys...), generator);
+    return generator->get();
+  } catch (const std::exception& e) {
+    LOG_ERROR(format(
+        "Resource \"%1%\" exception: %2%", typeid(Resource).name(), e.what()));
+    throw;
+  } catch (...) {
+    LOG_ERROR(format("Resource \"%1%\" exception.", typeid(Resource).name()));
+    throw;
+  }
+}
 
 class AsyncResources {
  public:
@@ -432,12 +453,6 @@ class AsyncResources {
 
  private:
   template <typename Resource, typename... Keys>
-  bool isBuilding(const Keys&... keys) {
-    std::lock_guard lock(building_mutex_);
-    return building_.count(resourceHash<Resource>(keys...));
-  }
-
-  template <typename Resource, typename... Keys>
   auto describe(const Keys&... keys) {
     return format("<%1%>(%2%)", typeid(Resource).name(), join(", ", keys...));
   }
@@ -445,7 +460,7 @@ class AsyncResources {
   template <typename Function, typename... Keys>
   auto schedule(const std::string& task, Function fn, const Keys&... keys) {
     return executor_->schedule(
-        [this, task, fn = std::move(fn), keys = std::make_tuple(keys...)] {
+        [task, fn = std::move(fn), keys = std::make_tuple(keys...)] {
           try {
             return std::apply(fn, keys);
           } catch (const std::exception& e) {

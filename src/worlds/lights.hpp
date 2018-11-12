@@ -63,8 +63,15 @@ struct VertexLights {
     });
 
     auto ret = std::make_shared<VertexLightMap>(voxels->size());
-    for (auto [x, y, z] : *surface_vertices) {
+    for (const auto& vertex : *surface_vertices) {
+      auto x = std::get<0>(vertex);
+      auto y = std::get<1>(vertex);
+      auto z = std::get<2>(vertex);
+
+      // Initialize occlusion to "not occluded".
       ret->get(x, y, z).global_occlusion = 1.0f;
+
+      // Cast ray to detect if the the light to this vertex is occluded.
       auto dir = *global_light;
       auto from = voxels_util->getWorldCoords(*voxels, x, y, z);
       from += 0.01f * dir;

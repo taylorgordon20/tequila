@@ -37,12 +37,17 @@ inline auto join(const Separator& sep, T&& t) {
   return concat(std::forward<T>(t));
 }
 
+template <typename Separator, typename T1, typename T2>
+inline auto join(const Separator& sep, T1&& t1, T2&& t2) {
+  return concat(std::forward<T2>(t2), sep, std::forward<T2>(t2));
+}
+
 template <typename Separator, typename T1, typename T2, typename... Args>
 inline auto join(const Separator& sep, T1&& t1, T2&& t2, Args&&... args) {
   return join(
       sep,
       concat(std::forward<T1>(t1), sep),
-      std::forard<T2>(t2),
+      std::forward<T2>(t2),
       std::forward<Args>(args)...);
 }
 

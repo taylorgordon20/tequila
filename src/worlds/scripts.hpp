@@ -37,6 +37,14 @@ auto FFI_exit(std::shared_ptr<Window>& window) {
   return [window] { window->close(); };
 }
 
+auto FFI_now_time() {
+  return [] {
+    auto now = std::chrono::system_clock::now();
+    auto dur = std::chrono::duration<double>(now.time_since_epoch());
+    return dur.count();
+  };
+}
+
 auto FFI_reload(std::shared_ptr<Resources>& resources) {
   return [resources] { resources->invalidate<ScriptContext>(); };
 }
@@ -288,6 +296,7 @@ class ScriptExecutor {
   void initializeFFI(LuaContext& ctx) {
     std::cout << "Intializing Lua FFI." << std::endl;
     ctx.set("exit", wrapFFI(FFI_exit(window_)));
+    ctx.set("now_time", wrapFFI(FFI_now_time()));
     ctx.set("reload", wrapFFI(FFI_reload(resources_)));
     ctx.set("get_module", wrapFFI(FFI_get_module(resources_)));
     ctx.set("get_stats", wrapFFI(FFI_get_stats(stats_)));

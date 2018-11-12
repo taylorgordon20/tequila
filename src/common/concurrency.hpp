@@ -45,7 +45,8 @@ inline void spin(std::future<void>& future, Function&& fn) {
 
 template <typename Future, typename Function>
 inline auto spin(Future& future, Function&& fn) {
-  for (auto ret = get_opt(future); !ret; ret = get_opt(future)) {
+  auto ret = get_opt(future);
+  while (!(ret = get_opt(future))) {
     fn();
   }
   return *ret;

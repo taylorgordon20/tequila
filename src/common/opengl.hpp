@@ -8,12 +8,16 @@
 
 // Include glbinding which provides bindings of all functions used in the
 // version/profile of the current OpenGL context.
+#include <glbinding-aux/ContextInfo.h>
+#include <glbinding-aux/debug.h>
+#include <glbinding-aux/types_to_string.h>
 #include <glbinding/Binding.h>
-#include <glbinding/ContextInfo.h>
 #include <glbinding/Version.h>
 #include <glbinding/gl/gl.h>
+#include <glbinding/glbinding.h>
 
 #include "src/common/errors.hpp"
+#include "src/common/strings.hpp"
 
 namespace tequila {
 
@@ -29,14 +33,14 @@ renderer: %3%
 inline void logInfoAboutOpenGL() {
   std::cout << format(
       kOpenGLInfoTemplate,
-      glbinding::ContextInfo::version().toString(),
-      glbinding::ContextInfo::vendor(),
-      glbinding::ContextInfo::renderer());
+      glbinding::aux::ContextInfo::version().toString(),
+      glbinding::aux::ContextInfo::vendor(),
+      glbinding::aux::ContextInfo::renderer());
 }
 
 inline void initializeBindingsForOpenGL() {
   // Bindings are lazily initialized.
-  glbinding::Binding::initialize(false);
+  glbinding::initialize(glfwGetProcAddress);
 }
 
 }  // namespace tequila

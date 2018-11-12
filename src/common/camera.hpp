@@ -27,8 +27,7 @@ struct Camera {
         far_distance(100.0f) {}
 
   auto viewMatrix() const {
-    constexpr glm::vec3 up(0.0f, 1.0f, 0.0f);
-    return glm::lookAt(position, position + view, up);
+    return glm::lookAt(position, position + view, glm::vec3(0.0f, 1.0f, 0.0f));
   }
 
   auto normalMatrix() const {
