@@ -1,10 +1,10 @@
 #version 410
 
 // Material properties.
-const vec3 mat_ambient = vec3(0.2, 0.2, 0.2);
-const vec3 mat_diffuse = vec3(0.9, 0.9, 0.9);
+const vec3 mat_ambient = vec3(0.3, 0.3, 0.3);
+const vec3 mat_diffuse = vec3(0.7, 0.7, 0.7);
 const vec3 mat_specular = vec3(0.3, 0.3, 0.3);
-const float mat_shininess = 10.0;
+const float mat_shininess = 4.0;
 const float mat_occlusion_exp = 4.0;
 
 // Light properties.
@@ -64,7 +64,10 @@ void main() {
   vec3 idx_normal = vec3(_tex_coord.xy, _normal_layer);
   vec3 t_color = texture(color_map, idx_color).xyz;
   vec3 t_normal = normalize(2.0 * texture(normal_map, idx_normal).xyz - 1.0);
-  float t_occlusion = pow(max(0, dot(vec3(0, 0, 1), t_normal)), mat_occlusion_exp);
+  float t_occlusion = max(0, dot(vec3(0, 0, 1), t_normal));
+
+  // Boost the occlusion and clamp it from below.
+  t_occlusion = clamp(0.1 + 0.8 * pow(t_occlusion, mat_occlusion_exp), 0.1, 1.0);
 
   // Compute light component vectors.
   vec3 normal = normalize(mat3(_tangent, _cotangent, _normal) * t_normal);
@@ -72,9 +75,10 @@ void main() {
   vec3 halfv = normalize(0.5 * (_eye + _light));
 
   // Compute lighting components.
-  vec3 A = _occlusion * getAmbientComponent(t_occlusion);
-  vec3 D = _occlusion * getDiffuseComponent(normal, light);
-  vec3 S = _occlusion * getSpecularComponent(normal, light, halfv);
+  float occlusion = max(0.25, 1.0 / (1 + exp(-8.0 * (_occlusion - 0.5))));
+  vec3 A = occlusion * getAmbientComponent(t_occlusion);
+  vec3 D = occlusion * getDiffuseComponent(normal, light);
+  vec3 S = occlusion * getSpecularComponent(normal, light, halfv);
 
   // Compute the pixel color.
   color = vec4(applyFog(_color * t_color * (A + D) + S, _depth), 1.0);

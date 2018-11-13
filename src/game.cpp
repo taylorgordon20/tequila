@@ -53,8 +53,7 @@ auto getWorldUI() {
 void logTraces(std::shared_ptr<Stats> stats, std::vector<TraceTag>& tags) {
   ENFORCE(tags.size() >= 2);
   auto total_dur = std::get<1>(tags.back()) - std::get<1>(tags.front());
-  if (total_dur > std::chrono::milliseconds(20)) {
-    LOG_ERROR("Woah, slow loop!");
+  if (total_dur > std::chrono::milliseconds(30)) {
     StatsUpdate stats_update(stats);
     for (int i = 1; i < tags.size(); i += 1) {
       using namespace std::chrono;

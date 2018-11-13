@@ -15,7 +15,7 @@
         "name": "grass",
         "color": "FFFFFF",
         "color_map": "images/color_map_grass.png",
-        "normal_map": "images/normal_map_ground.png"
+        "normal_map": "images/normal_map_grass.png"
       }
     },
     {
@@ -76,42 +76,42 @@
       "key": 9,
       "value": {
         "name": "brick",
-        "color": "FFFFFF",
-        "color_map": "images/color_map_clay.png",
-        "normal_map": "images/normal_map_brick.png"
+        "color": "CC8866",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_hut.png"
       }
     },
     {
       "key": 10,
       "value": {
         "name": "blue_brick",
-        "color": "3333FF",
+        "color": "8899CC",
         "color_map": "images/color_map_shale.png",
-        "normal_map": "images/normal_map_brick.png"
+        "normal_map": "images/normal_map_hut.png"
       }
     },
     {
       "key": 11,
       "value": {
-        "name": "cyan_brick",
-        "color": "33FFFF",
-        "color_map": "images/color_map_shale.png",
-        "normal_map": "images/normal_map_brick.png"
+        "name": "granite",
+        "color": "FFFFFF",
+        "color_map": "images/color_map_granite.png",
+        "normal_map": "images/normal_map_rock.png"
       }
     },
     {
       "key": 12,
       "value": {
-        "name": "red_brick",
-        "color": "FF3333",
-        "color_map": "images/color_map_shale.png",
-        "normal_map": "images/normal_map_brick.png"
+        "name": "granite_brick",
+        "color": "FFFFFF",
+        "color_map": "images/color_map_granite.png",
+        "normal_map": "images/normal_map_hut.png"
       }
     },
     {
       "key": 13,
       "value": {
-        "name": "hut",
+        "name": "gray_brick",
         "color": "DDCCBB",
         "color_map": "images/color_map_shale.png",
         "normal_map": "images/normal_map_hut.png"
