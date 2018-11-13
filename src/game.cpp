@@ -125,24 +125,37 @@ void run() {
   // Update registry pointer inside resources.
   static_context->registry = &registry;
 
+  // Increase thread priority of the OpenGL thread.
+#ifdef _WIN32
+  SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+#endif
+
   // Enter the game loop.
   std::cout << "Entering game loop." << std::endl;
   registry.get<Window>()->loop([&](float dt) {
     StatsTimer loop_timer(registry.get<Stats>(), "game_loop");
     Trace trace([&](auto& tags) { logTraces(registry.get<Stats>(), tags); });
+    registry.get<Stats>()->set(
+        "async_tasks", registry.get<QueueExecutor>()->queueSize());
 
     // Handle the update game event.
+    Trace::tag("loop_1");
     registry.get<EventHandler>()->update(dt);
 
     // Process OpenGL updates that are blocking async tasks.
+    Trace::tag("loop_2");
     registry.get<OpenGLContextExecutor>()->process();
 
     // Render the scene to a new frame.
     gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
-    registry.get<SkyRenderer>()->draw();
+    // Trace::tag("loop_3");
+    // registry.get<SkyRenderer>()->draw();
+    Trace::tag("loop_4");
     registry.get<TerrainRenderer>()->draw();
+    Trace::tag("loop_5");
     registry.get<UIRenderer>()->draw();
+    Trace::tag("loop_6");
   });
 
   // Unblock and wait for any outstanding asynchronous tasks.

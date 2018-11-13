@@ -445,7 +445,6 @@ class TerrainRenderer {
   void draw() const {
     StatsUpdate stats(stats_);
     StatsTimer loop_timer(stats_, "terrain_renderer");
-    ScopeTrace trace("terrain_renderer");
 
     // Fetch globals needed to render terrain.
     auto light = resources_->get<WorldLight>();

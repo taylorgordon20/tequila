@@ -435,6 +435,15 @@ class AsyncResources {
   }
 
   template <typename Resource, typename... Keys>
+  auto get_cached(const Keys&... keys) {
+    auto generator = resources()->generator<Resource>(keys...);
+    if (auto value_ptr = generator->get_ptr()) {
+      return *value_ptr;
+    }
+    return resources()->get<Resource>(keys...);
+  }
+
+  template <typename Resource, typename... Keys>
   auto get_opt(const Keys&... keys) {
     // If there is a cached value, return it immediately and kick off an
     // asynchronous update if the cached value is stale.

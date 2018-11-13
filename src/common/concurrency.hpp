@@ -67,6 +67,11 @@ class MPMCQueue {
     return queue_.empty();
   }
 
+  auto size() {
+    std::lock_guard lock(mutex_);
+    return queue_.size();
+  }
+
   void close() {
     {
       std::lock_guard lock(mutex_);
@@ -119,6 +124,11 @@ class QueueExecutor {
         finished_workers_ += 1;
       });
     }
+#ifdef _WIN32
+    for (auto& worker : workers_) {
+      SetThreadPriority(worker.native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
+    }
+#endif
   }
 
   ~QueueExecutor() {
@@ -126,6 +136,10 @@ class QueueExecutor {
     for (auto& worker : workers_) {
       worker.join();
     }
+  }
+
+  auto queueSize() {
+    return task_queue_.size();
   }
 
   bool isDone() {
