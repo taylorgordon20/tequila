@@ -84,11 +84,15 @@ struct SkyShader {
 class SkyRenderer {
  public:
   SkyRenderer(
+      std::shared_ptr<Stats> stats,
       std::shared_ptr<Resources> resources,
       std::shared_ptr<AsyncResources> async_resources)
-      : resources_(resources), async_resources_(async_resources) {}
+      : stats_(stats),
+        resources_(resources),
+        async_resources_(async_resources) {}
 
   void draw() const {
+    StatsTimer loop_timer(stats_, "sky_renderer");
     auto sky_opt = async_resources_->get_opt<Sky>();
     if (!sky_opt) {
       return;
@@ -114,6 +118,7 @@ class SkyRenderer {
   }
 
  private:
+  std::shared_ptr<Stats> stats_;
   std::shared_ptr<Resources> resources_;
   std::shared_ptr<AsyncResources> async_resources_;
 };
@@ -121,7 +126,9 @@ class SkyRenderer {
 template <>
 inline std::shared_ptr<SkyRenderer> gen(const Registry& registry) {
   return std::make_shared<SkyRenderer>(
-      registry.get<Resources>(), registry.get<AsyncResources>());
+      registry.get<Stats>(),
+      registry.get<Resources>(),
+      registry.get<AsyncResources>());
 }
 
 }  // namespace tequila

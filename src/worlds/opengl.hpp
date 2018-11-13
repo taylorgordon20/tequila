@@ -17,8 +17,9 @@ static constexpr auto kProcessThrottleDuration = std::chrono::milliseconds(10);
 
 class OpenGLContextExecutor {
  public:
-  OpenGLContextExecutor(std::shared_ptr<Window> window)
-      : window_(std::move(window)) {}
+  OpenGLContextExecutor(
+      std::shared_ptr<Stats> stats, std::shared_ptr<Window> window)
+      : stats_(std::move(stats)), window_(std::move(window)) {}
 
   template <typename Function>
   auto manage(Function&& fn) {
@@ -43,10 +44,15 @@ class OpenGLContextExecutor {
   }
 
   void process() {
+    StatsTimer process_timer(stats_, "process_gl_tasks");
     ENFORCE(window_->inContext());
     auto prev = std::chrono::high_resolution_clock::now();
     while (!queue_.isEmpty()) {
-      queue_.pop().get()();
+      auto task = queue_.pop().get();
+      {
+        StatsTimer task_timer(stats_, "gl_task");
+        task();
+      }
       auto curr = std::chrono::high_resolution_clock::now();
       if (curr - prev > kProcessThrottleDuration) {
         break;
@@ -72,13 +78,15 @@ class OpenGLContextExecutor {
     return [&] { promise.set_value(fn()); };
   }
 
+  std::shared_ptr<Stats> stats_;
   std::shared_ptr<Window> window_;
   MPMCQueue<std::function<void()>> queue_;
 };
 
 template <>
 inline std::shared_ptr<OpenGLContextExecutor> gen(const Registry& registry) {
-  return std::make_shared<OpenGLContextExecutor>(registry.get<Window>());
+  return std::make_shared<OpenGLContextExecutor>(
+      registry.get<Stats>(), registry.get<Window>());
 }
 
 }  // namespace tequila

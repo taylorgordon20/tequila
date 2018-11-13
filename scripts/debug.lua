@@ -37,7 +37,8 @@ function module:on_init()
         table.sort(stat_keys)
         for index, key in ipairs(stat_keys) do
           local avg = get_stat_average(key)
-          local line =  string.format("%s\tavg: %.6f", key, avg)
+          local max = get_stat_maximum(key)
+          local line =  string.format("%40.40s    avg: %10.5f,    max: %10.5f", key, avg, max)
           get_module("console"):log(line)
         end
       end

@@ -15,7 +15,7 @@
         "name": "grass",
         "color": "FFFFFF",
         "color_map": "images/color_map_grass.png",
-        "normal_map": "images/normal_map_grain.png"
+        "normal_map": "images/normal_map_ground.png"
       }
     },
     {
@@ -106,6 +106,24 @@
         "color": "FF3333",
         "color_map": "images/color_map_shale.png",
         "normal_map": "images/normal_map_brick.png"
+      }
+    },
+    {
+      "key": 13,
+      "value": {
+        "name": "hut",
+        "color": "DDCCBB",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_hut.png"
+      }
+    },
+    {
+      "key": 14,
+      "value": {
+        "name": "wood",
+        "color": "BB9955",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_wood.png"
       }
     }
   ]

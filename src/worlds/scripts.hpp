@@ -55,6 +55,10 @@ auto FFI_get_module(std::shared_ptr<Resources>& resources) {
   };
 }
 
+auto FFI_clear_stats(std::shared_ptr<Stats>& stats) {
+  return [stats] { return stats->clear(); };
+}
+
 auto FFI_get_stats(std::shared_ptr<Stats>& stats) {
   return [stats] { return stats->keys(); };
 }
@@ -64,6 +68,16 @@ auto FFI_get_stat_average(std::shared_ptr<Stats>& stats) {
     sol::optional<float> ret;
     if (stats->has(stat)) {
       ret = stats->getAverage(stat);
+    }
+    return ret;
+  };
+}
+
+auto FFI_get_stat_maximum(std::shared_ptr<Stats>& stats) {
+  return [stats](const std::string& stat) {
+    sol::optional<float> ret;
+    if (stats->has(stat)) {
+      ret = stats->getMaximum(stat);
     }
     return ret;
   };
@@ -299,8 +313,10 @@ class ScriptExecutor {
     ctx.set("now_time", wrapFFI(FFI_now_time()));
     ctx.set("reload", wrapFFI(FFI_reload(resources_)));
     ctx.set("get_module", wrapFFI(FFI_get_module(resources_)));
+    ctx.set("clear_stats", wrapFFI(FFI_clear_stats(stats_)));
     ctx.set("get_stats", wrapFFI(FFI_get_stats(stats_)));
     ctx.set("get_stat_average", wrapFFI(FFI_get_stat_average(stats_)));
+    ctx.set("get_stat_maximum", wrapFFI(FFI_get_stat_maximum(stats_)));
     ctx.set("get_light_dir", wrapFFI(FFI_get_light_dir(resources_)));
     ctx.set("set_light_dir", wrapFFI(FFI_set_light_dir(resources_)));
     ctx.set("get_camera_pos", wrapFFI(FFI_get_camera_pos(resources_)));

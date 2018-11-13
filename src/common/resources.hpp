@@ -6,6 +6,7 @@
 
 #include <functional>
 #include <mutex>
+#include <shared_mutex>
 #include <tuple>
 #include <type_traits>
 #include <typeindex>
@@ -283,33 +284,34 @@ class ResourceGenerator : public ResourceGeneratorBase {
 // TODO: Implement hash collision fallback.
 class Resources {
  public:
-  Resources() : mutex_(std::make_unique<std::mutex>()) {}
+  Resources() : mutex_(std::make_unique<std::shared_mutex>()) {}
   Resources(std::unordered_map<std::type_index, boost::any> overrides)
-      : mutex_(std::make_unique<std::mutex>()),
+      : mutex_(std::make_unique<std::shared_mutex>()),
         overrides_(std::move(overrides)) {}
 
   template <typename Resource, typename... Keys>
   auto generator(const Keys&... keys) {
-    std::lock_guard guard(*mutex_);
+    auto cache_key = resourceHash<Resource>(keys...);
 
     // Return the value from cache immediately if available.
-    auto cache_key = resourceHash<Resource>(keys...);
-    if (cache_.count(cache_key)) {
-      auto generator = cache_.at(cache_key);
-      ENFORCE(
-          typeid(Resource) == generator->type(),
-          concat(
-              "Cache collision ",
-              typeid(Resource).name(),
-              " vs ",
-              generator->type().name()));
-      return std::static_pointer_cast<ResourceGenerator<Resource>>(generator);
+    {
+      std::shared_lock lock(*mutex_);
+      if (auto cached_generator = cachedGenerator<Resource>(cache_key)) {
+        return cached_generator;
+      }
     }
 
     // Create generator and cache it.
-    auto generator = makeGenerator<Resource>(keys...);
-    ENFORCE(cache_.emplace(cache_key, generator).second);
-    return generator;
+    {
+      std::unique_lock exclusive_lock(*mutex_);
+      if (auto cached_generator = cachedGenerator<Resource>(cache_key)) {
+        return cached_generator;
+      } else {
+        auto generator = makeGenerator<Resource>(keys...);
+        ENFORCE(cache_.emplace(cache_key, generator).second);
+        return generator;
+      }
+    }
   }
 
   template <typename Resource, typename... Keys>
@@ -325,6 +327,23 @@ class Resources {
   }
 
  private:
+  template <typename Resource>
+  auto cachedGenerator(uint64_t cache_key) {
+    std::shared_ptr<ResourceGenerator<Resource>> ret;
+    if (cache_.count(cache_key)) {
+      auto generator = cache_.at(cache_key);
+      ENFORCE(
+          typeid(Resource) == generator->type(),
+          concat(
+              "Cache collision ",
+              typeid(Resource).name(),
+              " vs ",
+              generator->type().name()));
+      ret = std::static_pointer_cast<ResourceGenerator<Resource>>(generator);
+    }
+    return ret;
+  }
+
   auto subscribers(uint64_t source_key) {
     std::unordered_map<uint64_t, std::shared_ptr<ResourceGeneratorBase>> ret;
 
@@ -338,7 +357,7 @@ class Resources {
 
       // Get this generator from cache if it exists.
       auto generator = [&] {
-        std::lock_guard guard(*mutex_);
+        std::shared_lock lock(*mutex_);
         if (cache_.count(key)) {
           return cache_.at(key);
         } else {
@@ -382,7 +401,7 @@ class Resources {
     }
   }
 
-  std::unique_ptr<std::mutex> mutex_;
+  std::unique_ptr<std::shared_mutex> mutex_;
   std::unordered_map<std::type_index, boost::any> overrides_;
   std::unordered_map<uint64_t, std::shared_ptr<ResourceGeneratorBase>> cache_;
 };
@@ -519,9 +538,16 @@ template <typename Resource, typename... Keys>
 class ResourceMutation {
  public:
   ResourceMutation(Resources& resources, const Keys&... keys)
-      : resources_(resources), value_(resources_.get<Resource>(keys...)) {
-    invalidator_ = [this, keys...] {
-      resources_.invalidate<Resource>(keys...);
+      : value_(resources.get<Resource>(keys...)) {
+    invalidator_ = [&resources, keys...] {
+      resources.invalidate<Resource>(keys...);
+    };
+  }
+
+  ResourceMutation(AsyncResources& resources, const Keys&... keys)
+      : value_(resources.get<Resource>(keys...).get()) {
+    invalidator_ = [&resources, keys...] {
+      resources.invalidate<Resource>(keys...);
     };
   }
 
@@ -534,8 +560,7 @@ class ResourceMutation {
   }
 
  private:
-  Resources& resources_;
-  decltype(resources_.get<Resource>(std::declval<Keys>()...)) value_;
+  decltype(Resources().get<Resource>(std::declval<Keys>()...)) value_;
   std::function<void()> invalidator_;
 };
 

@@ -372,18 +372,22 @@ inline std::shared_ptr<StyleUIRenderer> gen(const Registry& registry) {
 class UIRenderer {
  public:
   UIRenderer(
+      std::shared_ptr<Stats> stats,
       std::shared_ptr<Window> window,
       std::shared_ptr<Resources> resources,
       std::shared_ptr<RectUIRenderer> rect_renderer,
       std::shared_ptr<TextUIRenderer> text_renderer,
       std::shared_ptr<StyleUIRenderer> style_renderer)
-      : window_(window),
+      : stats_(stats),
+        window_(window),
         resources_(resources),
         rect_renderer_(rect_renderer),
         text_renderer_(text_renderer),
         style_renderer_(style_renderer) {}
 
   void draw() {
+    StatsTimer loop_timer(stats_, "ui_renderer");
+
     // Prepare OpenGL state.
     gl::glDisable(gl::GL_DEPTH_TEST);
     gl::glEnable(gl::GL_BLEND);
@@ -405,6 +409,7 @@ class UIRenderer {
   }
 
  private:
+  std::shared_ptr<Stats> stats_;
   std::shared_ptr<Window> window_;
   std::shared_ptr<Resources> resources_;
   std::shared_ptr<RectUIRenderer> rect_renderer_;
@@ -415,6 +420,7 @@ class UIRenderer {
 template <>
 inline std::shared_ptr<UIRenderer> gen(const Registry& registry) {
   return std::make_shared<UIRenderer>(
+      registry.get<Stats>(),
       registry.get<Window>(),
       registry.get<Resources>(),
       registry.get<RectUIRenderer>(),

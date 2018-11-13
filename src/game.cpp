@@ -12,6 +12,7 @@
 #include "src/common/opengl.hpp"
 #include "src/common/resources.hpp"
 #include "src/common/stats.hpp"
+#include "src/common/traces.hpp"
 #include "src/worlds/core.hpp"
 #include "src/worlds/events.hpp"
 #include "src/worlds/opengl.hpp"
@@ -49,6 +50,21 @@ auto getWorldUI() {
   return std::make_shared<UITree>();
 }
 
+void logTraces(std::shared_ptr<Stats> stats, std::vector<TraceTag>& tags) {
+  ENFORCE(tags.size() >= 2);
+  auto total_dur = std::get<1>(tags.back()) - std::get<1>(tags.front());
+  if (total_dur > std::chrono::milliseconds(20)) {
+    LOG_ERROR("Woah, slow loop!");
+    StatsUpdate stats_update(stats);
+    for (int i = 1; i < tags.size(); i += 1) {
+      using namespace std::chrono;
+      auto tag_dur = std::get<1>(tags.at(i)) - std::get<1>(tags.at(i - 1));
+      auto seconds = duration_cast<duration<double>>(tag_dur).count();
+      stats_update[concat("traces.", std::get<0>(tags.at(i - 1)))] += seconds;
+    }
+  }
+}
+
 void run() {
   // Figure out which world to load.
   std::string world_name;
@@ -64,7 +80,7 @@ void run() {
 
   // Define a factory to build the global asychronous task executor.
   auto executor_factory = [](const Registry& registry) {
-    return std::make_shared<QueueExecutor>(20);
+    return std::make_shared<QueueExecutor>(16);
   };
 
   // Define a factory to build the world resources.
@@ -113,14 +129,14 @@ void run() {
   // Enter the game loop.
   std::cout << "Entering game loop." << std::endl;
   registry.get<Window>()->loop([&](float dt) {
+    StatsTimer loop_timer(registry.get<Stats>(), "game_loop");
+    Trace trace([&](auto& tags) { logTraces(registry.get<Stats>(), tags); });
+
     // Handle the update game event.
     registry.get<EventHandler>()->update(dt);
 
     // Process OpenGL updates that are blocking async tasks.
-    if (!registry.get<OpenGLContextExecutor>()->isEmpty()) {
-      StatsTimer timer(registry.get<Stats>(), "process_gl_tasks");
-      registry.get<OpenGLContextExecutor>()->process();
-    }
+    registry.get<OpenGLContextExecutor>()->process();
 
     // Render the scene to a new frame.
     gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);

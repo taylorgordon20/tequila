@@ -21,7 +21,7 @@ constexpr auto kMaxPositionLights = 4;
 
 auto getVertexAmbientOcclusion(uint8_t occlusion_mask) {
   static std::vector<float> kCountToOcclusion{
-      0.0f, 0.2f, 0.3f, 0.3f, 0.95f, 0.95f, 0.95f, 1.0f, 1.0f};
+      0.0f, 0.35f, 0.5f, 0.5f, 0.95f, 0.95f, 0.95f, 1.0f, 1.0f};
   static std::vector<int> kMaskToCount = [] {
     std::vector<int> ret(256);
     std::unordered_set<int> hits;
@@ -128,7 +128,7 @@ struct VertexLights {
           from, dir, 100.0, [&](int vx, int vy, int vz, float distance) {
             float cx = vx + 0.5f, cy = vy + 0.5f, cz = vz + 0.5f;
             if (sampler.getVoxel(cx, cy, cz)) {
-              global_occlusion = 0.2f;
+              global_occlusion = 0.35f;
               return false;
             }
             return true;

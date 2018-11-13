@@ -11,12 +11,21 @@ namespace tequila {
 
 class Stats {
  public:
+  void clear() {
+    std::lock_guard lock(mutex_);
+    stats_.clear();
+    averages_.clear();
+    maximums_.clear();
+  }
+
   void set(const std::string& key, float value) {
     std::lock_guard lock(mutex_);
     if (stats_.insert(key).second) {
       averages_[key] = value;
+      maximums_[key] = value;
     } else {
       averages_[key] = 0.9 * averages_[key] + 0.1 * value;
+      maximums_[key] = std::max(maximums_[key], value);
     }
   }
 
@@ -30,6 +39,11 @@ class Stats {
     return averages_.at(key);
   }
 
+  float getMaximum(const std::string& key) {
+    std::lock_guard lock(mutex_);
+    return maximums_.at(key);
+  }
+
   std::unordered_set<std::string> keys() {
     std::lock_guard lock(mutex_);
     return stats_;
@@ -39,6 +53,7 @@ class Stats {
   std::mutex mutex_;
   std::unordered_set<std::string> stats_;
   std::unordered_map<std::string, float> averages_;
+  std::unordered_map<std::string, float> maximums_;
 };
 
 class StatsUpdate {
