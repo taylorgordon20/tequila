@@ -52,11 +52,13 @@ auto getWorldUI() {
 
 void logTraces(std::shared_ptr<Stats> stats, std::vector<TraceTag>& tags) {
   ENFORCE(tags.size() >= 2);
+  using namespace std::chrono;
   auto total_dur = std::get<1>(tags.back()) - std::get<1>(tags.front());
-  if (total_dur > std::chrono::milliseconds(30)) {
+  if (total_dur > std::chrono::milliseconds(20)) {
     StatsUpdate stats_update(stats);
+    auto total_seconds = duration_cast<duration<double>>(total_dur).count();
+    stats_update["traces.total"] += total_seconds;
     for (int i = 1; i < tags.size(); i += 1) {
-      using namespace std::chrono;
       auto tag_dur = std::get<1>(tags.at(i)) - std::get<1>(tags.at(i - 1));
       auto seconds = duration_cast<duration<double>>(tag_dur).count();
       stats_update[concat("traces.", std::get<0>(tags.at(i - 1)))] += seconds;
@@ -127,6 +129,7 @@ void run() {
 
   // Increase thread priority of the OpenGL thread.
 #ifdef _WIN32
+  SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 #endif
 
@@ -139,23 +142,17 @@ void run() {
         "async_tasks", registry.get<QueueExecutor>()->queueSize());
 
     // Handle the update game event.
-    Trace::tag("loop_1");
     registry.get<EventHandler>()->update(dt);
 
     // Process OpenGL updates that are blocking async tasks.
-    Trace::tag("loop_2");
     registry.get<OpenGLContextExecutor>()->process();
 
     // Render the scene to a new frame.
     gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
-    // Trace::tag("loop_3");
-    // registry.get<SkyRenderer>()->draw();
-    Trace::tag("loop_4");
+    registry.get<SkyRenderer>()->draw();
     registry.get<TerrainRenderer>()->draw();
-    Trace::tag("loop_5");
     registry.get<UIRenderer>()->draw();
-    Trace::tag("loop_6");
   });
 
   // Unblock and wait for any outstanding asynchronous tasks.

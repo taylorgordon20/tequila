@@ -93,28 +93,25 @@ class SkyRenderer {
 
   void draw() const {
     StatsTimer loop_timer(stats_, "sky_renderer");
-    auto sky_opt = async_resources_->get_opt<Sky>();
-    if (!sky_opt) {
-      return;
+    if (auto opt_sky = async_resources_->optGet<Sky>()) {
+      auto sky = opt_sky.get();
+      auto camera = resources_->get<WorldCamera>();
+      auto shader = resources_->get<SkyShader>();
+      shader->run([&] {
+        // Set uniforms.
+        shader->uniform("view_matrix", camera->viewMatrix() * sky->transform);
+        shader->uniform("projection_matrix", camera->projectionMatrix());
+
+        // Bind the sky's cube map texture.
+        TextureCubeBinding cube_map(*sky->texture, 0);
+        shader->uniform("cube_map", cube_map.location());
+
+        // Draw the sky box.
+        gl::glDisable(gl::GL_DEPTH_TEST);
+        sky->mesh.draw(*shader);
+        gl::glEnable(gl::GL_DEPTH_TEST);
+      });
     }
-
-    auto sky = sky_opt.get();
-    auto camera = resources_->get<WorldCamera>();
-    auto shader = resources_->get<SkyShader>();
-    shader->run([&] {
-      // Set uniforms.
-      shader->uniform("view_matrix", camera->viewMatrix() * sky->transform);
-      shader->uniform("projection_matrix", camera->projectionMatrix());
-
-      // Bind the sky's cube map texture.
-      TextureCubeBinding cube_map(*sky->texture, 0);
-      shader->uniform("cube_map", cube_map.location());
-
-      // Draw the sky box.
-      gl::glDisable(gl::GL_DEPTH_TEST);
-      sky->mesh.draw(*shader);
-      gl::glEnable(gl::GL_DEPTH_TEST);
-    });
   }
 
  private:

@@ -107,22 +107,17 @@ class RectUIRenderer {
   RectUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
   void draw(const glm::mat4& projection) {
-    auto node_ids = resources_->get_opt<WorldRectNodes>();
-    if (!node_ids) {
-      return;
-    }
-
-    auto shader = resources_->resources()->get<RectUIShader>();
+    auto shader = resources_->syncGet<RectUIShader>();
+    auto node_ids = resources_->syncGet<WorldRectNodes>();
     shader->run([&] {
       shader->uniform("projection_matrix", projection);
-      for (const auto& node_id : *node_ids.get()) {
-        auto rect = resources_->get_opt<WorldRectNode>(node_id);
-        if (!rect) {
-          continue;
+      for (const auto& node_id : *node_ids) {
+        if (auto opt_rect = resources_->optGet<WorldRectNode>(node_id)) {
+          auto rect = opt_rect.get();
+          shader->uniform("model_matrix", rect->mesh.transform());
+          shader->uniform("base_color", rect->color);
+          rect->mesh.draw(*shader);
         }
-        shader->uniform("model_matrix", rect.get()->mesh.transform());
-        shader->uniform("base_color", rect.get()->color);
-        rect.get()->mesh.draw(*shader);
       }
     });
   }
@@ -198,24 +193,19 @@ class TextUIRenderer {
   TextUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
   void draw(const glm::mat4& projection) {
-    auto node_ids = resources_->get_opt<WorldTextNodes>();
-    if (!node_ids) {
-      return;
-    }
-
-    auto shader = resources_->resources()->get<TextUIShader>();
+    auto shader = resources_->syncGet<TextUIShader>();
+    auto node_ids = resources_->syncGet<WorldTextNodes>();
     shader->run([&] {
       shader->uniform("projection_matrix", projection);
-      for (const auto& node_id : *node_ids.get()) {
-        auto text = resources_->get_opt<WorldTextNode>(node_id);
-        if (!text) {
-          continue;
+      for (const auto& node_id : *node_ids) {
+        if (auto opt_text = resources_->optGet<WorldTextNode>(node_id)) {
+          auto text = opt_text.get();
+          TextureBinding tb(*text->texture, 0);
+          shader->uniform("color_map", tb.location());
+          shader->uniform("model_matrix", text->mesh.transform());
+          shader->uniform("base_color", text->color);
+          text->mesh.draw(*shader);
         }
-        TextureBinding tb(*text.get()->texture, 0);
-        shader->uniform("color_map", tb.location());
-        shader->uniform("model_matrix", text.get()->mesh.transform());
-        shader->uniform("base_color", text.get()->color);
-        text.get()->mesh.draw(*shader);
       }
     });
   }
@@ -335,17 +325,13 @@ class StyleUIRenderer {
   StyleUIRenderer(std::shared_ptr<AsyncResources> resources)
       : resources_(resources) {}
   void draw(const glm::mat4& projection) {
-    auto node_ids = resources_->get_opt<WorldStyleNodes>();
-    if (!node_ids) {
-      return;
-    }
-
-    auto shader = resources_->resources()->get<StyleUIShader>();
+    auto shader = resources_->syncGet<StyleUIShader>();
+    auto node_ids = resources_->syncGet<WorldStyleNodes>();
     shader->run([&] {
       shader->uniform("projection_matrix", projection);
-      for (const auto& node_id : *node_ids.get()) {
-        if (auto node_opt = resources_->get_opt<WorldStyleNode>(node_id)) {
-          auto node = node_opt.get();
+      for (const auto& node_id : *node_ids) {
+        if (auto opt_node = resources_->optGet<WorldStyleNode>(node_id)) {
+          auto node = opt_node.get();
           TextureArrayBinding color_map_array(*node->color_map, 0);
           TextureArrayBinding normal_map_array(*node->normal_map, 1);
           shader->uniform("color_map_array", color_map_array.location());

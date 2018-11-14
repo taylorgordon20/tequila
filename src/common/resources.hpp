@@ -163,8 +163,8 @@ class ResourceGenerator : public ResourceGeneratorBase {
       // Update the value to the new version if its the latest and make sure
       // that dependency subscription lists match the latest version.
       if (version_ == requested_version_) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        std::atomic_store(&value_, value);
+        std::lock_guard lock(mutex_);
+        value_ = value;
         auto& new_deps = deps.deps();
         for (const auto& pair : deps_) {
           if (!new_deps.count(pair.first)) {
@@ -188,7 +188,8 @@ class ResourceGenerator : public ResourceGeneratorBase {
 
   // Returns a pointer to the currently cached value atomically.
   auto get_ptr() {
-    return std::atomic_load(&value_);
+    std::shared_lock lock(mutex_);
+    return value_;
   }
 
   // Returns the value atomically with caching.
@@ -231,12 +232,14 @@ class ResourceGenerator : public ResourceGeneratorBase {
 
   // Atomically returns the resource keys of the current subscribers.
   std::shared_ptr<std::unordered_set<uint64_t>> subscribers() override {
-    return std::atomic_load(&cached_subs_);
+    std::shared_lock lock(mutex_);
+    return cached_subs_;
   }
 
   // Atomically returns the resource keys of the current dependencies.
   std::shared_ptr<std::unordered_set<uint64_t>> dependencies() override {
-    return std::atomic_load(&cached_deps_);
+    std::shared_lock lock(mutex_);
+    return cached_deps_;
   }
 
   // Deletes the resource version and returns the current subscribers.
@@ -253,17 +256,14 @@ class ResourceGenerator : public ResourceGeneratorBase {
 
  private:
   void cacheDeps() {
-    auto cached_deps = std::make_shared<std::unordered_set<uint64_t>>();
+    cached_deps_->clear();
     for (const auto& pair : deps_) {
-      cached_deps->insert(pair.first);
+      cached_deps_->insert(pair.first);
     }
-    std::atomic_store(&cached_deps_, cached_deps);
   }
 
   void cacheSubs() {
-    auto cached_subs = std::make_shared<std::unordered_set<uint64_t>>();
-    *cached_subs = subs_;
-    std::atomic_store(&cached_subs_, cached_subs);
+    *cached_subs_ = subs_;
   }
 
   Resources& resources_;
@@ -276,8 +276,8 @@ class ResourceGenerator : public ResourceGeneratorBase {
   std::shared_ptr<Value> value_;
   std::unordered_map<uint64_t, std::shared_ptr<ResourceGeneratorBase>> deps_;
   std::unordered_set<uint64_t> subs_;
-  std::mutex mutex_;
   std::mutex generator_mutex_;
+  std::shared_mutex mutex_;
 };
 
 // TODO: Implement cache eviction.
@@ -435,18 +435,20 @@ class AsyncResources {
   }
 
   template <typename Resource, typename... Keys>
-  auto get_cached(const Keys&... keys) {
-    auto generator = resources()->generator<Resource>(keys...);
-    if (auto value_ptr = generator->get_ptr()) {
-      return *value_ptr;
-    }
-    return resources()->get<Resource>(keys...);
+  auto get(const Keys&... keys) {
+    return schedule(
+        concat("get", describe<Resource>(keys...)),
+        [this](const auto&... keys) {
+          return resources()->get<Resource>(keys...);
+        },
+        keys...);
   }
 
+  // Returns an optional containing the resource value if a cached value
+  // exists. An asynchronous update is scheduled if the value does not exist in
+  // the cache or if one exists but it is stale.
   template <typename Resource, typename... Keys>
-  auto get_opt(const Keys&... keys) {
-    // If there is a cached value, return it immediately and kick off an
-    // asynchronous update if the cached value is stale.
+  auto optGet(const Keys&... keys) {
     boost::optional<decltype(resources()->get<Resource>(keys...))> ret;
     auto generator = resources()->generator<Resource>(keys...);
     if (auto value_ptr = generator->get_ptr()) {
@@ -459,13 +461,8 @@ class AsyncResources {
   }
 
   template <typename Resource, typename... Keys>
-  auto get(const Keys&... keys) {
-    return schedule(
-        concat("get", describe<Resource>(keys...)),
-        [this](const auto&... keys) {
-          return resources()->get<Resource>(keys...);
-        },
-        keys...);
+  auto syncGet(const Keys&... keys) {
+    return resources()->get<Resource>(keys...);
   }
 
   template <typename Resource, typename... Keys>
