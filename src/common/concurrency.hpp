@@ -16,11 +16,10 @@
 
 namespace tequila {
 
-// Returns an optional set to the future's value if fulfilled in the duration.
+// Returns an optional set to true if fulfilled in the duration.
 template <typename Rep, typename Period>
 inline bool get_opt(
-    std::future<void>& future,
-    std::chrono::duration<Rep, Period> wait = std::chrono::seconds(0)) {
+    std::future<void>& future, std::chrono::duration<Rep, Period> wait) {
   bool ret = false;
   if (future.wait_for(wait) == std::future_status::ready) {
     ret = true;
@@ -28,7 +27,7 @@ inline bool get_opt(
   return ret;
 }
 
-// Returns an optional set to the future's value if and only if it is ready.
+// Returns an optional set to the future's value if fulfilled in the duration.
 template <typename Value, typename Rep, typename Period>
 inline boost::optional<Value> get_opt(
     std::future<Value>& future,
@@ -38,6 +37,15 @@ inline boost::optional<Value> get_opt(
     ret = future.get();
   }
   return ret;
+}
+
+inline bool get_opt(std::future<void>& future) {
+  return get_opt(future, std::chrono::seconds(0));
+}
+
+template <typename Value>
+inline bool get_opt(std::future<Value>& future) {
+  return get_opt(future, std::chrono::seconds(0));
 }
 
 // Executes the given function in a loop until the given future is ready.
