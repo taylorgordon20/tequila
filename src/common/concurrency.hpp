@@ -124,11 +124,6 @@ class QueueExecutor {
         finished_workers_ += 1;
       });
     }
-#ifdef _WIN32
-    for (auto& worker : workers_) {
-      SetThreadPriority(worker.native_handle(), THREAD_PRIORITY_BELOW_NORMAL);
-    }
-#endif
   }
 
   ~QueueExecutor() {

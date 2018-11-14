@@ -81,7 +81,7 @@ void run() {
 
   // Define a factory to build the global asychronous task executor.
   auto executor_factory = [](const Registry& registry) {
-    return std::make_shared<QueueExecutor>(16);
+    return std::make_shared<QueueExecutor>(100);
   };
 
   // Define a factory to build the world resources.
@@ -127,7 +127,7 @@ void run() {
   // Update registry pointer inside resources.
   static_context->registry = &registry;
 
-  // Increase thread priority of the OpenGL thread.
+  // Increase thread priority of the OpenGL thread and this process.
 #ifdef _WIN32
   SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
