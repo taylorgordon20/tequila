@@ -461,13 +461,16 @@ class TerrainRenderer {
       shader->uniform("projection_matrix", camera->projectionMatrix());
 
       // Render the terrain slices visible to the current camera.
-      auto shard_keys = resources_->get<TerrainShardKeys>();
-      for (auto key : *shard_keys) {
-        auto shard_opt = async_resources_->optGet<TerrainShard>(key);
-        if (!shard_opt) {
+      auto opt_shard_keys = async_resources_->optGet<TerrainShardKeys>();
+      if (!opt_shard_keys) {
+        return;
+      }
+      for (auto key : *opt_shard_keys.get()) {
+        auto opt_shard = async_resources_->optGet<TerrainShard>(key);
+        if (!opt_shard) {
           continue;
         }
-        for (auto slice : shard_opt.get()->slices) {
+        for (auto slice : opt_shard.get()->slices) {
           // Set geometry uniforms.
           shader->uniform("modelview_matrix", slice->modelViewMatrix(*camera));
           shader->uniform("normal_matrix", slice->normalMatrix(*camera));

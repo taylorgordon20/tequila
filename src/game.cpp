@@ -81,7 +81,7 @@ void run() {
 
   // Define a factory to build the global asychronous task executor.
   auto executor_factory = [](const Registry& registry) {
-    return std::make_shared<QueueExecutor>(100);
+    return std::make_shared<QueueExecutor>(20);
   };
 
   // Define a factory to build the world resources.
