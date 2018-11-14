@@ -13,7 +13,7 @@
 
 namespace tequila {
 
-static constexpr auto kProcessThrottleDuration = std::chrono::milliseconds(10);
+static constexpr auto kProcessThrottleDuration = std::chrono::milliseconds(5);
 
 class OpenGLContextExecutor {
  public:

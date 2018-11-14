@@ -435,23 +435,22 @@ struct TerrainShader {
 class TerrainRenderer {
  public:
   TerrainRenderer(
-      std::shared_ptr<Resources> resources,
       std::shared_ptr<AsyncResources> async_resources,
       std::shared_ptr<Stats> stats)
-      : resources_(resources),
-        async_resources_(async_resources),
-        stats_(stats) {}
+      : resources_(async_resources), stats_(stats) {}
 
   void draw() const {
     StatsUpdate stats(stats_);
     StatsTimer loop_timer(stats_, "terrain_renderer");
 
     // Fetch globals needed to render terrain.
-    auto light = resources_->get<WorldLight>();
-    auto camera = resources_->get<WorldCamera>();
-    auto shader = resources_->get<TerrainShader>();
+    auto light = resources_->syncGet<WorldLight>();
+    auto camera = resources_->syncGet<WorldCamera>();
+    auto shader = resources_->syncGet<TerrainShader>();
 
     shader->run([&] {
+      using namespace std::chrono_literals;
+
       // Configure OpenGL pipeline state.
       gl::glEnable(gl::GL_DEPTH_TEST);
       Finally finally([&] { gl::glDisable(gl::GL_DEPTH_TEST); });
@@ -461,12 +460,9 @@ class TerrainRenderer {
       shader->uniform("projection_matrix", camera->projectionMatrix());
 
       // Render the terrain slices visible to the current camera.
-      auto opt_shard_keys = async_resources_->optGet<TerrainShardKeys>();
-      if (!opt_shard_keys) {
-        return;
-      }
-      for (auto key : *opt_shard_keys.get()) {
-        auto opt_shard = async_resources_->optGet<TerrainShard>(key);
+      auto shard_keys = resources_->syncGet<TerrainShardKeys>();
+      for (auto key : *shard_keys) {
+        auto opt_shard = resources_->optGet<TerrainShard>(key);
         if (!opt_shard) {
           continue;
         }
@@ -496,17 +492,14 @@ class TerrainRenderer {
   }
 
  private:
-  std::shared_ptr<Resources> resources_;
-  std::shared_ptr<AsyncResources> async_resources_;
+  std::shared_ptr<AsyncResources> resources_;
   std::shared_ptr<Stats> stats_;
 };
 
 template <>
 inline std::shared_ptr<TerrainRenderer> gen(const Registry& registry) {
   return std::make_shared<TerrainRenderer>(
-      registry.get<Resources>(),
-      registry.get<AsyncResources>(),
-      registry.get<Stats>());
+      registry.get<AsyncResources>(), registry.get<Stats>());
 }
 
 }  // namespace tequila

@@ -54,7 +54,7 @@ void logTraces(std::shared_ptr<Stats> stats, std::vector<TraceTag>& tags) {
   ENFORCE(tags.size() >= 2);
   using namespace std::chrono;
   auto total_dur = std::get<1>(tags.back()) - std::get<1>(tags.front());
-  if (total_dur > std::chrono::milliseconds(20)) {
+  if (total_dur > std::chrono::milliseconds(15)) {
     StatsUpdate stats_update(stats);
     auto total_seconds = duration_cast<duration<double>>(total_dur).count();
     stats_update["traces.total"] += total_seconds;
@@ -81,7 +81,7 @@ void run() {
 
   // Define a factory to build the global asychronous task executor.
   auto executor_factory = [](const Registry& registry) {
-    return std::make_shared<QueueExecutor>(20);
+    return std::make_shared<QueueExecutor>(10);
   };
 
   // Define a factory to build the world resources.
@@ -142,16 +142,21 @@ void run() {
         "async_tasks", registry.get<QueueExecutor>()->queueSize());
 
     // Handle the update game event.
+    Trace::tag("events");
     registry.get<EventHandler>()->update(dt);
 
     // Process OpenGL updates that are blocking async tasks.
+    Trace::tag("gl");
     registry.get<OpenGLContextExecutor>()->process();
 
     // Render the scene to a new frame.
     gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
+    Trace::tag("sky");
     registry.get<SkyRenderer>()->draw();
+    Trace::tag("terrain");
     registry.get<TerrainRenderer>()->draw();
+    Trace::tag("ui");
     registry.get<UIRenderer>()->draw();
   });
 

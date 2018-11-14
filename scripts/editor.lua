@@ -91,6 +91,10 @@ function module:update_ui()
 end
 
 function module:insert_voxel()
+  if edit_delay_s < 0.3 then
+    return
+  end
+
   local pred = nil
   for_camera_ray_voxels(function(x, y, z, distance)
     if get_voxel(x, y, z) ~= 0 then
@@ -113,6 +117,10 @@ function module:insert_voxel()
 end
 
 function module:remove_voxel()
+  if edit_delay_s < 0.3 then
+    return
+  end
+
   for_camera_ray_voxels(function(x, y, z)
     if get_voxel(x, y, z) ~= 0 then
       set_voxel(x, y, z, 0)
@@ -173,20 +181,12 @@ function module:on_key(key, scancode, action, mods)
   end
 end
 
-function module:on_click(button, action, mods)
-  if button == 0 and action == 1 then
-    self:insert_voxel()
-  elseif button == 1 and action == 1 then
-    self:remove_voxel()
-  end
-end
-
 function module:on_update(dt)
   -- Apply delayed voxel edits.
   edit_delay_s = edit_delay_s + dt
-  if is_mouse_pressed(0) and edit_delay_s > 0.25 then
+  if is_mouse_pressed(0) then
     self:insert_voxel()
-  elseif is_mouse_pressed(1) and edit_delay_s > 0.25 then
+  elseif is_mouse_pressed(1) then
     self:remove_voxel()
   end
 end

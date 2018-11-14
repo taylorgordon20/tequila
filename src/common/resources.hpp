@@ -4,6 +4,7 @@
 #include <boost/container_hash/extensions.hpp>
 #include <boost/optional.hpp>
 
+#include <chrono>
 #include <functional>
 #include <mutex>
 #include <shared_mutex>
@@ -449,13 +450,24 @@ class AsyncResources {
   // the cache or if one exists but it is stale.
   template <typename Resource, typename... Keys>
   auto optGet(const Keys&... keys) {
-    boost::optional<decltype(resources()->get<Resource>(keys...))> ret;
+    boost::optional<ResourceValue<Resource>> ret;
     auto generator = resources()->generator<Resource>(keys...);
     if (auto value_ptr = generator->get_ptr()) {
       ret = *value_ptr;
     }
     if (generator->stale()) {
       get<Resource>(keys...);
+    }
+    return ret;
+  }
+
+  // Waits on the "get" future for up to the given wait duration, and then falls
+  // back to an optGet if the future is unfulfilled within the wait duration.
+  template <typename Resource, typename Duration, typename... Keys>
+  auto tryGet(Duration&& wait, const Keys&... keys) {
+    auto ret = get_opt(get<Resource>(keys...), std::forward<Duration>(wait));
+    if (!ret) {
+      ret = optGet<Resource>(keys...);
     }
     return ret;
   }
