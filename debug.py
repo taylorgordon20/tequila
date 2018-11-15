@@ -43,11 +43,13 @@ def main():
   mirror_tree("bazel-bin/src/", "dbg/", "*.pdb")
   mirror_tree("bazel-bin/src/", "dbg/", "game")
   mirror_tree("bazel-bin/src/", "dbg/", "*.dll")
-  mirror_tree("bazel-bin/src/", "dbg/", "scripts/*.lua")
-  mirror_tree("bazel-bin/src/", "dbg/", "scripts/*.js")
-  mirror_tree("bazel-bin/src/", "dbg/", "shaders/*.glsl")
-  mirror_tree("bazel-bin/src/", "dbg/", "images/*.png")
-  mirror_tree("bazel-bin/src/", "dbg/", "data/*.db")
+  mirror_tree("bazel-bin/src/", "bin/", "configs/*.json")
+  mirror_tree("bazel-bin/src/", "bin/", "data/*.db")
+  mirror_tree("bazel-bin/src/", "bin/", "fonts/**/*.ttf")
+  mirror_tree("bazel-bin/src/", "bin/", "images/*.png")
+  mirror_tree("bazel-bin/src/", "bin/", "scripts/*.js")
+  mirror_tree("bazel-bin/src/", "bin/", "scripts/*.lua")
+  mirror_tree("bazel-bin/src/", "bin/", "shaders/*.glsl")
 
 
 if __name__ == "__main__":

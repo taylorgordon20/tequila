@@ -18,10 +18,46 @@ class Texture {
   Texture(const Texture&) = delete;
   Texture& operator=(const Texture&) = delete;
 
+  static Texture makeEmpty(int width, int height, int depth);
+
  private:
   gl::GLuint texture_;
+  std::tuple<int64_t, int64_t> dimensions_;
 
   friend class TextureBinding;
+};
+
+class TextureOutput {
+ public:
+  TextureOutput(int width, int height, int samples);
+  ~TextureOutput();
+
+  // Add explicit move constructor and assignment operator
+  TextureOutput(TextureOutput&& other);
+  TextureOutput& operator=(TextureOutput&& other);
+
+  // Delete copy constructor and assignment operator
+  TextureOutput(const TextureOutput&) = delete;
+  TextureOutput& operator=(const TextureOutput&) = delete;
+
+  auto dimensions() const {
+    return dimensions_;
+  }
+
+  auto samples() const {
+    return samples_;
+  }
+
+  auto id() const {
+    return texture_;
+  }
+
+ private:
+  gl::GLuint texture_;
+  std::tuple<int, int> dimensions_;
+  int samples_;
+
+  friend class TextureOutputBinding;
 };
 
 class TextureArray {
@@ -71,6 +107,18 @@ class TextureBinding {
 
  private:
   Texture& texture_;
+  int location_;
+};
+
+class TextureOutputBinding {
+ public:
+  TextureOutputBinding(TextureOutput& texture, int location);
+  ~TextureOutputBinding() noexcept;
+
+  int location() const;
+
+ private:
+  TextureOutput& texture_;
   int location_;
 };
 

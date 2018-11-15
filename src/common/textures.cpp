@@ -52,6 +52,33 @@ Texture& Texture::operator=(Texture&& other) {
   return *this;
 }
 
+TextureOutput::TextureOutput(int width, int height, int samples)
+    : dimensions_(width, height), samples_(samples) {
+  // Create an OpenGL texture object.
+  glGenTextures(1, &texture_);
+
+  // Set the textures pixel data.
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture_);
+  glTexImage2DMultisample(
+      GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+}
+
+TextureOutput::~TextureOutput() {
+  if (texture_) {
+    glDeleteTextures(1, &texture_);
+  }
+}
+
+TextureOutput::TextureOutput(TextureOutput&& other) : texture_(0) {
+  *this = std::move(other);
+}
+
+TextureOutput& TextureOutput::operator=(TextureOutput&& other) {
+  std::swap(texture_, other.texture_);
+  return *this;
+}
+
 TextureArray::TextureArray(const std::vector<ImageTensor>& pixels) {
   ENFORCE(pixels.size());
   size_t height = pixels.front().dimension(0);
@@ -169,6 +196,21 @@ TextureBinding::~TextureBinding() noexcept {
 }
 
 int TextureBinding::location() const {
+  return location_;
+}
+
+TextureOutputBinding::TextureOutputBinding(TextureOutput& texture, int location)
+    : texture_(texture), location_(location) {
+  glActiveTexture(GL_TEXTURE0 + location_);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture_.texture_);
+}
+
+TextureOutputBinding::~TextureOutputBinding() noexcept {
+  glActiveTexture(GL_TEXTURE0 + location_);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+}
+
+int TextureOutputBinding::location() const {
   return location_;
 }
 

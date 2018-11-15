@@ -21,6 +21,7 @@
 #include "src/worlds/styles.hpp"
 #include "src/worlds/terrain.hpp"
 #include "src/worlds/ui.hpp"
+#include "src/worlds/world.hpp"
 
 namespace tequila {
 
@@ -112,16 +113,17 @@ void run() {
           .bind<QueueExecutor>(executor_factory)
           .bind<Resources>(resources_factory)
           .bind<Stats>(std::make_shared<Stats>())
-          .bindToDefaultFactory<OpenGLContextExecutor>()
           .bindToDefaultFactory<EventHandler>()
+          .bindToDefaultFactory<OpenGLContextExecutor>()
           .bindToDefaultFactory<RectUIRenderer>()
           .bindToDefaultFactory<ScriptExecutor>()
-          .bindToDefaultFactory<TerrainRenderer>()
-          .bindToDefaultFactory<TextUIRenderer>()
           .bindToDefaultFactory<SkyRenderer>()
           .bindToDefaultFactory<StyleUIRenderer>()
+          .bindToDefaultFactory<TerrainRenderer>()
+          .bindToDefaultFactory<TextUIRenderer>()
           .bindToDefaultFactory<UIRenderer>()
           .bindToDefaultFactory<VoxelsUtil>()
+          .bindToDefaultFactory<WorldRenderer>()
           .build();
 
   // Update registry pointer inside resources.
@@ -133,39 +135,36 @@ void run() {
   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 #endif
 
+  // Clean up asynchronous tasks on termination.
+  Finally finally([&] {
+    // Unblock and wait for any outstanding asynchronous tasks.
+    registry.get<QueueExecutor>()->close();
+    while (!registry.get<QueueExecutor>()->isDone()) {
+      registry.get<OpenGLContextExecutor>()->process();
+    }
+    std::cout << "Shutting down!" << std::endl;
+  });
+
   // Enter the game loop.
   std::cout << "Entering game loop." << std::endl;
   registry.get<Window>()->loop([&](float dt) {
     StatsTimer loop_timer(registry.get<Stats>(), "game_loop");
     Trace trace([&](auto& tags) { logTraces(registry.get<Stats>(), tags); });
-    registry.get<Stats>()->set(
-        "async_tasks", registry.get<QueueExecutor>()->queueSize());
 
     // Handle the update game event.
-    Trace::tag("events");
+    Trace::tag("update_game");
     registry.get<EventHandler>()->update(dt);
 
     // Process OpenGL updates that are blocking async tasks.
-    Trace::tag("gl");
+    Trace::tag("update_gl");
     registry.get<OpenGLContextExecutor>()->process();
 
-    // Render the scene to a new frame.
-    gl::glClearColor(0.62f, 0.66f, 0.8f, 0.0f);
+    // Render a new frame.
+    Trace::tag("draw_game");
     gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
-    Trace::tag("sky");
-    registry.get<SkyRenderer>()->draw();
-    Trace::tag("terrain");
-    registry.get<TerrainRenderer>()->draw();
-    Trace::tag("ui");
+    registry.get<WorldRenderer>()->draw();
     registry.get<UIRenderer>()->draw();
   });
-
-  // Unblock and wait for any outstanding asynchronous tasks.
-  registry.get<QueueExecutor>()->close();
-  while (!registry.get<QueueExecutor>()->isDone()) {
-    registry.get<OpenGLContextExecutor>()->process();
-  }
-  std::cout << "Shutting down!" << std::endl;
 }
 
 }  // namespace tequila

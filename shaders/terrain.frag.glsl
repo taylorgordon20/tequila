@@ -18,24 +18,24 @@ const float fog_start = 200.0;
 const float fog_rate = 0.1;
 
 // Texture uniforms.
-uniform sampler2DArray color_map; 
-uniform sampler2DArray normal_map; 
+uniform sampler2DArray color_map;
+uniform sampler2DArray normal_map;
 
 // Interpolated vertex input.
-in vec3 _normal; 
-in vec3 _tangent; 
-in vec3 _cotangent; 
+in vec3 _normal;
+in vec3 _tangent;
+in vec3 _cotangent;
 in vec3 _light;
 in vec3 _eye;
 in vec3 _color;
 in vec2 _tex_coord;
-in float _occlusion; 
-in float _depth; 
-in float _color_layer; 
-in float _normal_layer; 
+in float _occlusion;
+in float _depth;
+in float _color_layer;
+in float _normal_layer;
 
 // Output fragment color.
-out vec4 color;
+layout(location = 0) out vec4 color;
 
 vec3 getAmbientComponent(float occlusion) {
   return light_ambient * mat_ambient * occlusion;
@@ -67,7 +67,8 @@ void main() {
   float t_occlusion = max(0, dot(vec3(0, 0, 1), t_normal));
 
   // Boost the occlusion and clamp it from below.
-  t_occlusion = clamp(0.1 + 0.8 * pow(t_occlusion, mat_occlusion_exp), 0.1, 1.0);
+  t_occlusion =
+      clamp(0.1 + 0.8 * pow(t_occlusion, mat_occlusion_exp), 0.1, 1.0);
 
   // Compute light component vectors.
   vec3 normal = normalize(mat3(_tangent, _cotangent, _normal) * t_normal);
@@ -82,4 +83,4 @@ void main() {
 
   // Compute the pixel color.
   color = vec4(applyFog(_color * t_color * (A + D) + S, _depth), 1.0);
-}     
+}

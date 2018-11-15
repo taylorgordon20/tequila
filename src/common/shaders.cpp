@@ -24,6 +24,7 @@ void checkShaderCompilation(GLuint shader) {
 
     std::vector<GLchar> error_log(log_length);
     glGetShaderInfoLog(shader, log_length, &log_length, error_log.data());
+    LOG_ERROR(concat("Shader compilation error: ", &error_log[0]));
     throwError("Shader compilation error: %1%", &error_log[0]);
   }
 }

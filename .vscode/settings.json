@@ -2,6 +2,7 @@
   "editor.formatOnSave": true,
   "editor.renderIndentGuides": false,
   "editor.tabSize": 2,
+  "clang-format.executable": "C:\\Program Files\\LLVM\\bin\\clang-format",
   "python.formatting.provider": "yapf",
   "python.formatting.yapfArgs": [
     "--style",
