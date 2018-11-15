@@ -45,7 +45,8 @@ struct WorldRectNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
     StatsTimer timer(registryGet<Stats>(deps), "ui.rect_node");
 
-    const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
+    auto ui_tree = deps.get<WorldUI>();
+    const auto& ui_node = ui_tree->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
@@ -136,7 +137,8 @@ struct WorldTextNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
     StatsTimer timer(registryGet<Stats>(deps), "ui.text_node");
 
-    const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
+    auto ui_tree = deps.get<WorldUI>();
+    const auto& ui_node = ui_tree->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
@@ -247,7 +249,8 @@ struct WorldStyleNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
     StatsTimer timer(registryGet<Stats>(deps), "ui.style_node");
 
-    const auto& ui_node = deps.get<WorldUI>()->nodes.at(id);
+    auto ui_tree = deps.get<WorldUI>();
+    const auto& ui_node = ui_tree->nodes.at(id);
     auto x = to<float>(get_or(ui_node.attr, "x", "0"));
     auto y = to<float>(get_or(ui_node.attr, "y", "0"));
     auto z = to<float>(get_or(ui_node.attr, "z", "1"));
@@ -257,7 +260,7 @@ struct WorldStyleNode {
     auto rgba = to<uint32_t>(get_or(ui_node.attr, "color", "0"));
 
     // Parse out the style data.
-    const auto& styles = deps.get<TerrainStyles>()->styles;
+    auto terrain_styles = deps.get<TerrainStyles>();
     auto color_maps = deps.get<TerrainStylesColorMap>();
     auto normal_maps = deps.get<TerrainStylesNormalMap>();
 
@@ -268,7 +271,10 @@ struct WorldStyleNode {
     positions.row(2) << 0, 0, 0, 0, 0, 0;
 
     // Parse out the rect's color.
-    auto color = styles.at(style).colorVec();
+    auto color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    if (auto style_ptr = get_ptr(terrain_styles->styles, style)) {
+      color = style_ptr->colorVec();
+    }
     color[0] *= (rgba >> 24 & 0xFF) / 255.0f;
     color[1] *= (rgba >> 16 & 0xFF) / 255.0f;
     color[2] *= (rgba >> 8 & 0xFF) / 255.0f;
@@ -279,6 +285,8 @@ struct WorldStyleNode {
     tex_coords.row(0) << 0, 1, 1, 1, 0, 0;
     tex_coords.row(1) << 0, 0, 1, 1, 1, 0;
 
+    auto color_index = color_maps->indexOrDefault(style);
+    auto normal_index = normal_maps->indexOrDefault(style);
     return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
       return new StyleNode(
           MeshBuilder()
@@ -287,8 +295,8 @@ struct WorldStyleNode {
               .setTransform(glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z)))
               .build(),
           std::move(color),
-          color_maps->index.at(style),
-          normal_maps->index.at(style),
+          color_maps->indexOrDefault(style),
+          normal_maps->indexOrDefault(style),
           color_maps->texture_array,
           normal_maps->texture_array);
     });

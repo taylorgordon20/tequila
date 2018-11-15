@@ -3,10 +3,6 @@
 #include <thread>
 #include <utility>
 
-#ifdef _WIN32
-#include "windows.h"
-#endif
-
 #include "src/common/errors.hpp"
 #include "src/common/lua.hpp"
 #include "src/common/opengl.hpp"
@@ -73,9 +69,24 @@ void run() {
   std::cout << "Enter world name (e.g. octree_world): ";
   std::getline(std::cin, world_name);
   if (world_name.empty()) {
-    std::cout << "Defaulting to world 'octree_world'." << std::endl;
+    std::cout << "Defaulting to world \"octree_world\"." << std::endl;
     world_name = "octree_world";
   }
+
+  // Choose a style config.
+  auto style_name = std::make_shared<std::string>();
+  do {
+    std::cout << "Enter style config (e.g. styles.default): ";
+    std::getline(std::cin, *style_name);
+    if (style_name->empty()) {
+      std::cout << "Defaulting to world \"styles.default\"." << std::endl;
+      *style_name = "styles.default";
+    }
+    if (resolvePath(format("configs/%1%.json", *style_name))) {
+      break;
+    }
+    std::cout << "Could not find config for: " << *style_name << std::endl;
+  } while (true);
 
   // Define a resource to store the static registry.
   auto static_context = std::make_shared<StaticContext>();
@@ -94,6 +105,7 @@ void run() {
             .withSeed<WorldLight>(getWorldLight())
             .withSeed<WorldName>(world_name)
             .withSeed<WorldStaticContext>(static_context)
+            .withSeed<WorldStyleName>(style_name)
             .withSeed<WorldUI>(getWorldUI())
             .build());
   };

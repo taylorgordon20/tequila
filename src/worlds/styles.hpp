@@ -20,6 +20,9 @@
 
 namespace tequila {
 
+struct WorldStyleName
+    : public SeedResource<WorldStyleName, std::shared_ptr<std::string>> {};
+
 struct TerrainStyleConfig {
   std::string name;
   std::string color;
@@ -56,7 +59,8 @@ struct TerrainStyleIndex {
 struct TerrainStyles {
   auto operator()(ResourceDeps& deps) {
     std::stringstream ss;
-    ss << loadFile("configs/terrain.json");
+    auto config_name = deps.get<WorldStyleName>();
+    ss << loadFile(format("configs/%1%.json", *config_name));
     cereal::JSONInputArchive archive(ss);
     auto style_config = std::make_shared<TerrainStyleIndex>();
     style_config->serialize(archive);
@@ -67,21 +71,27 @@ struct TerrainStyles {
 struct TerrainStylesColorMapIndex {
   std::unordered_map<int64_t, int> index;
   std::shared_ptr<TextureArray> texture_array;
+
   TerrainStylesColorMapIndex(
       std::unordered_map<int64_t, int> index,
       std::shared_ptr<TextureArray> texture_array)
       : index(std::move(index)), texture_array(std::move(texture_array)) {}
+
+  auto indexOrDefault(int64_t style) {
+    return get_or(index, style, index.at(1));
+  }
 };
 
 struct TerrainStylesColorMap {
   auto operator()(ResourceDeps& deps) {
     StatsTimer timer(registryGet<Stats>(deps), "terrain_color_styles");
+    auto terrain_styles = deps.get<TerrainStyles>();
 
     // Build the color map index.
     std::vector<std::string> color_maps;
     std::unordered_map<int64_t, int> style_index;
     std::unordered_map<std::string, int> color_map_index;
-    for (const auto& style_pair : deps.get<TerrainStyles>()->styles) {
+    for (const auto& style_pair : terrain_styles->styles) {
       const auto& color_map = style_pair.second.color_map;
       if (!color_map_index.count(color_map)) {
         color_map_index[color_map] = color_maps.size();
@@ -106,21 +116,27 @@ struct TerrainStylesColorMap {
 struct TerrainStylesNormalMapIndex {
   std::unordered_map<int64_t, int> index;
   std::shared_ptr<TextureArray> texture_array;
+
   TerrainStylesNormalMapIndex(
       std::unordered_map<int64_t, int> index,
       std::shared_ptr<TextureArray> texture_array)
       : index(std::move(index)), texture_array(std::move(texture_array)) {}
+
+  auto indexOrDefault(int64_t style) {
+    return get_or(index, style, index.at(1));
+  }
 };
 
 struct TerrainStylesNormalMap {
   auto operator()(ResourceDeps& deps) {
     StatsTimer timer(registryGet<Stats>(deps), "terrain_normal_styles");
+    auto terrain_styles = deps.get<TerrainStyles>();
 
     // Build the normal map index.
     std::vector<std::string> normal_maps;
     std::unordered_map<int64_t, int> style_index;
     std::unordered_map<std::string, int> normal_map_index;
-    for (const auto& style_pair : deps.get<TerrainStyles>()->styles) {
+    for (const auto& style_pair : terrain_styles->styles) {
       const auto& normal_map = style_pair.second.normal_map;
       if (!normal_map_index.count(normal_map)) {
         normal_map_index[normal_map] = normal_maps.size();

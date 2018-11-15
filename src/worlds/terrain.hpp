@@ -239,7 +239,7 @@ struct TerrainSlice {
     // Look up the texture maps for this face since we need to specify
     // vertex attributes to point each face to its corresponding texture
     // map indices.
-    const auto& styles = deps.get<TerrainStyles>()->styles;
+    auto terrain_styles = deps.get<TerrainStyles>();
     auto color_maps = deps.get<TerrainStylesColorMap>();
     auto normal_maps = deps.get<TerrainStylesNormalMap>();
 
@@ -293,10 +293,14 @@ struct TerrainSlice {
       positions.row(2).segment(6 * i, 6) = fz * ones_row + dir_face.row(2);
 
       // Colors.
-      auto rgba = styles.at(style).colorVec();
-      colors.row(0).segment(6 * i, 6) = rgba[0] * ones_row;
-      colors.row(1).segment(6 * i, 6) = rgba[1] * ones_row;
-      colors.row(2).segment(6 * i, 6) = rgba[2] * ones_row;
+      if (auto style_ptr = get_ptr(terrain_styles->styles, style)) {
+        auto rgba = style_ptr->colorVec();
+        colors.row(0).segment(6 * i, 6) = rgba[0] * ones_row;
+        colors.row(1).segment(6 * i, 6) = rgba[1] * ones_row;
+        colors.row(2).segment(6 * i, 6) = rgba[2] * ones_row;
+      } else {
+        colors.block<3, 6>(0, 6 * i).setOnes();
+      }
 
       // Lights.
       // HACK: These lights are inappropriately shoved into normal coords.
@@ -317,8 +321,8 @@ struct TerrainSlice {
       // HACK: These indices are inappropriately shoved into texture coords.
       // TODO: Refactor mesh library into vertex buffer wrapper that supports
       // arbitrarily packed and typed vertex attributes.
-      auto color_index = get_or(color_maps->index, style, 0);
-      auto normal_index = get_or(normal_maps->index, style, 0);
+      auto color_index = color_maps->indexOrDefault(style);
+      auto normal_index = normal_maps->indexOrDefault(style);
       indices.row(0).segment(6 * i, 6) = color_index * ones_row;
       indices.row(1).segment(6 * i, 6) = normal_index * ones_row;
     }

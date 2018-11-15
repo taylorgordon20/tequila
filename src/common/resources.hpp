@@ -149,7 +149,7 @@ class ResourceGenerator : public ResourceGeneratorBase {
       }
 
       // Build a new version.
-      version_ = requested_version_.load();
+      uint64_t version = requested_version_.load();
       ResourceDeps deps(resources_, key_);
       auto value = std::apply(
           [&](const auto&... keys) {
@@ -163,7 +163,7 @@ class ResourceGenerator : public ResourceGeneratorBase {
 
       // Update the value to the new version if its the latest and make sure
       // that dependency subscription lists match the latest version.
-      if (version_ == requested_version_) {
+      if (version == requested_version_) {
         std::lock_guard lock(mutex_);
         value_ = value;
         auto& new_deps = deps.deps();
@@ -174,6 +174,7 @@ class ResourceGenerator : public ResourceGeneratorBase {
         }
         deps_.swap(new_deps);
         cacheDeps();
+        version_ = version;
       }
 
       return *value;

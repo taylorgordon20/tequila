@@ -1,0 +1,211 @@
+{
+  "styles": [
+    {
+      "key": 1,
+      "value": {
+        "name": "unknown",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_question.png",
+        "normal_map": "images/myles/nm_question.png"
+      }
+    },
+    {
+      "key": 2,
+      "value": {
+        "name": "grass",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_grass.png",
+        "normal_map": "images/myles/nm_grass.png"
+      }
+    },
+    {
+      "key": 3,
+      "value": {
+        "name": "dirt",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_dirt.png",
+        "normal_map": "images/myles/nm_dirt.png"
+      }
+    },
+    {
+      "key": 4,
+      "value": {
+        "name": "rock",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_rock.png",
+        "normal_map": "images/myles/nm_rock.png"
+      }
+    },
+    {
+      "key": 5,
+      "value": {
+        "name": "planks",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_planks.png",
+        "normal_map": "images/myles/nm_planks.png"
+      }
+    },
+    {
+      "key": 6,
+      "value": {
+        "name": "jungle_grass",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_jungle_grass.png",
+        "normal_map": "images/myles/nm_jungle_grass.png"
+      }
+    },
+    {
+      "key": 7,
+      "value": {
+        "name": "sand",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_sand.png",
+        "normal_map": "images/myles/nm_sand.png"
+      }
+    },
+    {
+      "key": 8,
+      "value": {
+        "name": "swampy_grass",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_swampy_grass.png",
+        "normal_map": "images/myles/nm_swampy_grass.png"
+      }
+    },
+    {
+      "key": 9,
+      "value": {
+        "name": "brick",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_brick.png",
+        "normal_map": "images/myles/nm_brick.png"
+      }
+    },
+    {
+      "key": 10,
+      "value": {
+        "name": "blue_brick",
+        "color": "8899CC",
+        "color_map": "images/myles/cm_brick_bw.png",
+        "normal_map": "images/myles/nm_brick.png"
+      }
+    },
+    {
+      "key": 11,
+      "value": {
+        "name": "granite",
+        "color": "DDDDDD",
+        "color_map": "images/myles/cm_brick_bw.png",
+        "normal_map": "images/myles/nm_brick.png"
+      }
+    },
+    {
+      "key": 12,
+      "value": {
+        "name": "granite_brick",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_brick_bw.png",
+        "normal_map": "images/myles/nm_brick.png"
+      }
+    },
+    {
+      "key": 13,
+      "value": {
+        "name": "gray_brick",
+        "color": "DDCCBB",
+        "color_map": "images/myles/cm_brick_bw.png",
+        "normal_map": "images/myles/nm_brick.png"
+      }
+    },
+    {
+      "key": 14,
+      "value": {
+        "name": "bark",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_bark.png",
+        "normal_map": "images/myles/nm_bark.png"
+      }
+    },
+    {
+      "key": 15,
+      "value": {
+        "name": "bark_dark",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_bark_dark.png",
+        "normal_map": "images/myles/nm_bark_dark.png"
+      }
+    },
+    {
+      "key": 16,
+      "value": {
+        "name": "brown_grass",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_brown_grass.png",
+        "normal_map": "images/myles/nm_brown_grass.png"
+      }
+    },
+    {
+      "key": 17,
+      "value": {
+        "name": "roof_tiles",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_roof_tiles.png",
+        "normal_map": "images/myles/nm_roof_tiles.png"
+      }
+    },
+    {
+      "key": 18,
+      "value": {
+        "name": "stone_wall",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_stone_wall.png",
+        "normal_map": "images/myles/nm_stone_wall.png"
+      }
+    },
+    {
+      "key": 19,
+      "value": {
+        "name": "stone_wall_moss",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_stone_wall_moss.png",
+        "normal_map": "images/myles/nm_stone_wall.png"
+      }
+    },
+    {
+      "key": 20,
+      "value": {
+        "name": "stone_floor",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_stone_floor.png",
+        "normal_map": "images/myles/nm_stone_floor.png"
+      }
+    },
+    {
+      "key": 21,
+      "value": {
+        "name": "tile_floor1",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_tile_floor1.png",
+        "normal_map": "images/myles/nm_tile_floor1.png"
+      }
+    },
+    {
+      "key": 22,
+      "value": {
+        "name": "tile_floor2",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_tile_floor2.png",
+        "normal_map": "images/myles/nm_tile_floor2.png"
+      }
+    },
+    {
+      "key": 23,
+      "value": {
+        "name": "mario_pipe",
+        "color": "FFFFFF",
+        "color_map": "images/myles/cm_mario_pipe.png",
+        "normal_map": "images/myles/nm_mario_pipe.png"
+      }
+    }
+  ]
+}

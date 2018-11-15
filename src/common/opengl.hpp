@@ -2,6 +2,10 @@
 
 #include <iostream>
 
+#ifdef _WIN32
+#include "windows.h"
+#endif
+
 // Include GLFW which provided OpenGL context creation and window management.
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>

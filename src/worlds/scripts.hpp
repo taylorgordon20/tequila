@@ -133,6 +133,12 @@ auto FFI_set_camera_view(std::shared_ptr<Resources>& resources) {
   };
 }
 
+auto FFI_set_style_config(std::shared_ptr<Resources>& resources) {
+  return [resources](const std::string& name) {
+    ResourceMutation<WorldStyleName>(*resources)->assign(name);
+  };
+}
+
 auto FFI_is_key_pressed(std::shared_ptr<Window>& window) {
   return
       [window](int key) { return window->call<glfwGetKey>(key) == GLFW_PRESS; };
@@ -323,6 +329,7 @@ class ScriptExecutor {
     ctx.set("set_camera_pos", wrapFFI(FFI_set_camera_pos(resources_)));
     ctx.set("get_camera_view", wrapFFI(FFI_get_camera_view(resources_)));
     ctx.set("set_camera_view", wrapFFI(FFI_set_camera_view(resources_)));
+    ctx.set("set_style_config", wrapFFI(FFI_set_style_config(resources_)));
     ctx.set("is_key_pressed", wrapFFI(FFI_is_key_pressed(window_)));
     ctx.set("is_mouse_pressed", wrapFFI(FFI_is_mouse_pressed(window_)));
     ctx.set("get_cursor_pos", wrapFFI(FFI_get_cursor_pos(window_)));

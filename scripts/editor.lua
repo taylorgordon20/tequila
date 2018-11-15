@@ -1,7 +1,7 @@
 local module = {
   palette_styles = {},
   palette_selection = 1,
-  palette_count = 10,
+  palette_count = 16,
 }
 
 local crosshair_size = 0.005
