@@ -16,10 +16,14 @@
       "value": {
         "name": "grass",
         "color": "FFFFFF",
-        "color_map": "images/myles/cm_grass.png",
-        "normal_map": "images/myles/nm_grass.png",
-        "color_map_overrides": {},
-        "normal_map_overrides": {}
+        "color_map": "images/myles/cm_dirt.png",
+        "normal_map": "images/myles/nm_dirt.png",
+        "color_map_overrides": {
+          "top": "images/myles/cm_grass.png"
+        },
+        "normal_map_overrides": {
+          "top": "images/myles/nm_grass.png"
+        }
       }
     },
     {

@@ -90,7 +90,7 @@ class Application {
     // Initialize OpenGL context with vsync and extension bindings.
     glfwMakeContextCurrent(glfw_window);
     glfwSwapInterval(1);
-    initializeBindingsForOpenGL();
+    initializeOpenGL();
     logInfoAboutOpenGL();
 
     // Return the window wrapper.

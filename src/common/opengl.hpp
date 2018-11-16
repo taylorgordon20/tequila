@@ -42,9 +42,10 @@ inline void logInfoAboutOpenGL() {
       glbinding::aux::ContextInfo::renderer());
 }
 
-inline void initializeBindingsForOpenGL() {
+inline void initializeOpenGL() {
   // Bindings are lazily initialized.
   glbinding::initialize(glfwGetProcAddress);
+  gl::glEnable(gl::GL_MULTISAMPLE);
 }
 
 }  // namespace tequila

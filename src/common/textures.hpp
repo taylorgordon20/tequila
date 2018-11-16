@@ -29,7 +29,7 @@ class Texture {
 
 class TextureOutput {
  public:
-  TextureOutput(int width, int height, int samples);
+  TextureOutput(int width, int height);
   ~TextureOutput();
 
   // Add explicit move constructor and assignment operator
@@ -39,6 +39,34 @@ class TextureOutput {
   // Delete copy constructor and assignment operator
   TextureOutput(const TextureOutput&) = delete;
   TextureOutput& operator=(const TextureOutput&) = delete;
+
+  auto dimensions() const {
+    return dimensions_;
+  }
+
+  auto id() const {
+    return texture_;
+  }
+
+ private:
+  gl::GLuint texture_;
+  std::tuple<int, int> dimensions_;
+
+  friend class TextureOutputBinding;
+};
+
+class MultisampleTextureOutput {
+ public:
+  MultisampleTextureOutput(int width, int height, int samples);
+  ~MultisampleTextureOutput();
+
+  // Add explicit move constructor and assignment operator
+  MultisampleTextureOutput(MultisampleTextureOutput&& other);
+  MultisampleTextureOutput& operator=(MultisampleTextureOutput&& other);
+
+  // Delete copy constructor and assignment operator
+  MultisampleTextureOutput(const MultisampleTextureOutput&) = delete;
+  MultisampleTextureOutput& operator=(const MultisampleTextureOutput&) = delete;
 
   auto dimensions() const {
     return dimensions_;
@@ -57,7 +85,7 @@ class TextureOutput {
   std::tuple<int, int> dimensions_;
   int samples_;
 
-  friend class TextureOutputBinding;
+  friend class MultisampleTextureOutputBinding;
 };
 
 class TextureArray {
@@ -119,6 +147,19 @@ class TextureOutputBinding {
 
  private:
   TextureOutput& texture_;
+  int location_;
+};
+
+class MultisampleTextureOutputBinding {
+ public:
+  MultisampleTextureOutputBinding(
+      MultisampleTextureOutput& texture, int location);
+  ~MultisampleTextureOutputBinding() noexcept;
+
+  int location() const;
+
+ private:
+  MultisampleTextureOutput& texture_;
   int location_;
 };
 
