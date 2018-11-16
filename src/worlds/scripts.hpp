@@ -270,6 +270,7 @@ class ScriptExecutor {
     lua_modules.push_back(resources_->get<ScriptModule>("console"));
     lua_modules.push_back(resources_->get<ScriptModule>("camera"));
     lua_modules.push_back(resources_->get<ScriptModule>("editor"));
+    lua_modules.push_back(resources_->get<ScriptModule>("game"));
     for (const auto& module : lua_modules) {
       if (!module->has("__initialized")) {
         module->call<void>("on_init");
