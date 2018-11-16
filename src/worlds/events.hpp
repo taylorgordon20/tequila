@@ -38,16 +38,35 @@ class EventHandler {
     });
 
     // Register key event callback.
-    window_->on<glfwSetKeyCallback>(
-        [&](int key, int scancode, int action, int mods) {
-          StatsTimer timer(stats_, "events.on_key");
-          if (key == GLFW_KEY_F1) {
-            gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_FILL);
-          } else if (key == GLFW_KEY_F2) {
-            gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_LINE);
+    window_->on<glfwSetKeyCallback>([&](int key,
+                                        int scancode,
+                                        int action,
+                                        int mods) {
+      StatsTimer timer(stats_, "events.on_key");
+      if (action == GLFW_PRESS) {
+        if (key == GLFW_KEY_F1) {
+          gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_FILL);
+        } else if (key == GLFW_KEY_F2) {
+          gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_LINE);
+        } else if (key == GLFW_KEY_ENTER && mods == GLFW_MOD_ALT) {
+          if (window_->call<glfwGetWindowMonitor>()) {
+            // Leave fullscreen.
+            window_->call<glfwSetWindowMonitor>(
+                (GLFWmonitor*)nullptr, 100, 100, 1024, 768, 0);
+          } else {
+            // Enter fullscreen.
+            auto monitor = glfwGetPrimaryMonitor();
+            if (monitor) {
+              const auto mode = glfwGetVideoMode(monitor);
+              window_->call<glfwSetWindowMonitor>(
+                  monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+              glfwSwapInterval(1);
+            }
           }
-          scripts_->delegate("on_key", key, scancode, action, mods);
-        });
+        }
+      }
+      scripts_->delegate("on_key", key, scancode, action, mods);
+    });
 
     // Register scroll event callback.
     window_->on<glfwSetCharCallback>([&](unsigned int codepoint) {
