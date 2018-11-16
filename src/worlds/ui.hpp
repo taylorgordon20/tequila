@@ -285,8 +285,6 @@ struct WorldStyleNode {
     tex_coords.row(0) << 0, 1, 1, 1, 0, 0;
     tex_coords.row(1) << 0, 0, 1, 1, 1, 0;
 
-    auto color_index = color_maps->indexOrDefault(style);
-    auto normal_index = normal_maps->indexOrDefault(style);
     return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
       return new StyleNode(
           MeshBuilder()
@@ -295,8 +293,8 @@ struct WorldStyleNode {
               .setTransform(glm::translate(glm::mat4(1.0), glm::vec3(x, y, -z)))
               .build(),
           std::move(color),
-          color_maps->indexOrDefault(style),
-          normal_maps->indexOrDefault(style),
+          color_maps->indexOrDefault(StyleIndexKey(style, "top")),
+          normal_maps->indexOrDefault(StyleIndexKey(style, "top")),
           color_maps->texture_array,
           normal_maps->texture_array);
     });

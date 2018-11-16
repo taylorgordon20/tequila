@@ -6,7 +6,9 @@
         "name": "unknown",
         "color": "FFFFFF",
         "color_map": "images/color_map_question.png",
-        "normal_map": "images/normal_map_fabric.png"
+        "normal_map": "images/normal_map_fabric.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -14,8 +16,14 @@
       "value": {
         "name": "grass",
         "color": "FFFFFF",
-        "color_map": "images/color_map_grass.png",
-        "normal_map": "images/normal_map_grass.png"
+        "color_map": "images/color_map_dirt.png",
+        "normal_map": "images/normal_map_grain.png",
+        "color_map_overrides": {
+          "top": "images/color_map_grass.png"
+        },
+        "normal_map_overrides": {
+          "top": "images/normal_map_grass.png"
+        }
       }
     },
     {
@@ -24,7 +32,9 @@
         "name": "dirt",
         "color": "FFFFFF",
         "color_map": "images/color_map_dirt.png",
-        "normal_map": "images/normal_map_grain.png"
+        "normal_map": "images/normal_map_grain.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -33,7 +43,9 @@
         "name": "rock",
         "color": "FFFFFF",
         "color_map": "images/color_map_rock.png",
-        "normal_map": "images/normal_map_rock.png"
+        "normal_map": "images/normal_map_rock.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -42,16 +54,20 @@
         "name": "crate",
         "color": "FFFFFF",
         "color_map": "images/color_map_dirt.png",
-        "normal_map": "images/normal_map_crate.png"
+        "normal_map": "images/normal_map_crate.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
       "key": 6,
       "value": {
-        "name": "mud",
+        "name": "leaves",
         "color": "FFFFFF",
-        "color_map": "images/color_map_dirt.png",
-        "normal_map": "images/normal_map_rock.png"
+        "color_map": "images/color_map_grass.png",
+        "normal_map": "images/normal_map_grass.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -60,16 +76,20 @@
         "name": "sand",
         "color": "FFFFFF",
         "color_map": "images/color_map_sand.png",
-        "normal_map": "images/normal_map_fabric.png"
+        "normal_map": "images/normal_map_fabric.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
       "key": 8,
       "value": {
-        "name": "clay",
+        "name": "moss",
         "color": "FFFFFF",
-        "color_map": "images/color_map_clay.png",
-        "normal_map": "images/normal_map_fabric.png"
+        "color_map": "images/color_map_grass.png",
+        "normal_map": "images/normal_map_fabric.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -78,7 +98,9 @@
         "name": "brick",
         "color": "CC8866",
         "color_map": "images/color_map_shale.png",
-        "normal_map": "images/normal_map_hut.png"
+        "normal_map": "images/normal_map_hut.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -87,7 +109,9 @@
         "name": "blue_brick",
         "color": "8899CC",
         "color_map": "images/color_map_shale.png",
-        "normal_map": "images/normal_map_hut.png"
+        "normal_map": "images/normal_map_hut.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -96,7 +120,9 @@
         "name": "granite",
         "color": "FFFFFF",
         "color_map": "images/color_map_granite.png",
-        "normal_map": "images/normal_map_rock.png"
+        "normal_map": "images/normal_map_rock.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -105,7 +131,9 @@
         "name": "granite_brick",
         "color": "FFFFFF",
         "color_map": "images/color_map_granite.png",
-        "normal_map": "images/normal_map_hut.png"
+        "normal_map": "images/normal_map_hut.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
@@ -114,16 +142,108 @@
         "name": "gray_brick",
         "color": "DDCCBB",
         "color_map": "images/color_map_shale.png",
-        "normal_map": "images/normal_map_hut.png"
+        "normal_map": "images/normal_map_hut.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     },
     {
       "key": 14,
       "value": {
-        "name": "wood",
+        "name": "bark",
         "color": "BB9955",
         "color_map": "images/color_map_shale.png",
-        "normal_map": "images/normal_map_wood.png"
+        "normal_map": "images/normal_map_wood.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 15,
+      "value": {
+        "name": "bark_dark",
+        "color": "996622",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_wood.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 16,
+      "value": {
+        "name": "brown_grass",
+        "color": "FFCC66",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_grass.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 17,
+      "value": {
+        "name": "roof_tiles",
+        "color": "CC9966",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_tile.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 18,
+      "value": {
+        "name": "stone_wall",
+        "color": "FFFFFF",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_tile.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 19,
+      "value": {
+        "name": "stone_wall_moss",
+        "color": "FFFFFF",
+        "color_map": "images/color_map_grass.png",
+        "normal_map": "images/normal_map_tile.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 20,
+      "value": {
+        "name": "stone_floor",
+        "color": "FFFFFF",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_tile.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 21,
+      "value": {
+        "name": "tile_floor_fancy",
+        "color": "FFFFFF",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_tile.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
+    },
+    {
+      "key": 22,
+      "value": {
+        "name": "tile_floor_plain",
+        "color": "FFFFFF",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_tile.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
       }
     }
   ]

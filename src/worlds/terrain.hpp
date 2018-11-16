@@ -41,6 +41,25 @@ inline std::ostream& operator<<(std::ostream& os, TerrainSliceDir& dir) {
   return os << static_cast<int>(dir);
 }
 
+inline auto terrainSliceStyleKey(int64_t style, TerrainSliceDir dir) {
+  switch (dir) {
+    case LEFT:
+      return StyleIndexKey(style, "left");
+    case RIGHT:
+      return StyleIndexKey(style, "right");
+    case DOWN:
+      return StyleIndexKey(style, "bottom");
+    case UP:
+      return StyleIndexKey(style, "top");
+    case BACK:
+      return StyleIndexKey(style, "back");
+    case FRONT:
+      return StyleIndexKey(style, "front");
+    default:
+      throwError("Invalid terrain slice dir: %1%", dir);
+  }
+}
+
 inline auto terrainSliceOrigin(TerrainSliceDir dir) {
   static const std::vector<glm::vec3> kOrigins = {
       glm::vec3(0.0f, 0.0f, 0.0f),
@@ -321,8 +340,9 @@ struct TerrainSlice {
       // HACK: These indices are inappropriately shoved into texture coords.
       // TODO: Refactor mesh library into vertex buffer wrapper that supports
       // arbitrarily packed and typed vertex attributes.
-      auto color_index = color_maps->indexOrDefault(style);
-      auto normal_index = normal_maps->indexOrDefault(style);
+      auto style_index_key = terrainSliceStyleKey(style, dir);
+      auto color_index = color_maps->indexOrDefault(style_index_key);
+      auto normal_index = normal_maps->indexOrDefault(style_index_key);
       indices.row(0).segment(6 * i, 6) = color_index * ones_row;
       indices.row(1).segment(6 * i, 6) = normal_index * ones_row;
     }

@@ -15,6 +15,28 @@
 #include "src/common/errors.hpp"
 #include "src/common/files.hpp"
 
+// Define custom serialization for maps keyed by strings since this use case
+// occurs often and the default serialization is cumbersome.
+namespace cereal {
+template <typename Archive, typename Value>
+inline void save(
+    Archive& ar, const std::unordered_map<std::string, Value>& map) {
+  for (const auto& pair : map) {
+    ar(cereal::make_nvp(pair.first, pair.second));
+  }
+}
+
+template <class Archive, typename Value>
+inline void load(Archive& ar, std::unordered_map<std::string, Value>& map) {
+  map.clear();
+  Value value;
+  for (auto name = ar.getNodeName(); name; name = ar.getNodeName()) {
+    ar(value);
+    map.emplace(name, std::move(value));
+  }
+}
+}  // namespace cereal
+
 namespace tequila {
 
 template <typename ValueType>
