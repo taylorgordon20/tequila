@@ -30,6 +30,6 @@ void main() {
   float brightness = dot(scene_color.rgb, vec3(0.2126, 0.7152, 0.0722));
 
   // Smoothly filter out pixels below a certain brightness.
-  float filter = 1.0 / (1.0 + exp(-20.0 * (brightness - 0.7)));
-  color = filter * scene_color;
+  float cutoff = 1.0 / (1.0 + exp(-20.0 * (brightness - 0.7)));
+  color = cutoff * scene_color;
 }
