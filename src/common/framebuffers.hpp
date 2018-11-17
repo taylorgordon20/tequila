@@ -5,12 +5,13 @@
 
 namespace tequila {
 
+// TODO: Change texture pointers to std::shared_ptr.
 class Framebuffer {
  public:
   Framebuffer(
       const std::tuple<int, int>& render_size,
-      const std::vector<TextureOutput*>& color_attachments,
-      TextureOutput* depth_attachment);
+      std::vector<std::shared_ptr<TextureOutput>> color_attachments,
+      std::shared_ptr<TextureOutput> depth_attachment);
   ~Framebuffer();
 
   // Add explicit move constructor and assignment operator
@@ -22,6 +23,8 @@ class Framebuffer {
   Framebuffer& operator=(const Framebuffer&) = delete;
 
  private:
+  std::vector<std::shared_ptr<TextureOutput>> color_attachments_;
+  std::shared_ptr<TextureOutput> depth_attachment_;
   gl::GLuint framebuffer_;
   gl::GLuint depthbuffer_;
 
@@ -29,13 +32,14 @@ class Framebuffer {
   friend class FramebufferBinding;
 };
 
+// TODO: Change texture pointers to std::shared_ptr.
 class MultisampleFramebuffer {
  public:
   MultisampleFramebuffer(
       const std::tuple<int, int>& render_size,
       int render_samples,
-      const std::vector<MultisampleTextureOutput*>& color_attachments,
-      MultisampleTextureOutput* depth_attachment);
+      std::vector<std::shared_ptr<MultisampleTextureOutput>> color_attachments,
+      std::shared_ptr<MultisampleTextureOutput> depth_attachment);
   ~MultisampleFramebuffer();
 
   // Add explicit move constructor and assignment operator
@@ -47,6 +51,8 @@ class MultisampleFramebuffer {
   MultisampleFramebuffer& operator=(const MultisampleFramebuffer&) = delete;
 
  private:
+  std::vector<std::shared_ptr<MultisampleTextureOutput>> color_attachments_;
+  std::shared_ptr<MultisampleTextureOutput> depth_attachment_;
   gl::GLuint framebuffer_;
   gl::GLuint depthbuffer_;
 
@@ -71,17 +77,18 @@ class FramebufferBinding {
 // Constructs a multi-sampled framebuffer with a single color attachment. This
 // kind of FBO is useful for rendering a normal anti-aliased scene to texture.
 inline MultisampleFramebuffer makeFramebuffer(
-    MultisampleTextureOutput& color_map) {
+    std::shared_ptr<MultisampleTextureOutput> color_map) {
+  using TexVec = std::vector<std::shared_ptr<MultisampleTextureOutput>>;
   return MultisampleFramebuffer(
-      color_map.dimensions(),
-      color_map.samples(),
-      std::vector<MultisampleTextureOutput*>{&color_map},
+      color_map->dimensions(),
+      color_map->samples(),
+      TexVec{color_map},
       nullptr);
 }
 
-inline Framebuffer makeFramebuffer(TextureOutput& color_map) {
-  return Framebuffer(
-      color_map.dimensions(), std::vector<TextureOutput*>{&color_map}, nullptr);
+inline Framebuffer makeFramebuffer(std::shared_ptr<TextureOutput> color_map) {
+  using TexVec = std::vector<std::shared_ptr<TextureOutput>>;
+  return Framebuffer(color_map->dimensions(), TexVec{color_map}, nullptr);
 }
 
 }  // namespace tequila

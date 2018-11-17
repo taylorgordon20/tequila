@@ -27,10 +27,7 @@ class EventHandler {
     // Register window resize event callback.
     window_->on<glfwSetFramebufferSizeCallback>([&](int width, int height) {
       StatsTimer timer(stats_, "events.on_resize");
-      int w, h;
-      window_->call<glfwGetFramebufferSize>(&w, &h);
       if (width > 0 && height > 0) {
-        gl::glViewport(0, 0, w, h);
         auto camera = ResourceMutation<WorldCamera>(*resources_);
         camera->aspect = static_cast<float>(width) / height;
       }

@@ -86,6 +86,9 @@ class WorldRenderer {
   void updateBuffers(int width, int height, int samples) {
     // Return if no update is required.
     if (scene_map_) {
+      if (width == 0 || height == 0) {
+        return;
+      }
       if (std::tuple(width, height) == scene_map_->dimensions() &&
           samples == scene_map_->samples()) {
         return;
@@ -93,10 +96,11 @@ class WorldRenderer {
     }
 
     // Create a new scene texture and framebuffer.
+    // NOTE: We need to delete the framebuffers before the textures are deleted.
     scene_map_ =
         std::make_shared<MultisampleTextureOutput>(width, height, samples);
     scene_fbo_ =
-        std::make_shared<MultisampleFramebuffer>(makeFramebuffer(*scene_map_));
+        std::make_shared<MultisampleFramebuffer>(makeFramebuffer(scene_map_));
 
     // Create a new light map texture and framebuffer.
     // TODO: Use bilinear sampling over a smaller texture.
@@ -104,8 +108,8 @@ class WorldRenderer {
     bloom_height_ = 512;
     bloom_map1_ = std::make_shared<TextureOutput>(bloom_width_, bloom_height_);
     bloom_map2_ = std::make_shared<TextureOutput>(bloom_width_, bloom_height_);
-    bloom_fbo1_ = std::make_shared<Framebuffer>(makeFramebuffer(*bloom_map1_));
-    bloom_fbo2_ = std::make_shared<Framebuffer>(makeFramebuffer(*bloom_map2_));
+    bloom_fbo1_ = std::make_shared<Framebuffer>(makeFramebuffer(bloom_map1_));
+    bloom_fbo2_ = std::make_shared<Framebuffer>(makeFramebuffer(bloom_map2_));
   }
 
   auto getWindowSize() {

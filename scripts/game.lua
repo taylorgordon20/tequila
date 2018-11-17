@@ -4,6 +4,14 @@ local alert_show = 0
 local alert_time = 0
 local alert_text = ""
 
+local secret_1 = false
+local secret_2 = false
+
+function module:camera_is_at(x, y, z)
+  local cx, cy, cz = table.unpack(get_camera_pos())
+  return math.abs(cx - x) < 2 and math.abs(cy - y) < 2 and math.abs(cz - z) < 2
+end
+
 function module:show_alert(text)
   alert_time = now_time()
   alert_text = text
@@ -17,7 +25,7 @@ function module:update_ui()
   update_ui_node(
     "alert",
     {
-      x = math.floor(0.5 * window_w - 0.5 * text_length * 35),
+      x = math.floor(0.5 * window_w - 0.5 * text_length * 30),
       y = math.floor(0.5 * window_h),
       z = 1,
       text = alert_text,
@@ -35,7 +43,7 @@ function module:on_init()
     {x = 0, y = 0, color = 0xFFFFFFFF, text = "", size = 72}
   )
 
-  self:show_alert("Welcome to my game!")
+  self:show_alert("Try to find the secret...")
 end
 
 function module:on_done()
@@ -54,12 +62,13 @@ function module:on_update(dt)
   end
 
   -- Check to see if the player found the secret spot.
-  local cx, cy, cz = table.unpack(get_camera_pos())
-  local x_dist = math.abs(cx - 298.5)
-  local y_dist = math.abs(cy - 33.5)
-  local z_dist = math.abs(cz - 222.5)
-  if x_dist < 2 and y_dist < 2 and z_dist < 2 then
+  if not secret_1 and self:camera_is_at(265.5, 37.5, 223.5) then
+    self:show_alert("Hmm... what's in here?")
+    secret_1 = true
+  end
+  if not secret_2 and self:camera_is_at(299.5, 33.5, 222.5) then 
     self:show_alert("You found the secret!")
+    secret_2 = true
   end
 end
 

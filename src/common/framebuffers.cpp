@@ -18,9 +18,11 @@ auto getMaxColorAttachments() {
 
 Framebuffer::Framebuffer(
     const std::tuple<int, int>& render_size,
-    const std::vector<TextureOutput*>& color_attachments,
-    TextureOutput* depth_attachment) {
-  ENFORCE(color_attachments.size() <= getMaxColorAttachments());
+    std::vector<std::shared_ptr<TextureOutput>> color_attachments,
+    std::shared_ptr<TextureOutput> depth_attachment)
+    : color_attachments_(std::move(color_attachments)),
+      depth_attachment_(std::move(depth_attachment)) {
+  ENFORCE(color_attachments_.size() <= getMaxColorAttachments());
 
   // Create OpenGL framebuffer and depthbuffer objects.
   glGenFramebuffers(1, &framebuffer_);
@@ -45,22 +47,22 @@ Framebuffer::Framebuffer(
 
   // Attach color texture outputs.
   std::vector<GLenum> draw_buffers;
-  for (int i = 0; i < color_attachments.size(); i += 1) {
-    ENFORCE(color_attachments.at(i));
+  for (int i = 0; i < color_attachments_.size(); i += 1) {
+    ENFORCE(color_attachments_.at(i));
     draw_buffers.emplace_back(GL_COLOR_ATTACHMENT0 + i);
     glFramebufferTexture2D(
         GL_FRAMEBUFFER,
         draw_buffers.back(),
         GL_TEXTURE_2D,
-        color_attachments.at(i)->id(),
+        color_attachments_.at(i)->id(),
         0);
   }
   glDrawBuffers(1, draw_buffers.data());
 
   // Attach depth texture outputs.
-  if (depth_attachment) {
+  if (depth_attachment_) {
     glFramebufferTexture(
-        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_attachment->id(), 0);
+        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_attachment_->id(), 0);
   }
 
   // Make sure that everything worked before returning.
@@ -89,9 +91,11 @@ Framebuffer& Framebuffer::operator=(Framebuffer&& other) {
 MultisampleFramebuffer::MultisampleFramebuffer(
     const std::tuple<int, int>& render_size,
     int render_samples,
-    const std::vector<MultisampleTextureOutput*>& color_attachments,
-    MultisampleTextureOutput* depth_attachment) {
-  ENFORCE(color_attachments.size() <= getMaxColorAttachments());
+    std::vector<std::shared_ptr<MultisampleTextureOutput>> color_attachments,
+    std::shared_ptr<MultisampleTextureOutput> depth_attachment)
+    : color_attachments_(std::move(color_attachments)),
+      depth_attachment_(std::move(depth_attachment)) {
+  ENFORCE(color_attachments_.size() <= getMaxColorAttachments());
 
   // Create OpenGL framebuffer and depthbuffer objects.
   glGenFramebuffers(1, &framebuffer_);
@@ -117,22 +121,22 @@ MultisampleFramebuffer::MultisampleFramebuffer(
 
   // Attach color texture outputs.
   std::vector<GLenum> draw_buffers;
-  for (int i = 0; i < color_attachments.size(); i += 1) {
-    ENFORCE(color_attachments.at(i));
+  for (int i = 0; i < color_attachments_.size(); i += 1) {
+    ENFORCE(color_attachments_.at(i));
     draw_buffers.emplace_back(GL_COLOR_ATTACHMENT0 + i);
     glFramebufferTexture2D(
         GL_FRAMEBUFFER,
         draw_buffers.back(),
         GL_TEXTURE_2D_MULTISAMPLE,
-        color_attachments.at(i)->id(),
+        color_attachments_.at(i)->id(),
         0);
   }
   glDrawBuffers(1, draw_buffers.data());
 
   // Attach depth texture outputs.
-  if (depth_attachment) {
+  if (depth_attachment_) {
     glFramebufferTexture(
-        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_attachment->id(), 0);
+        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_attachment_->id(), 0);
   }
 
   // Make sure that everything worked before returning.
