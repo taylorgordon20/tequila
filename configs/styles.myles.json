@@ -245,6 +245,17 @@
         "color_map_overrides": {},
         "normal_map_overrides": {}
       }
+    },
+    {
+      "key": 23,
+      "value": {
+        "name": "black_brick",
+        "color": "111111",
+        "color_map": "images/myles/cm_brick_bw.png",
+        "normal_map": "images/myles/nm_brick.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
     }
   ]
 }

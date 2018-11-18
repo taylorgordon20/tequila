@@ -12,7 +12,17 @@ local physics = {
   walk_force = 2.0,
   run_force = 5.0,
   fly_force = 4.0,
+  extra_jump = true,
+  extra_jump_enabled = false,
 }
+
+function module:toggle_extra_jump()
+  physics.extra_jump_enabled = not physics.extra_jump_enabled
+end
+
+function module:set_velocity(x, y, z)
+  physics.velocity = {x, y, z}
+end
 
 function module:clamp_movement(from, move, dim)
   local pad = 0.001
@@ -98,6 +108,14 @@ function module:get_physics_movement(dt)
     move[1] = move[1] - dt * propulsion * orient_z
     move[3] = move[3] + dt * propulsion * orient_x
   end
+  if is_key_pressed(KEYS.space) then
+    if physics.velocity[2] == 0 then
+      move[2] = dt * physics.jump_force
+    elseif physics.extra_jump_enabled and physics.extra_jump then
+      move[2] = dt * physics.jump_force
+      physics.extra_jump = false
+    end
+  end
 
   -- Apply a gravity force.
   move[2] = move[2] + dt * physics.gravity_force
@@ -106,11 +124,6 @@ function module:get_physics_movement(dt)
   move[1] = (1 + physics.resistance_force[1]) * move[1]
   move[2] = (1 + physics.resistance_force[2]) * move[2]
   move[3] = (1 + physics.resistance_force[3]) * move[3]
-
-  -- Truncate the movement vector to zero below some threshold.
-  move[1] = truncate(move[1], 0.00001)
-  move[2] = truncate(move[2], 0.00001)
-  move[3] = truncate(move[3], 0.00001)
 
   -- Clamp the movement vector to avoid collisions.
   -- TODO: Tweak the ranges below to be parameterized on player dimensions.
@@ -123,6 +136,16 @@ function module:get_physics_movement(dt)
         end
       end
     end
+  end
+
+  -- Truncate the movement vector to zero below some threshold.
+  move[1] = truncate(move[1], 0.00001)
+  move[2] = truncate(move[2], 0.00001)
+  move[3] = truncate(move[3], 0.00001)
+
+  -- Reset extra jump if camera is on ground.
+  if move[2] == 0 then
+    physics.extra_jump = true
   end
 
   -- Record the inertial velocity.
@@ -176,8 +199,6 @@ function module:on_key(key, scancode, action, mods)
   elseif key == KEYS.home and action == 1 then
     orientation_angles = {0, 0}
     self:update_camera_view()
-  elseif key == KEYS.space and action == 1 then
-    physics.velocity[2] = physics.jump_force
   end
 end
 
@@ -189,7 +210,7 @@ function module:on_update(dt)
   )
 
   -- Move the camera along the movement vector.
-  if camera_move[1] ~= 0 or camera_move[2] ~= 0 or camera_move[2] ~= 0 then
+  if camera_move[1] ~= 0 or camera_move[2] ~= 0 or camera_move[3] ~= 0 then
     self:update_camera_position(camera_move)
   end
 

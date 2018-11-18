@@ -245,6 +245,17 @@
         "color_map_overrides": {},
         "normal_map_overrides": {}
       }
+    },
+    {
+      "key": 23,
+      "value": {
+        "name": "black_brick",
+        "color": "111111",
+        "color_map": "images/color_map_shale.png",
+        "normal_map": "images/normal_map_hut.png",
+        "color_map_overrides": {},
+        "normal_map_overrides": {}
+      }
     }
   ]
 }
