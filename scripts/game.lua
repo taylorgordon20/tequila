@@ -106,9 +106,9 @@ function module:on_update(dt)
   elseif secret_2 and self:camera_is_at(317.5, 31, 222.5) then
     get_module("camera"):set_velocity(0, 100, 0)
   elseif self:camera_is_at(261.5, 82, 248.5) then
-    get_module("camera"):set_velocity(-800, 50, 800)
+    set_camera_pos(191.5, 95, 302.5)
   elseif self:camera_is_at(261.5, 82, 245.5) then
-    get_module("camera"):set_velocity(-800, 50, -800)
+    set_camera_pos(222.5, 95, 195.5)
   end
 end
 
