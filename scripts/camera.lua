@@ -16,8 +16,8 @@ local physics = {
   extra_jump_enabled = false,
 }
 
-function module:toggle_extra_jump()
-  physics.extra_jump_enabled = not physics.extra_jump_enabled
+function module:set_extra_jump(enabled)
+  physics.extra_jump_enabled = enabled
 end
 
 function module:set_velocity(x, y, z)
@@ -108,14 +108,6 @@ function module:get_physics_movement(dt)
     move[1] = move[1] - dt * propulsion * orient_z
     move[3] = move[3] + dt * propulsion * orient_x
   end
-  if is_key_pressed(KEYS.space) then
-    if physics.velocity[2] == 0 then
-      move[2] = dt * physics.jump_force
-    elseif physics.extra_jump_enabled and physics.extra_jump then
-      move[2] = dt * physics.jump_force
-      physics.extra_jump = false
-    end
-  end
 
   -- Apply a gravity force.
   move[2] = move[2] + dt * physics.gravity_force
@@ -199,6 +191,13 @@ function module:on_key(key, scancode, action, mods)
   elseif key == KEYS.home and action == 1 then
     orientation_angles = {0, 0}
     self:update_camera_view()
+  elseif is_key_pressed(KEYS.space) and action == 1 then
+    if physics.velocity[2] == 0 then
+      physics.velocity[2] = physics.jump_force
+    elseif physics.extra_jump_enabled and physics.extra_jump then
+      physics.velocity[2] = physics.jump_force
+      physics.extra_jump = false
+    end
   end
 end
 

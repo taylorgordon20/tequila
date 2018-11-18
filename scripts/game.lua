@@ -69,6 +69,10 @@ function module:on_done()
   delete_ui_node("alert")
 end
 
+function module:on_resize(width, height)
+  self:update_ui()
+end
+
 function module:on_update(dt)
   -- Update the text alpha every second.
   if alert_show > 0 then
