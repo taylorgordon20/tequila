@@ -1,23 +1,15 @@
 #version 410
 
 // Gaussian weighting.
-const float weights[16] = float[](
-    0.05263258884708393,
-    0.05222299879115271,
-    0.05101325432712272,
-    0.04905896724370121,
-    0.046448096632560096,
-    0.04329438663656544,
-    0.039729162416983904,
-    0.035892307175473155,
-    0.03192327883580561,
-    0.0279529569344979,
-    0.024096955090603608,
-    0.020450820168551074,
-    0.01708729983266336,
-    0.014055629444327335,
-    0.011382595607703473,
-    0.009074996438746435);
+const float weights[8] = float[](
+    0.10611540095683647,
+    0.10285057329714875,
+    0.0936465126609306,
+    0.08010010702316236,
+    0.06436224414802064,
+    0.04858317075581121,
+    0.034450626745357545,
+    0.022949064891150624);
 
 // Uniforms.
 uniform bool horizontal;
@@ -30,17 +22,15 @@ in vec2 _tex_coord;
 // Output fragment color.
 out vec4 color;
 
-bool inCircleOfConfusion(float base_depth, float candidate_depth) {
-  return abs(base_depth - candidate_depth) < 0.2;
+float circleOfConfusionWeight(float base_depth, float candidate_depth) {
+  float dist = 0.5 - abs(base_depth - candidate_depth) / base_depth;
+  return 1.0 / (1 + exp(-10.0 * dist));
 }
 
 vec4 blurColor(vec2 uv, float base_depth, vec4 base_color) {
   float candidate_depth = texture(depth_map, uv).r;
-  if (inCircleOfConfusion(base_depth, candidate_depth)) {
-    return texture(color_map, uv);
-  } else {
-    return base_color;
-  }
+  float coc = circleOfConfusionWeight(base_depth, candidate_depth);
+  return mix(base_color, texture(color_map, uv), coc);
 }
 
 void main() {
@@ -54,7 +44,7 @@ void main() {
 
   // Blur the center and neighboring pixels into the output color
   color = weights[0] * base_color;
-  for (int i = 1; i < 16; i += 1) {
+  for (int i = 1; i < 8; i += 1) {
     float w = weights[i];
     color += w * blurColor(_tex_coord + i * tex_shift, base_depth, base_color);
     color += w * blurColor(_tex_coord - i * tex_shift, base_depth, base_color);
