@@ -96,6 +96,7 @@ class SkyRenderer {
     if (auto opt_sky = async_resources_->optGet<Sky>()) {
       auto sky = opt_sky.get();
       auto camera = resources_->get<WorldCamera>();
+      auto light = resources_->get<WorldLight>();
       auto shader = resources_->get<SkyShader>();
       shader->run([&] {
         // Set uniforms.
@@ -105,6 +106,7 @@ class SkyRenderer {
         // Bind the sky's cube map texture.
         TextureCubeBinding cube_map(*sky->texture, 0);
         shader->uniform("cube_map", cube_map.location());
+        shader->uniform("lightness", glm::dot(glm::vec3(0, 1.0f, 0), *light));
 
         // Draw the sky box.
         gl::glDisable(gl::GL_DEPTH_TEST);

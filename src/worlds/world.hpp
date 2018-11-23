@@ -49,6 +49,17 @@ struct WorldLightFilterShader {
   }
 };
 
+struct WorldCopyShader {
+  auto operator()(ResourceDeps& deps) {
+    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+      return new ShaderProgram(std::vector<ShaderSource>{
+          makeVertexShader(loadFile("shaders/world.vert.glsl")),
+          makeFragmentShader(loadFile("shaders/world.copy.frag.glsl")),
+      });
+    });
+  }
+};
+
 struct WorldBlurShader {
   auto operator()(ResourceDeps& deps) {
     return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
@@ -97,10 +108,12 @@ class WorldRenderer {
 
     // Create a new scene texture and framebuffer.
     // NOTE: We need to delete the framebuffers before the textures are deleted.
-    scene_map_ =
-        std::make_shared<MultisampleTextureOutput>(width, height, samples);
-    scene_fbo_ =
-        std::make_shared<MultisampleFramebuffer>(makeFramebuffer(scene_map_));
+    scene_map_ = std::make_shared<MultisampleTextureOutput>(
+        width, height, samples, gl::GL_RGBA8);
+    depth_map_ = std::make_shared<MultisampleTextureOutput>(
+        width, height, samples, gl::GL_DEPTH_COMPONENT);
+    scene_fbo_ = std::make_shared<MultisampleFramebuffer>(
+        makeFramebuffer(scene_map_, depth_map_));
 
     // Create a new light map texture and framebuffer.
     // TODO: Use bilinear sampling over a smaller texture.
@@ -110,6 +123,15 @@ class WorldRenderer {
     bloom_map2_ = std::make_shared<TextureOutput>(bloom_width_, bloom_height_);
     bloom_fbo1_ = std::make_shared<Framebuffer>(makeFramebuffer(bloom_map1_));
     bloom_fbo2_ = std::make_shared<Framebuffer>(makeFramebuffer(bloom_map2_));
+
+    // Create a new texture and framebuffer to store the blurred scene.
+    // TODO: Use bilinear sampling over a smaller texture.
+    dof_width_ = static_cast<int>((512.0f * width) / height);
+    dof_height_ = 512;
+    dof_map1_ = std::make_shared<TextureOutput>(dof_width_, dof_height_);
+    dof_map2_ = std::make_shared<TextureOutput>(dof_width_, dof_height_);
+    dof_fbo1_ = std::make_shared<Framebuffer>(makeFramebuffer(dof_map1_));
+    dof_fbo2_ = std::make_shared<Framebuffer>(makeFramebuffer(dof_map2_));
   }
 
   auto getWindowSize() {
@@ -152,6 +174,21 @@ class WorldRenderer {
       });
     }
 
+    // Compute the raw dof map from the scene.
+    {
+      FramebufferBinding fb(*dof_fbo1_);
+      gl::glViewport(0, 0, dof_width_, dof_height_);
+      gl::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+      gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
+      auto shader = resources_->get<WorldCopyShader>();
+      shader->run([&] {
+        MultisampleTextureOutputBinding tb(*scene_map_, 0);
+        shader->uniform("samples", kSamplesCount);
+        shader->uniform("color_map", tb.location());
+        frame_mesh->draw(*shader);
+      });
+    }
+
     for (int blur_passes = 0; blur_passes < 10; blur_passes += 1) {
       // Blur the light map horizontally.
       {
@@ -184,6 +221,38 @@ class WorldRenderer {
       }
     }
 
+    for (int blur_passes = 0; blur_passes < 5; blur_passes += 1) {
+      // Blur the dof map horizontally.
+      {
+        FramebufferBinding fb(*dof_fbo2_);
+        gl::glViewport(0, 0, dof_width_, dof_height_);
+        gl::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
+        auto shader = resources_->get<WorldBlurShader>();
+        shader->run([&] {
+          TextureOutputBinding tb(*dof_map1_, 0);
+          shader->uniform("horizontal", 1);
+          shader->uniform("color_map", tb.location());
+          frame_mesh->draw(*shader);
+        });
+      }
+
+      // Blur the dof map vertically.
+      {
+        FramebufferBinding fb(*dof_fbo1_);
+        gl::glViewport(0, 0, dof_width_, dof_height_);
+        gl::glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        gl::glClear(gl::GL_COLOR_BUFFER_BIT | gl::GL_DEPTH_BUFFER_BIT);
+        auto shader = resources_->get<WorldBlurShader>();
+        shader->run([&] {
+          TextureOutputBinding tb(*dof_map2_, 0);
+          shader->uniform("horizontal", 0);
+          shader->uniform("color_map", tb.location());
+          frame_mesh->draw(*shader);
+        });
+      }
+    }
+
     // Render the scene map to the screen.
     {
       gl::glViewport(0, 0, window_width, window_height);
@@ -192,10 +261,14 @@ class WorldRenderer {
       auto shader = resources_->get<WorldShader>();
       shader->run([&] {
         MultisampleTextureOutputBinding smb(*scene_map_, 0);
-        TextureOutputBinding bmb(*bloom_map1_, 1);
+        MultisampleTextureOutputBinding dmb(*depth_map_, 1);
+        TextureOutputBinding bmb(*bloom_map1_, 2);
+        TextureOutputBinding fmb(*dof_map1_, 3);
         shader->uniform("samples", kSamplesCount);
         shader->uniform("color_map", smb.location());
+        shader->uniform("depth_map", dmb.location());
         shader->uniform("bloom_map", bmb.location());
+        shader->uniform("dof_map", fmb.location());
         frame_mesh->draw(*shader);
       });
     }
@@ -204,18 +277,31 @@ class WorldRenderer {
  private:
   std::shared_ptr<Resources> resources_;
   std::shared_ptr<Window> window_;
+
+  // Renderers for the world geometry.
   std::shared_ptr<SkyRenderer> sky_renderer_;
   std::shared_ptr<TerrainRenderer> terrain_renderer_;
 
+  // World is rendered to the following anti-aliased buffers.
   std::shared_ptr<MultisampleTextureOutput> scene_map_;
+  std::shared_ptr<MultisampleTextureOutput> depth_map_;
   std::shared_ptr<MultisampleFramebuffer> scene_fbo_;
 
+  // Post-processing buffers for generating bloom lighting.
   int bloom_width_;
   int bloom_height_;
   std::shared_ptr<TextureOutput> bloom_map1_;
   std::shared_ptr<TextureOutput> bloom_map2_;
   std::shared_ptr<Framebuffer> bloom_fbo1_;
   std::shared_ptr<Framebuffer> bloom_fbo2_;
+
+  // Post-processing buffers for generating depth of field effect.
+  int dof_width_;
+  int dof_height_;
+  std::shared_ptr<TextureOutput> dof_map1_;
+  std::shared_ptr<TextureOutput> dof_map2_;
+  std::shared_ptr<Framebuffer> dof_fbo1_;
+  std::shared_ptr<Framebuffer> dof_fbo2_;
 };
 
 template <>

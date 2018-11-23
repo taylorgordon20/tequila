@@ -86,9 +86,29 @@ inline MultisampleFramebuffer makeFramebuffer(
       nullptr);
 }
 
+// Constructs a multi-sampled framebuffer with a single color attachment as well
+// as a depth buffer attachment.
+inline MultisampleFramebuffer makeFramebuffer(
+    std::shared_ptr<MultisampleTextureOutput> color_map,
+    std::shared_ptr<MultisampleTextureOutput> depth_map) {
+  using TexVec = std::vector<std::shared_ptr<MultisampleTextureOutput>>;
+  return MultisampleFramebuffer(
+      color_map->dimensions(),
+      color_map->samples(),
+      TexVec{color_map},
+      depth_map);
+}
+
 inline Framebuffer makeFramebuffer(std::shared_ptr<TextureOutput> color_map) {
   using TexVec = std::vector<std::shared_ptr<TextureOutput>>;
   return Framebuffer(color_map->dimensions(), TexVec{color_map}, nullptr);
+}
+
+inline Framebuffer makeFramebuffer(
+    std::shared_ptr<TextureOutput> color_map,
+    std::shared_ptr<TextureOutput> depth_map) {
+  using TexVec = std::vector<std::shared_ptr<TextureOutput>>;
+  return Framebuffer(color_map->dimensions(), TexVec{color_map}, depth_map);
 }
 
 }  // namespace tequila

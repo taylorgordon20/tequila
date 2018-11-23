@@ -24,6 +24,10 @@ function module:set_velocity(x, y, z)
   physics.velocity = {x, y, z}
 end
 
+function module:get_orientation()
+  return orientation_angles
+end
+
 function module:clamp_movement(from, move, dim)
   local pad = 0.001
   local p = from[dim]

@@ -52,8 +52,8 @@ Texture& Texture::operator=(Texture&& other) {
   return *this;
 }
 
-TextureOutput::TextureOutput(int width, int height)
-    : dimensions_(width, height) {
+TextureOutput::TextureOutput(int width, int height, gl::GLenum format)
+    : dimensions_(width, height), format_(format) {
   // Create an OpenGL texture object.
   glGenTextures(1, &texture_);
 
@@ -64,15 +64,7 @@ TextureOutput::TextureOutput(int width, int height)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexImage2D(
-      GL_TEXTURE_2D,
-      0,
-      GL_RGBA,
-      width,
-      height,
-      0,
-      GL_RGBA,
-      GL_UNSIGNED_BYTE,
-      0);
+      GL_TEXTURE_2D, 0, format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -92,15 +84,15 @@ TextureOutput& TextureOutput::operator=(TextureOutput&& other) {
 }
 
 MultisampleTextureOutput::MultisampleTextureOutput(
-    int width, int height, int samples)
-    : dimensions_(width, height), samples_(samples) {
+    int width, int height, int samples, gl::GLenum format)
+    : dimensions_(width, height), samples_(samples), format_(format) {
   // Create an OpenGL texture object.
   glGenTextures(1, &texture_);
 
   // Set the textures pixel data.
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture_);
   glTexImage2DMultisample(
-      GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGBA8, width, height, true);
+      GL_TEXTURE_2D_MULTISAMPLE, samples, format, width, height, true);
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 }
 

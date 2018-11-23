@@ -17,17 +17,18 @@ in vec2 tex_coord;
 
 // Varying output to the fragment shader. All of the spatial outputs
 // are represented in view coordinates and relative to the vertex.
-out vec3 _normal; 
-out vec3 _tangent; 
-out vec3 _cotangent; 
+out vec3 _normal;
+out vec3 _tangent;
+out vec3 _cotangent;
 out vec3 _light;
 out vec3 _eye;
 out vec3 _color;
 out vec2 _tex_coord;
-out float _occlusion; 
-out float _depth; 
+out float _occlusion;
+out float _depth;
 out float _color_layer;
 out float _normal_layer;
+out float _lightness;
 
 void main() {
   vec4 view_position = modelview_matrix * vec4(position, 1.0);
@@ -50,4 +51,5 @@ void main() {
   _color_layer = tex_coord.x;
   _normal_layer = tex_coord.y;
   _depth = -view_position.z;
+  _lightness = clamp(0.2 + dot(light, vec3(0, 1, 0)), 0, 1);
 }

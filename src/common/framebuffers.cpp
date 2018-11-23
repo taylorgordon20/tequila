@@ -61,8 +61,12 @@ Framebuffer::Framebuffer(
 
   // Attach depth texture outputs.
   if (depth_attachment_) {
-    glFramebufferTexture(
-        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_attachment_->id(), 0);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_ATTACHMENT,
+        GL_TEXTURE_2D,
+        depth_attachment_->id(),
+        0);
   }
 
   // Make sure that everything worked before returning.
@@ -135,8 +139,12 @@ MultisampleFramebuffer::MultisampleFramebuffer(
 
   // Attach depth texture outputs.
   if (depth_attachment_) {
-    glFramebufferTexture(
-        GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_attachment_->id(), 0);
+    glFramebufferTexture2D(
+        GL_FRAMEBUFFER,
+        GL_DEPTH_ATTACHMENT,
+        GL_TEXTURE_2D_MULTISAMPLE,
+        depth_attachment_->id(),
+        0);
   }
 
   // Make sure that everything worked before returning.

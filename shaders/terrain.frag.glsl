@@ -33,6 +33,7 @@ in float _occlusion;
 in float _depth;
 in float _color_layer;
 in float _normal_layer;
+in float _lightness;
 
 // Output fragment color.
 layout(location = 0) out vec4 color;
@@ -41,12 +42,14 @@ vec3 getAmbientComponent(float occlusion) {
   return light_ambient * mat_ambient * occlusion;
 }
 
-vec3 getDiffuseComponent(vec3 normal, vec3 light) {
-  return max(0.0, dot(normal, light)) * (light_diffuse * mat_diffuse);
+vec3 getDiffuseComponent(vec3 normal, vec3 light, float lightness) {
+  vec3 diff = (lightness * light_diffuse * mat_diffuse);
+  return max(0.0, dot(normal, light)) * diff;
 }
 
-vec3 getSpecularComponent(vec3 normal, vec3 light, vec3 halfv) {
-  vec3 spec = light_specular * mat_specular;
+vec3 getSpecularComponent(
+    vec3 normal, vec3 light, vec3 halfv, float lightness) {
+  vec3 spec = lightness * light_specular * mat_specular;
   return pow(max(0.0, dot(normal, halfv)), mat_shininess) * spec;
 }
 
@@ -54,8 +57,9 @@ float sigmoid(float t) {
   return 1.0 / (1 + exp(-t));
 }
 
-vec3 applyFog(vec3 color, float depth) {
-  return mix(color, fog_color, sigmoid((depth - fog_start) * fog_rate));
+vec3 applyFog(vec3 color, float depth, float lightness) {
+  vec3 light_fog = lightness * fog_color;
+  return mix(color, light_fog, sigmoid((depth - fog_start) * fog_rate));
 }
 
 void main() {
@@ -78,9 +82,10 @@ void main() {
   // Compute lighting components.
   float occlusion = max(0.25, 1.0 / (1 + exp(-8.0 * (_occlusion - 0.5))));
   vec3 A = occlusion * getAmbientComponent(t_occlusion);
-  vec3 D = occlusion * getDiffuseComponent(normal, light);
-  vec3 S = occlusion * getSpecularComponent(normal, light, halfv);
+  vec3 D = occlusion * getDiffuseComponent(normal, light, _lightness);
+  vec3 S = occlusion * getSpecularComponent(normal, light, halfv, _lightness);
 
   // Compute the pixel color.
-  color = vec4(applyFog(_color * t_color * (A + D) + S, _depth), 1.0);
+  vec3 light_color = _color * t_color * (A + D) + S;
+  color = vec4(applyFog(light_color, _depth, _lightness), 1.0);
 }

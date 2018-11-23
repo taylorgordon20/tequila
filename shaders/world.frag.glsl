@@ -3,7 +3,9 @@
 // Uniforms.
 uniform int samples;
 uniform sampler2DMS color_map;
+uniform sampler2DMS depth_map;
 uniform sampler2D bloom_map;
+uniform sampler2D dof_map;
 
 // Interpolated vertex input.
 in vec2 _tex_coord;
@@ -23,10 +25,30 @@ vec4 multisampleTexture(sampler2DMS texture_map, vec2 uv, int sample_count) {
   return color / float(sample_count);
 }
 
+float invertDepth(float depth) {
+  const float near = 0.1f;
+  const float far = 256.0f;
+  float normalized = 2.0 * depth - 1.0;
+  return 2.0 * near * far / (far + near - normalized * (far - near));
+}
+
+float depthMask(float scene_depth) {
+  float speed = 0.02;
+  float pivot = 140;
+  float depth = invertDepth(scene_depth);
+  return 1.0 / (1 + exp(speed * (pivot - depth)));
+}
+
 void main() {
-  // Sample the raw scene color.
-  color = multisampleTexture(color_map, _tex_coord, samples);
+  // Sample the raw scene color and depth.
+  vec4 scene_color = multisampleTexture(color_map, _tex_coord, samples);
+  vec4 scene_depth = multisampleTexture(depth_map, _tex_coord, samples);
+
+  // Blend the scene color with the depth-of-field map.
+  float dof_mask = depthMask(scene_depth.r);
+  vec3 dof_color = texture(dof_map, _tex_coord).rgb;
+  scene_color.rgb = mix(scene_color.rgb, dof_color.rgb, dof_mask);
 
   // Add bloom lighting component.
-  color += 0.8 * texture(bloom_map, _tex_coord);
+  color = scene_color + 0.8 * texture(bloom_map, _tex_coord);
 }

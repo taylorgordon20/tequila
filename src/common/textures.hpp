@@ -29,7 +29,7 @@ class Texture {
 
 class TextureOutput {
  public:
-  TextureOutput(int width, int height);
+  TextureOutput(int width, int height, gl::GLenum format = gl::GL_RGBA);
   ~TextureOutput();
 
   // Add explicit move constructor and assignment operator
@@ -44,6 +44,10 @@ class TextureOutput {
     return dimensions_;
   }
 
+  auto format() const {
+    return format_;
+  }
+
   auto id() const {
     return texture_;
   }
@@ -51,13 +55,15 @@ class TextureOutput {
  private:
   gl::GLuint texture_;
   std::tuple<int, int> dimensions_;
+  gl::GLenum format_;
 
   friend class TextureOutputBinding;
 };
 
 class MultisampleTextureOutput {
  public:
-  MultisampleTextureOutput(int width, int height, int samples);
+  MultisampleTextureOutput(
+      int width, int height, int samples, gl::GLenum format = gl::GL_RGBA8);
   ~MultisampleTextureOutput();
 
   // Add explicit move constructor and assignment operator
@@ -76,6 +82,10 @@ class MultisampleTextureOutput {
     return samples_;
   }
 
+  auto format() const {
+    return format_;
+  }
+
   auto id() const {
     return texture_;
   }
@@ -84,6 +94,7 @@ class MultisampleTextureOutput {
   gl::GLuint texture_;
   std::tuple<int, int> dimensions_;
   int samples_;
+  gl::GLenum format_;
 
   friend class MultisampleTextureOutputBinding;
 };

@@ -19,9 +19,17 @@
         "color_map": "images/myles/cm_dirt.png",
         "normal_map": "images/myles/nm_dirt.png",
         "color_map_overrides": {
+          "left": "images/myles/cm_grass_edge.png",
+          "right": "images/myles/cm_grass_edge.png",
+          "back": "images/myles/cm_grass_edge.png",
+          "front": "images/myles/cm_grass_edge.png",
           "top": "images/myles/cm_grass.png"
         },
         "normal_map_overrides": {
+          "left": "images/myles/nm_grass_edge.png",
+          "right": "images/myles/nm_grass_edge.png",
+          "back": "images/myles/nm_grass_edge.png",
+          "front": "images/myles/nm_grass_edge.png",
           "top": "images/myles/nm_grass.png"
         }
       }
