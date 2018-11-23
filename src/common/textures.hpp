@@ -29,7 +29,7 @@ class Texture {
 
 class TextureOutput {
  public:
-  TextureOutput(int width, int height, gl::GLenum format = gl::GL_RGBA);
+  TextureOutput(int width, int height, gl::GLenum format = gl::GL_RGBA8);
   ~TextureOutput();
 
   // Add explicit move constructor and assignment operator

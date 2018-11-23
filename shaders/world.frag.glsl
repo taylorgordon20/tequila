@@ -5,7 +5,7 @@ uniform int samples;
 uniform sampler2DMS color_map;
 uniform sampler2DMS depth_map;
 uniform sampler2D bloom_map;
-uniform sampler2D dof_map;
+uniform sampler2D boken_map;
 
 // Interpolated vertex input.
 in vec2 _tex_coord;
@@ -44,10 +44,10 @@ void main() {
   vec4 scene_color = multisampleTexture(color_map, _tex_coord, samples);
   vec4 scene_depth = multisampleTexture(depth_map, _tex_coord, samples);
 
-  // Blend the scene color with the depth-of-field map.
-  float dof_mask = depthMask(scene_depth.r);
-  vec3 dof_color = texture(dof_map, _tex_coord).rgb;
-  scene_color.rgb = mix(scene_color.rgb, dof_color.rgb, dof_mask);
+  // Blend the scene color with the boken map.
+  float boken_mask = depthMask(scene_depth.r);
+  vec3 boken_color = texture(boken_map, _tex_coord).rgb;
+  scene_color.rgb = mix(scene_color.rgb, boken_color.rgb, boken_mask);
 
   // Add bloom lighting component.
   color = scene_color + 0.8 * texture(bloom_map, _tex_coord);

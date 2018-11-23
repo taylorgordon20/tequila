@@ -45,6 +45,11 @@ inline void logInfoAboutOpenGL() {
 inline void initializeOpenGL() {
   // Bindings are lazily initialized.
   glbinding::initialize(glfwGetProcAddress);
+
+  // Set error callbacks.
+  glbinding::aux::enableGetErrorCallback();
+
+  // Also enable some globally persistent OpenGL state.
   gl::glEnable(gl::GL_MULTISAMPLE);
 }
 

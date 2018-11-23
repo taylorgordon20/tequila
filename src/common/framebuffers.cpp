@@ -57,7 +57,7 @@ Framebuffer::Framebuffer(
         color_attachments_.at(i)->id(),
         0);
   }
-  glDrawBuffers(1, draw_buffers.data());
+  glDrawBuffers(draw_buffers.size(), draw_buffers.data());
 
   // Attach depth texture outputs.
   if (depth_attachment_) {
@@ -135,7 +135,7 @@ MultisampleFramebuffer::MultisampleFramebuffer(
         color_attachments_.at(i)->id(),
         0);
   }
-  glDrawBuffers(1, draw_buffers.data());
+  glDrawBuffers(draw_buffers.size(), draw_buffers.data());
 
   // Attach depth texture outputs.
   if (depth_attachment_) {
