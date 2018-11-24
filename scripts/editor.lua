@@ -7,6 +7,7 @@ local module = {
 local crosshair_size = 0.005
 local crosshair_color = 0xAAAAFFCC
 local edit_delay_s = 0
+local box_edit_start = nil
 
 local for_camera_ray_voxels = function(voxel_fn)
   local cx, cy, cz = table.unpack(get_camera_pos())
@@ -52,6 +53,24 @@ function module:update_ui()
       }
   )
 
+  -- Display the current state of the box edit mode.
+  if box_edit_start then
+    local be_x, be_y, be_z = table.unpack(box_edit_start)
+    update_ui_node(
+      "box_edit",
+      {
+        x = window_w - 180,
+        text = string.format("Box edit: %.0f, %.0f, %.0f", be_x, be_y, be_z),
+      }
+    )
+  else
+    update_ui_node(
+      "box_edit",
+      {x = window_w - 180, text = "Box edit: nil"}
+    )
+  end
+
+
   -- Position the style palette centered in the bottom of the screen.
   local palette_size = window_h * 0.05
   local palette_padding = window_h * 0.02
@@ -90,11 +109,8 @@ function module:update_ui()
   )
 end
 
-function module:insert_voxel()
-  if edit_delay_s < 0.3 then
-    return
-  end
-
+function module:get_ray_insertion_voxel()
+  local ret = nil
   local pred = nil
   for_camera_ray_voxels(function(x, y, z, distance)
     if get_voxel(x, y, z) ~= 0 then
@@ -105,15 +121,28 @@ function module:insert_voxel()
         local dy = py - cam_y + 0.5
         local dz = math.abs(pz - cam_z + 0.5)
         if dx > 0.9 or dz > 0.9 or dy < -2.1 or dy > 0.8 then
-          local style = self.palette_styles[self.palette_selection]
-          set_voxel(px, py, pz, style)
-          edit_delay_s = 0
+          ret = {px, py, pz}
         end
       end
       return true
     end
     pred = {x, y, z}
   end)
+  return ret
+end
+
+function module:insert_voxel()
+  if edit_delay_s < 0.3 then
+    return
+  end
+
+  local voxel = self:get_ray_insertion_voxel()
+  if voxel then
+    local x, y, z = table.unpack(voxel)
+    local style = self.palette_styles[self.palette_selection]
+    set_voxel(x, y, z, style)
+    edit_delay_s = 0
+  end
 end
 
 function module:remove_voxel()
@@ -139,6 +168,13 @@ function module:on_init()
       end
   )
 
+  -- Edit indicator UI.
+  create_ui_node(
+    "box_edit",
+    "text",
+    {x = 0, y = 10, color = 0xFFFFFFFF, text = "Edit: nil", size = 16}
+  )
+
   -- Create a crosshair that remains centered in the screen.
   create_ui_node("crosshair", "rect", {})
 
@@ -161,6 +197,8 @@ function module:on_done()
   end
   delete_ui_node("crosshair")
 
+  delete_ui_node("box_edit")
+
   -- Unregister console commands.
   get_module("console"):delete_command("set_style")
 end
@@ -177,6 +215,64 @@ end
 function module:on_key(key, scancode, action, mods)
   if key == KEYS.tab and action == 1 then
     self.palette_selection = self.palette_selection % self.palette_count + 1
+    self:update_ui()
+  end
+  if is_key_pressed(string.byte('C')) then
+    local insertion_voxel = self:get_ray_insertion_voxel()
+    if not box_edit_start and insertion_voxel then
+      box_edit_start = insertion_voxel
+    elseif insertion_voxel then
+      local sx, sy, sz = table.unpack(box_edit_start)
+      local ex, ey, ez = table.unpack(insertion_voxel)
+      if sx > ex then
+        sx, ex = ex, sx
+      end
+      if sy > ey then
+        sy, ey = ey, sy
+      end
+      if sz > ez then
+        sz, ez = ez, sz
+      end
+      local style = self.palette_styles[self.palette_selection]
+      for iz = sz, ez do
+        for iy = sy, ey do
+          for ix = sx, ex do
+            if get_voxel(ix, iy, iz) == 0 then
+              set_voxel(ix, iy, iz, style)
+            end
+          end
+        end
+      end
+      box_edit_start = nil
+    end
+    self:update_ui()
+  end
+  if is_key_pressed(string.byte('X')) then
+    if box_edit_start then
+      local insertion_voxel = self:get_ray_insertion_voxel()
+      if insertion_voxel then
+        local sx, sy, sz = table.unpack(box_edit_start)
+        local ex, ey, ez = table.unpack(insertion_voxel)
+        if sx > ex then
+          sx, ex = ex, sx
+        end
+        if sy > ey then
+          sy, ey = ey, sy
+        end
+        if sz > ez then
+          sz, ez = ez, sz
+        end
+        local style = self.palette_styles[self.palette_selection]
+        for iz = sz, ez do
+          for iy = sy, ey do
+            for ix = sx, ex do
+              set_voxel(ix, iy, iz, style)
+            end
+          end
+        end
+        box_edit_start = nil
+      end
+    end
     self:update_ui()
   end
 end
