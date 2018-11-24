@@ -75,14 +75,15 @@ Framebuffer::Framebuffer(
 
 Framebuffer::~Framebuffer() {
   if (depthbuffer_) {
-    glDeleteFramebuffers(1, &depthbuffer_);
+    glDeleteRenderbuffers(1, &depthbuffer_);
   }
   if (framebuffer_) {
     glDeleteFramebuffers(1, &framebuffer_);
   }
 }
 
-Framebuffer::Framebuffer(Framebuffer&& other) {
+Framebuffer::Framebuffer(Framebuffer&& other)
+    : framebuffer_(0), depthbuffer_(0) {
   *this = std::move(other);
 }
 
@@ -153,14 +154,15 @@ MultisampleFramebuffer::MultisampleFramebuffer(
 
 MultisampleFramebuffer::~MultisampleFramebuffer() {
   if (depthbuffer_) {
-    glDeleteFramebuffers(1, &depthbuffer_);
+    glDeleteRenderbuffers(1, &depthbuffer_);
   }
   if (framebuffer_) {
     glDeleteFramebuffers(1, &framebuffer_);
   }
 }
 
-MultisampleFramebuffer::MultisampleFramebuffer(MultisampleFramebuffer&& other) {
+MultisampleFramebuffer::MultisampleFramebuffer(MultisampleFramebuffer&& other)
+    : framebuffer_(0), depthbuffer_(0) {
   *this = std::move(other);
 }
 

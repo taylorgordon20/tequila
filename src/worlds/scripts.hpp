@@ -93,9 +93,7 @@ auto FFI_get_light_dir(std::shared_ptr<Resources>& resources) {
 auto FFI_set_light_dir(std::shared_ptr<Resources>& resources) {
   return [resources](float x, float y, float z) {
     ResourceMutation<WorldLight> light(*resources);
-    light->operator[](0) = x;
-    light->operator[](1) = y;
-    light->operator[](2) = z;
+    light->operator=(glm::normalize(glm::vec3(x, y, z)));
   };
 }
 
@@ -180,29 +178,41 @@ auto FFI_get_window_size(std::shared_ptr<Window>& window) {
   };
 }
 
-auto FFI_get_voxel(std::shared_ptr<VoxelsUtil>& voxels_util) {
-  return [voxels_util](float x, float y, float z) {
-    return voxels_util->getVoxel(x, y, z);
+auto FFI_get_voxel(std::shared_ptr<Resources>& resources) {
+  return [resources](float x, float y, float z) {
+    VoxelMutator mutator(resources);
+    return mutator.get(x, y, z);
   };
 }
 
-auto FFI_set_voxel(std::shared_ptr<VoxelsUtil>& voxels_util) {
-  return [voxels_util](float x, float y, float z, uint32_t value) {
-    voxels_util->setVoxel(x, y, z, value);
+auto FFI_set_voxel(std::shared_ptr<Resources>& resources) {
+  return [resources](float x, float y, float z, uint32_t value) {
+    VoxelMutator mutator(resources);
+    mutator.set(x, y, z, value);
   };
 }
 
-auto FFI_get_ray_voxels(std::shared_ptr<VoxelsUtil>& voxels_util) {
-  return [voxels_util](
-             float start_x,
-             float start_y,
-             float start_z,
-             float dir_x,
-             float dir_y,
-             float dir_z,
-             float distance) {
+auto FFI_set_voxels(std::shared_ptr<Resources>& resources) {
+  return [resources](const sol::table& voxel_sets) {
+    VoxelMutator mutator(resources);
+    voxel_sets.for_each([&](sol::object voxel, sol::object value) {
+      auto xyz = voxel.as<sol::table>();
+      int x = xyz[1], y = xyz[2], z = xyz[3];
+      mutator.set(x, y, z, value.as<uint32_t>());
+    });
+  };
+}
+
+auto FFI_get_ray_voxels() {
+  return [](float start_x,
+            float start_y,
+            float start_z,
+            float dir_x,
+            float dir_y,
+            float dir_z,
+            float distance) {
     std::vector<std::vector<int>> results;
-    voxels_util->marchVoxels(
+    marchVoxels(
         glm::vec3(start_x, start_y, start_z),
         glm::vec3(dir_x, dir_y, dir_z),
         distance,
@@ -250,12 +260,8 @@ class ScriptExecutor {
   ScriptExecutor(
       std::shared_ptr<Window> window,
       std::shared_ptr<Resources> resources,
-      std::shared_ptr<VoxelsUtil> voxels_util,
       std::shared_ptr<Stats> stats)
-      : window_(window),
-        resources_(resources),
-        voxels_util_(voxels_util),
-        stats_(stats) {}
+      : window_(window), resources_(resources), stats_(stats) {}
 
   template <typename... Args>
   void delegate(const std::string& event, Args&&... args) {
@@ -337,9 +343,10 @@ class ScriptExecutor {
     ctx.set("set_cursor_pos", wrapFFI(FFI_set_cursor_pos(window_)));
     ctx.set("show_cursor", wrapFFI(FFI_show_cursor(window_)));
     ctx.set("get_window_size", wrapFFI(FFI_get_window_size(window_)));
-    ctx.set("get_voxel", wrapFFI(FFI_get_voxel(voxels_util_)));
-    ctx.set("set_voxel", wrapFFI(FFI_set_voxel(voxels_util_)));
-    ctx.set("get_ray_voxels", wrapFFI(FFI_get_ray_voxels(voxels_util_)));
+    ctx.set("get_voxel", wrapFFI(FFI_get_voxel(resources_)));
+    ctx.set("set_voxel", wrapFFI(FFI_set_voxel(resources_)));
+    ctx.set("set_voxels", wrapFFI(FFI_set_voxels(resources_)));
+    ctx.set("get_ray_voxels", wrapFFI(FFI_get_ray_voxels()));
     ctx.set("create_ui_node", wrapFFI(FFI_create_ui_node(resources_)));
     ctx.set("update_ui_node", wrapFFI(FFI_update_ui_node(resources_)));
     ctx.set("delete_ui_node", wrapFFI(FFI_delete_ui_node(resources_)));
@@ -348,17 +355,13 @@ class ScriptExecutor {
 
   std::shared_ptr<Window> window_;
   std::shared_ptr<Resources> resources_;
-  std::shared_ptr<VoxelsUtil> voxels_util_;
   std::shared_ptr<Stats> stats_;
 };
 
 template <>
 inline std::shared_ptr<ScriptExecutor> gen(const Registry& registry) {
   return std::make_shared<ScriptExecutor>(
-      registry.get<Window>(),
-      registry.get<Resources>(),
-      registry.get<VoxelsUtil>(),
-      registry.get<Stats>());
+      registry.get<Window>(), registry.get<Resources>(), registry.get<Stats>());
 }
 
 }  // namespace tequila

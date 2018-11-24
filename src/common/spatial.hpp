@@ -275,6 +275,10 @@ class Octree {
     tree_depth_ = boost::integer_log2(7 * cell_count_ + 1) / 3;
   }
 
+  auto size() const {
+    return leaf_size_ * grid_size_;
+  }
+
   auto cellCount() const {
     return cell_count_;
   };

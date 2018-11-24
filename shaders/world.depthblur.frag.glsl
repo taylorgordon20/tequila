@@ -23,7 +23,7 @@ in vec2 _tex_coord;
 out vec4 color;
 
 float circleOfConfusionWeight(float base_depth, float candidate_depth) {
-  float dist = 0.5 - abs(base_depth - candidate_depth) / base_depth;
+  float dist = 0.3 - abs(base_depth - candidate_depth) / base_depth;
   return 1.0 / (1 + exp(-10.0 * dist));
 }
 

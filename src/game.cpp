@@ -134,7 +134,6 @@ void run() {
           .bindToDefaultFactory<TerrainRenderer>()
           .bindToDefaultFactory<TextUIRenderer>()
           .bindToDefaultFactory<UIRenderer>()
-          .bindToDefaultFactory<VoxelsUtil>()
           .bindToDefaultFactory<WorldRenderer>()
           .build();
 

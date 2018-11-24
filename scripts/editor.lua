@@ -159,6 +159,35 @@ function module:remove_voxel()
   end)
 end
 
+function module:insert_voxel_box(from, to, style, override)
+  local sx, sy, sz = table.unpack(from)
+  local ex, ey, ez = table.unpack(to)
+
+  -- Swap indices so that from increases towards to.
+  if sx > ex then
+    sx, ex = ex, sx
+  end
+  if sy > ey then
+    sy, ey = ey, sy
+  end
+  if sz > ez then
+    sz, ez = ez, sz
+  end
+  
+  -- Determine all insertions and set them in a batch update.
+  local voxels = {}
+  for iz = sz, ez do
+    for iy = sy, ey do
+      for ix = sx, ex do
+        if override or get_voxel(ix, iy, iz) == 0 then
+          voxels[{ix, iy, iz}] = style
+        end
+      end
+    end
+  end
+  set_voxels(voxels)
+end
+
 function module:on_init()
   -- Registry a console command to set palette styles.
   get_module("console"):create_command(
@@ -222,27 +251,8 @@ function module:on_key(key, scancode, action, mods)
     if not box_edit_start and insertion_voxel then
       box_edit_start = insertion_voxel
     elseif insertion_voxel then
-      local sx, sy, sz = table.unpack(box_edit_start)
-      local ex, ey, ez = table.unpack(insertion_voxel)
-      if sx > ex then
-        sx, ex = ex, sx
-      end
-      if sy > ey then
-        sy, ey = ey, sy
-      end
-      if sz > ez then
-        sz, ez = ez, sz
-      end
       local style = self.palette_styles[self.palette_selection]
-      for iz = sz, ez do
-        for iy = sy, ey do
-          for ix = sx, ex do
-            if get_voxel(ix, iy, iz) == 0 then
-              set_voxel(ix, iy, iz, style)
-            end
-          end
-        end
-      end
+      self:insert_voxel_box(box_edit_start, insertion_voxel, style, false)
       box_edit_start = nil
     end
     self:update_ui()
@@ -251,25 +261,8 @@ function module:on_key(key, scancode, action, mods)
     if box_edit_start then
       local insertion_voxel = self:get_ray_insertion_voxel()
       if insertion_voxel then
-        local sx, sy, sz = table.unpack(box_edit_start)
-        local ex, ey, ez = table.unpack(insertion_voxel)
-        if sx > ex then
-          sx, ex = ex, sx
-        end
-        if sy > ey then
-          sy, ey = ey, sy
-        end
-        if sz > ez then
-          sz, ez = ez, sz
-        end
         local style = self.palette_styles[self.palette_selection]
-        for iz = sz, ez do
-          for iy = sy, ey do
-            for ix = sx, ex do
-              set_voxel(ix, iy, iz, style)
-            end
-          end
-        end
+        self:insert_voxel_box(box_edit_start, insertion_voxel, style, true)
         box_edit_start = nil
       end
     end

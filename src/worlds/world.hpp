@@ -138,6 +138,7 @@ class WorldRenderer {
         makeFramebuffer(scene_map_, depth_map_));
 
     // Create texture and framebuffers to store small copies of scene buffers.
+    using Attachments = std::vector<std::shared_ptr<TextureOutput>>;
     copy_width_ = static_cast<int>((512.0f * width) / height);
     copy_height_ = 512;
     copy_color_map_ = std::make_shared<TextureOutput>(
@@ -146,8 +147,7 @@ class WorldRenderer {
         copy_width_, copy_height_, gl::GL_RGBA8);
     copy_fbo_ = std::make_shared<Framebuffer>(
         std::tuple(copy_width_, copy_height_),
-        std::vector<std::shared_ptr<TextureOutput>>{copy_color_map_,
-                                                    copy_depth_map_},
+        Attachments{copy_color_map_, copy_depth_map_},
         nullptr);
 
     // Create a new texture and framebuffer to store bloom blurred scene.

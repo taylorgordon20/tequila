@@ -150,62 +150,35 @@ inline auto terrainSliceVertexOffsets(TerrainSliceDir dir) {
   return kOffsets.at(dir);
 }
 
-using TerrainSliceKey = std::tuple<int64_t, TerrainSliceDir>;
+using TerrainSliceKey = std::tuple<int, TerrainSliceDir>;
 using TerrainSliceFace = std::tuple<int, int, int, int64_t>;
-
-// Maps a terrain slice to its corresponding voxel array.
-struct TerrainSliceVoxels {
-  auto operator()(ResourceDeps& deps, int64_t cell) {
-    auto voxel_keys = deps.get<VoxelKeys>(cell);
-    ENFORCE(voxel_keys->size() == 1);
-    return deps.get<Voxels>(voxel_keys->front());
-  }
-};
-
-// Maps a terrain slice to its corresponding surface voxel array.
-struct TerrainSliceSurfaceVoxels {
-  auto operator()(ResourceDeps& deps, int64_t cell) {
-    auto voxel_keys = deps.get<VoxelKeys>(cell);
-    ENFORCE(voxel_keys->size() == 1);
-    return deps.get<SurfaceVoxels>(voxel_keys->front());
-  }
-};
-
-// Maps a terrain slice to its corresponding light map.
-struct TerrainSliceVertexLights {
-  auto operator()(ResourceDeps& deps, int64_t cell) {
-    auto voxel_keys = deps.get<VoxelKeys>(cell);
-    ENFORCE(voxel_keys->size() == 1);
-    return deps.get<VertexLights>(voxel_keys->front());
-  }
-};
 
 // Computes all faces.
 struct TerrainSliceFaces {
   auto operator()(ResourceDeps& deps, TerrainSliceKey key) {
     StatsTimer timer(registryGet<Stats>(deps), "terrain_slice_faces");
 
-    auto cell = std::get<0>(key);
-    auto sdir = std::get<1>(key);
+    auto shard_key = std::get<0>(key);
+    auto shard_dir = std::get<1>(key);
 
     // Fetch the bounding box of this slice's terrain shard.
-    auto octree = deps.get<WorldOctree>();
-    auto [x0, y0, z0, x1, y1, z1] = octree->cellBox(cell);
+    auto voxel_config = deps.get<VoxelConfig>();
+    auto [x0, y0, z0, x1, y1, z1] = voxel_config->voxelBox(shard_key);
 
-    // Get the voxel array in which this cell is embedded.
-    auto normal = terrainSliceNormal(sdir);
-    auto voxels = deps.get<TerrainSliceVoxels>(cell);
-    auto surface_voxels = deps.get<TerrainSliceSurfaceVoxels>(cell);
+    // Identify surface faces for the current terrain shard.
+    VoxelAccessor accessor(deps);
+    auto normal = terrainSliceNormal(shard_dir);
+    auto surface_voxels = deps.get<SurfaceVoxels>(shard_key);
     auto faces = std::make_shared<std::vector<TerrainSliceFace>>();
-    for (auto [x, y, z] : *surface_voxels) {
+    for (auto [ix, iy, iz] : *surface_voxels) {
+      int x = x0 + ix;
+      int y = y0 + iy;
+      int z = z0 + iz;
       int nx = x + static_cast<int>(normal[0]);
       int ny = y + static_cast<int>(normal[1]);
       int nz = z + static_cast<int>(normal[2]);
-      int ox = nx < 0 || nx >= voxels->size();
-      int oy = ny < 0 || ny >= voxels->size();
-      int oz = nz < 0 || nz >= voxels->size();
-      if (ox || oy || oz || !voxels->get(nx, ny, nz)) {
-        faces->emplace_back(x0 + x, y0 + y, z0 + z, voxels->get(x, y, z));
+      if (!accessor.get(nx, ny, nz)) {
+        faces->emplace_back(x, y, z, accessor.get(x, y, z));
       }
     }
 
@@ -262,13 +235,13 @@ struct TerrainSlice {
     auto color_maps = deps.get<TerrainStylesColorMap>();
     auto normal_maps = deps.get<TerrainStylesNormalMap>();
 
-    // Look up world coordinate information.
-    auto cell = std::get<0>(key);
-    auto octree = deps.get<WorldOctree>();
-    auto [x0, y0, z0, x1, y1, z1] = octree->cellBox(cell);
+    // Fetch the bounding box of this slice's terrain shard.
+    auto shard_key = std::get<0>(key);
+    auto voxel_config = deps.get<VoxelConfig>();
+    auto [x0, y0, z0, x1, y1, z1] = voxel_config->voxelBox(shard_key);
 
     // Look up vertex lighting information for this slice's faces.
-    auto vertex_lights = deps.get<TerrainSliceVertexLights>(cell);
+    auto vertex_lights = deps.get<VertexLights>(shard_key);
 
     // Look up the surface vectors for the current direction.
     auto dir = std::get<1>(key);
@@ -374,7 +347,7 @@ struct TerrainShardData {
 // into a shard so that we can cull slices facing away from the camera and to
 // ensure that all slices within a shard display updates atomically.
 struct TerrainShard {
-  auto operator()(ResourceDeps& deps, int64_t key) {
+  auto operator()(ResourceDeps& deps, int key) {
     StatsTimer timer(registryGet<Stats>(deps), "terrain_shard");
 
     // Output all relevant slices for the given shard.
@@ -407,40 +380,35 @@ struct TerrainShardKeys {
   auto operator()(ResourceDeps& deps) {
     StatsTimer timer(registryGet<Stats>(deps), "terrain_shard_keys");
 
+    // Terrains shards are one-to-one with voxel array indices.
     auto octree = deps.get<WorldOctree>();
+    auto voxel_config = deps.get<VoxelConfig>();
+    auto shard_size = voxel_config->voxel_size;
+    auto grid_size = voxel_config->grid_size;
 
-    // Compute the depth of the voxel arrays.
-    // TODO: Move this into an offline terrain config computation.
-    auto voxel_level = 0;
-    octree->search([&](int64_t cell) {
-      auto voxel_keys = deps.get<VoxelKeys>(cell);
-      ENFORCE(voxel_keys->size() >= 1);
-      if (voxel_keys->size() == 1) {
-        voxel_level = octree->cellLevel(cell);
-        return false;
-      }
-      return true;
-    });
-
-    // Compute all visible cells at the level of the voxel arrays.
-    std::unordered_set<int64_t> voxel_cells;
-    auto cells = *deps.get<VisibleCells>();
-    for (int i = 0; i < cells.size(); i += 1) {
-      auto cell = cells.at(i);
-      if (octree->cellLevel(cell) < voxel_level) {
-        for (int j = 0; j < 8; j += 1) {
-          cells.push_back(8 * cell + 1 + j);
-        }
-      } else if (octree->cellLevel(cell) > voxel_level) {
-        cells.push_back(octree->cellParent(cell));
-      } else {
-        voxel_cells.insert(cell);
-      }
+    // Find all shard keys that intersect with the visible octree cells.
+    std::unordered_set<int> shard_keys;
+    for (auto cell : *deps.get<VisibleCells>()) {
+      octree->search(
+          [&](int64_t cell) {
+            auto [x0, y0, z0, x1, y1, z1] = octree->cellBox(cell);
+            if (x1 - x0 <= shard_size) {
+              int sx = x0 / shard_size;
+              int sy = y0 / shard_size;
+              int sz = z0 / shard_size;
+              shard_keys.insert(
+                  sx + sy * grid_size + sz * grid_size * grid_size);
+              return false;
+            } else {
+              return true;
+            }
+          },
+          cell);
     }
 
-    // Return the octree cell keys identifying each terrain shard.
-    auto ret = std::make_shared<std::vector<uint64_t>>();
-    ret->insert(ret->end(), voxel_cells.begin(), voxel_cells.end());
+    // Return the distinct keys as a vector.
+    auto ret = std::make_shared<std::vector<int>>();
+    ret->insert(ret->end(), shard_keys.begin(), shard_keys.end());
     return ret;
   }
 };

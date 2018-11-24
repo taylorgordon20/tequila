@@ -578,6 +578,10 @@ class ResourceMutation {
     return value_;
   }
 
+  auto& operator* () {
+    return value_;
+  }
+
  private:
   decltype(Resources().get<Resource>(std::declval<Keys>()...)) value_;
   std::function<void()> invalidator_;

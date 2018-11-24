@@ -95,39 +95,39 @@ class VertexLightMap {
 
 // Maps a voxel array to light rays at each surface vertex.
 struct VertexLights {
-  auto operator()(ResourceDeps& deps, const std::string& voxel_key) {
+  auto operator()(ResourceDeps& deps, int voxel_key) {
     StatsTimer timer(registryGet<Stats>(deps), "vertex_lights");
 
-    auto voxels_util = registryGet<VoxelsUtil>(deps);
-    auto voxels = deps.get<Voxels>(voxel_key);
-    auto surface_vertices = deps.get<SurfaceVertices>(voxel_key);
     auto global_light = deps.get<WorldLight>();
 
-    // Create a sampler to efficiently query voxel values.
-    VoxelsSampler sampler(deps.get<WorldOctree>(), [&](int64_t cell) {
-      auto voxel_keys = deps.get<VoxelKeys>(cell);
-      ENFORCE(voxel_keys->size() == 1);
-      return deps.get<Voxels>(voxel_keys->front());
-    });
+    // Load voxel data for this voxel array.
+    auto surface_vertices = deps.get<SurfaceVertices>(voxel_key);
+    auto voxel_config = deps.get<VoxelConfig>();
+    auto [x0, y0, z0, x1, y1, z1] = voxel_config->voxelBox(voxel_key);
 
-    auto ret = std::make_shared<VertexLightMap>(voxels->size());
+    // Create a sampler to efficiently query voxel values.
+    VoxelAccessor accessor(deps); 
+    auto ret = std::make_shared<VertexLightMap>(voxel_config->voxel_size);
     for (const auto& vertex : *surface_vertices) {
-      auto x = std::get<0>(vertex);
-      auto y = std::get<1>(vertex);
-      auto z = std::get<2>(vertex);
-      auto& global_occlusion = ret->get(x, y, z).global_occlusion;
+      auto ix = std::get<0>(vertex);
+      auto iy = std::get<1>(vertex);
+      auto iz = std::get<2>(vertex);
 
       // Initialize occlusion to "not occluded".
+      auto& global_occlusion = ret->get(ix, iy, iz).global_occlusion;
       global_occlusion = 1.0f;
 
-      // Cast ray to detect if the the light to this vertex is occluded.
+      // Initialize global vertex position and light direction.
       auto dir = *global_light;
-      auto from = voxels_util->getWorldCoords(*voxels, x, y, z);
-      from += 0.01f * dir;
-      voxels_util->marchVoxels(
-          from, dir, 100.0, [&](int vx, int vy, int vz, float distance) {
-            float cx = vx + 0.5f, cy = vy + 0.5f, cz = vz + 0.5f;
-            if (sampler.getVoxel(cx, cy, cz)) {
+      auto from = glm::vec3(x0 + ix, y0 + iy, z0 + iz) + 0.01f * dir;
+
+      // Cast ray to detect if the the light to this vertex is occluded.
+      marchVoxels(
+          from,
+          dir,
+          100.0,
+          [&](int x, int y, int z, float distance) {
+            if (accessor.get(x, y, z)) {
               global_occlusion = 0.35f;
               return false;
             }
@@ -136,9 +136,9 @@ struct VertexLights {
 
       // Also check to see if this vertex is a "corner".
       if (global_occlusion > 0.2f) {
-        auto vx = from[0] + 0.5f, vy = from[1] + 0.5f, vz = from[2] + 0.5f;
+        int x = x0 + ix, y = y0 + iy, z = z0 + iz;
         auto bit = [&](int ox, int oy, int oz) {
-          auto value = sampler.getVoxel(vx - 1 + ox, vy - 1 + oy, vz - 1 + oz);
+          auto value = accessor.get(x - 1 + ox, y - 1 + oy, z - 1 + oz);
           return value ? 1 : 0;
         };
         uint8_t mask = 0;
