@@ -34,7 +34,7 @@ float invertDepth(float depth) {
 
 float depthMask(float scene_depth) {
   float speed = 0.02;
-  float pivot = 120;
+  float pivot = 150;
   float depth = invertDepth(scene_depth);
   return 1.0 / (1 + exp(speed * (pivot - depth)));
 }
