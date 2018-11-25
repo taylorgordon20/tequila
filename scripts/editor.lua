@@ -246,7 +246,7 @@ function module:on_key(key, scancode, action, mods)
     self.palette_selection = self.palette_selection % self.palette_count + 1
     self:update_ui()
   end
-  if is_key_pressed(string.byte('C')) then
+  if key == string.byte('C') and action == 1 then
     local insertion_voxel = self:get_ray_insertion_voxel()
     if not box_edit_start and insertion_voxel then
       box_edit_start = insertion_voxel
@@ -257,7 +257,7 @@ function module:on_key(key, scancode, action, mods)
     end
     self:update_ui()
   end
-  if is_key_pressed(string.byte('X')) then
+  if key == string.byte('X') and action == 1 then
     if box_edit_start then
       local insertion_voxel = self:get_ray_insertion_voxel()
       if insertion_voxel then
@@ -266,6 +266,10 @@ function module:on_key(key, scancode, action, mods)
         box_edit_start = nil
       end
     end
+    self:update_ui()
+  end
+  if key == KEYS.escape and action == 1 then
+    box_edit_start = nil
     self:update_ui()
   end
 end

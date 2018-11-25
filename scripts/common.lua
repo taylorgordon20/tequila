@@ -1,5 +1,6 @@
 KEYS = {
   space = 32,
+  escape = 256,
   enter = 257,
   tab = 258,
   backspace = 259,
