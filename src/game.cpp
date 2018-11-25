@@ -88,9 +88,6 @@ void run() {
     std::cout << "Could not find config for: " << *style_name << std::endl;
   } while (true);
 
-  // Define a resource to store the static registry.
-  auto static_context = std::make_shared<StaticContext>();
-
   // Define a factory to build the global asychronous task executor.
   auto executor_factory = [](const Registry& registry) {
     return std::make_shared<QueueExecutor>(10);
@@ -100,11 +97,12 @@ void run() {
   auto resources_factory = [&](const Registry& registry) {
     return std::make_shared<Resources>(
         ResourcesBuilder()
+            .withSeed<OpenGLExecutor>(registry.get<OpenGLContextExecutor>())
             .withSeed<ScriptContext>(getScriptContext())
             .withSeed<WorldCamera>(getWorldCamera())
             .withSeed<WorldLight>(getWorldLight())
+            .withSeed<WorldStats>(registry.get<Stats>())
             .withSeed<WorldName>(world_name)
-            .withSeed<WorldStaticContext>(static_context)
             .withSeed<WorldStyleName>(style_name)
             .withSeed<WorldUI>(getWorldUI())
             .build());
@@ -136,9 +134,6 @@ void run() {
           .bindToDefaultFactory<UIRenderer>()
           .bindToDefaultFactory<WorldRenderer>()
           .build();
-
-  // Update registry pointer inside resources.
-  static_context->registry = &registry;
 
   // Increase thread priority of the OpenGL thread and this process.
 #ifdef _WIN32

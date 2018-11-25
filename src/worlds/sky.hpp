@@ -28,7 +28,7 @@ struct SkyData {
 
 struct SkyMap {
   auto operator()(ResourceDeps& deps) {
-    StatsTimer timer(registryGet<Stats>(deps), "sky_map");
+    StatsTimer timer(deps.get<WorldStats>(), "sky_map");
 
     auto pixels = loadPngToTensor("images/sky_map_clouds.png");
     int h = pixels.dimension(0) / 3;
@@ -61,7 +61,7 @@ struct Sky {
     const auto& light = *deps.get<WorldLight>();
     auto angle = std::atan2(-light[2], light[0]);
 
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new SkyData(
           MeshBuilder().setPositions(kPositions).build(),
           deps.get<SkyMap>(),
@@ -72,7 +72,7 @@ struct Sky {
 
 struct SkyShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/sky.vert.glsl")),
           makeFragmentShader(loadFile("shaders/sky.frag.glsl")),

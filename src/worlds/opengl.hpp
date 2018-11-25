@@ -10,6 +10,8 @@
 #include "src/common/errors.hpp"
 #include "src/common/opengl.hpp"
 #include "src/common/registry.hpp"
+#include "src/common/stats.hpp"
+#include "src/common/window.hpp"
 
 namespace tequila {
 

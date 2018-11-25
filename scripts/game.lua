@@ -92,17 +92,18 @@ function module:on_update(dt)
     secret_2 = true
     self:show_alert("You found the secret!")
     
-    -- Build canon.
-    local black_brick = 23
-    set_voxel(316, 30, 221, black_brick)
-    set_voxel(316, 30, 222, black_brick)
-    set_voxel(316, 30, 223, black_brick)
-    set_voxel(317, 30, 221, black_brick)
-    set_voxel(317, 29, 222, black_brick)
-    set_voxel(317, 30, 223, black_brick)
-    set_voxel(318, 30, 221, black_brick)
-    set_voxel(318, 30, 222, black_brick)
-    set_voxel(318, 30, 223, black_brick)
+    -- Build cannon (23 corresponds to the black brick voxel).
+    set_voxels({
+      [{316, 30, 221}] = 23,
+      [{316, 30, 222}] = 23,
+      [{316, 30, 223}] = 23,
+      [{317, 30, 221}] = 23,
+      [{317, 29, 222}] = 23,
+      [{317, 30, 223}] = 23,
+      [{318, 30, 221}] = 23,
+      [{318, 30, 222}] = 23,
+      [{318, 30, 223}] = 23,
+    })
   elseif secret_2 and self:camera_is_at(317.5, 31, 222.5) then
     get_module("camera"):set_velocity(0, 100, 0)
   elseif self:camera_is_at(261.5, 82, 248.5) then

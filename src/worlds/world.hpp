@@ -40,7 +40,7 @@ struct WorldFrameMesh {
 
 struct WorldCopyShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/world.vert.glsl")),
           makeFragmentShader(loadFile("shaders/world.copy.frag.glsl")),
@@ -51,7 +51,7 @@ struct WorldCopyShader {
 
 struct WorldLightFilterShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/world.vert.glsl")),
           makeFragmentShader(loadFile("shaders/world.lightfilter.frag.glsl")),
@@ -62,7 +62,7 @@ struct WorldLightFilterShader {
 
 struct WorldBlurShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/world.vert.glsl")),
           makeFragmentShader(loadFile("shaders/world.blur.frag.glsl")),
@@ -73,7 +73,7 @@ struct WorldBlurShader {
 
 struct WorldPassthroughShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/world.vert.glsl")),
           makeFragmentShader(loadFile("shaders/world.passthrough.frag.glsl")),
@@ -84,7 +84,7 @@ struct WorldPassthroughShader {
 
 struct WorldDepthBlurShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/world.vert.glsl")),
           makeFragmentShader(loadFile("shaders/world.depthblur.frag.glsl")),
@@ -95,7 +95,7 @@ struct WorldDepthBlurShader {
 
 struct WorldShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/world.vert.glsl")),
           makeFragmentShader(loadFile("shaders/world.frag.glsl")),

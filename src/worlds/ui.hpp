@@ -43,7 +43,7 @@ struct RectNode {
 // Builds the ready-to-render format of a rect node.
 struct WorldRectNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
-    StatsTimer timer(registryGet<Stats>(deps), "ui.rect_node");
+    StatsTimer timer(deps.get<WorldStats>(), "ui.rect_node");
 
     auto ui_tree = deps.get<WorldUI>();
     const auto& ui_node = ui_tree->nodes.at(id);
@@ -67,7 +67,7 @@ struct WorldRectNode {
         (rgba >> 8 & 0xFF) / 255.0f,
         (rgba & 0xFF) / 255.0f);
 
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new RectNode(
           MeshBuilder()
               .setPositions(std::move(positions))
@@ -94,7 +94,7 @@ struct WorldRectNodes {
 
 struct RectUIShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/ui.vert.glsl")),
           makeFragmentShader(loadFile("shaders/ui.rect.frag.glsl")),
@@ -135,7 +135,7 @@ std::shared_ptr<RectUIRenderer> gen(const Registry& registry) {
 // Builds the ready-to-render format of a text node.
 struct WorldTextNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
-    StatsTimer timer(registryGet<Stats>(deps), "ui.text_node");
+    StatsTimer timer(deps.get<WorldStats>(), "ui.text_node");
 
     auto ui_tree = deps.get<WorldUI>();
     const auto& ui_node = ui_tree->nodes.at(id);
@@ -154,7 +154,7 @@ struct WorldTextNode {
         (rgba >> 8 & 0xFF) / 255.0f,
         (rgba & 0xFF) / 255.0f);
 
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       // Build the text mesh.
       auto node = deps.get<UIFont>(font, size)->buildText(text);
       node.mesh.transform() =
@@ -181,7 +181,7 @@ struct WorldTextNodes {
 
 struct TextUIShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/ui.vert.glsl")),
           makeFragmentShader(loadFile("shaders/ui.text.frag.glsl")),
@@ -247,7 +247,7 @@ struct StyleNode {
 // Builds the ready-to-render format of a style node.
 struct WorldStyleNode {
   auto operator()(ResourceDeps& deps, const std::string& id) {
-    StatsTimer timer(registryGet<Stats>(deps), "ui.style_node");
+    StatsTimer timer(deps.get<WorldStats>(), "ui.style_node");
 
     auto ui_tree = deps.get<WorldUI>();
     const auto& ui_node = ui_tree->nodes.at(id);
@@ -285,7 +285,7 @@ struct WorldStyleNode {
     tex_coords.row(0) << 0, 1, 1, 1, 0, 0;
     tex_coords.row(1) << 0, 0, 1, 1, 1, 0;
 
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new StyleNode(
           MeshBuilder()
               .setPositions(std::move(positions))
@@ -317,7 +317,7 @@ struct WorldStyleNodes {
 
 struct StyleUIShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/ui.vert.glsl")),
           makeFragmentShader(loadFile("shaders/ui.style.frag.glsl")),

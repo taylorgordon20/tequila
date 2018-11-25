@@ -96,7 +96,7 @@ class VertexLightMap {
 // Maps a voxel array to light rays at each surface vertex.
 struct VertexLights {
   auto operator()(ResourceDeps& deps, int voxel_key) {
-    StatsTimer timer(registryGet<Stats>(deps), "vertex_lights");
+    StatsTimer timer(deps.get<WorldStats>(), "vertex_lights");
 
     auto global_light = deps.get<WorldLight>();
 

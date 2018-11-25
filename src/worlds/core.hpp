@@ -15,16 +15,15 @@
 #include "src/common/resources.hpp"
 #include "src/common/spatial.hpp"
 #include "src/common/stats.hpp"
+#include "src/worlds/opengl.hpp"
 
 namespace tequila {
 
-struct StaticContext {
-  const Registry* registry;
-};
+struct OpenGLExecutor : public SeedResource<
+                            OpenGLExecutor,
+                            std::shared_ptr<OpenGLContextExecutor>> {};
 
-struct WorldStaticContext
-    : public SeedResource<WorldStaticContext, std::shared_ptr<StaticContext>> {
-};
+struct WorldStats : public SeedResource<WorldStats, std::shared_ptr<Stats>> {};
 
 struct WorldName : public SeedResource<WorldName, std::string> {};
 
@@ -57,12 +56,5 @@ struct VisibleCells {
     return std::make_shared<std::vector<int64_t>>(std::move(cells));
   }
 };
-
-// Convenience method to make it easier to get registry objects while generating
-// a resource (e.g. inside its factory).
-template <typename Type>
-inline auto registryGet(ResourceDeps& deps) {
-  return deps.get<WorldStaticContext>()->registry->get<Type>();
-}
 
 }  // namespace tequila

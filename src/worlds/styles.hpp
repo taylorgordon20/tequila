@@ -111,7 +111,7 @@ struct TerrainStylesColorMapIndex {
 
 struct TerrainStylesColorMap {
   auto operator()(ResourceDeps& deps) {
-    StatsTimer timer(registryGet<Stats>(deps), "terrain_color_styles");
+    StatsTimer timer(deps.get<WorldStats>(), "terrain_color_styles");
     auto terrain_styles = deps.get<TerrainStyles>();
 
     // Build the color map index.
@@ -144,7 +144,7 @@ struct TerrainStylesColorMap {
       pixels.push_back(loadPngToTensor(color_map));
     }
 
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new TerrainStylesColorMapIndex(
           std::move(style_index), std::make_shared<TextureArray>(pixels));
     });
@@ -171,7 +171,7 @@ struct TerrainStylesNormalMapIndex {
 
 struct TerrainStylesNormalMap {
   auto operator()(ResourceDeps& deps) {
-    StatsTimer timer(registryGet<Stats>(deps), "terrain_normal_styles");
+    StatsTimer timer(deps.get<WorldStats>(), "terrain_normal_styles");
     auto terrain_styles = deps.get<TerrainStyles>();
 
     // Build the normal map index.
@@ -204,7 +204,7 @@ struct TerrainStylesNormalMap {
       pixels.push_back(loadPngToTensor(normal_map));
     }
 
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new TerrainStylesNormalMapIndex(
           std::move(style_index), std::make_shared<TextureArray>(pixels));
     });

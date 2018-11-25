@@ -156,7 +156,7 @@ using TerrainSliceFace = std::tuple<int, int, int, int64_t>;
 // Computes all faces.
 struct TerrainSliceFaces {
   auto operator()(ResourceDeps& deps, TerrainSliceKey key) {
-    StatsTimer timer(registryGet<Stats>(deps), "terrain_slice_faces");
+    StatsTimer timer(deps.get<WorldStats>(), "terrain_slice_faces");
 
     auto shard_key = std::get<0>(key);
     auto shard_dir = std::get<1>(key);
@@ -226,7 +226,7 @@ struct TerrainSlice {
       return std::shared_ptr<TerrainSliceData>();
     }
 
-    StatsTimer timer(registryGet<Stats>(deps), "terrain_slice");
+    StatsTimer timer(deps.get<WorldStats>(), "terrain_slice");
 
     // Look up the texture maps for this face since we need to specify
     // vertex attributes to point each face to its corresponding texture
@@ -322,7 +322,7 @@ struct TerrainSlice {
 
     // Set the final slice data.
     // NOTE: We need to execute this within the OpenGL context.
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new TerrainSliceData(
           MeshBuilder()
               .setPositions(std::move(positions))
@@ -348,7 +348,7 @@ struct TerrainShardData {
 // ensure that all slices within a shard display updates atomically.
 struct TerrainShard {
   auto operator()(ResourceDeps& deps, int key) {
-    StatsTimer timer(registryGet<Stats>(deps), "terrain_shard");
+    StatsTimer timer(deps.get<WorldStats>(), "terrain_shard");
 
     // Output all relevant slices for the given shard.
     // TODO: Do back-face culling of slices here.
@@ -378,7 +378,7 @@ struct TerrainShard {
 // Returns the keys for the terrain shards that should be rendered.
 struct TerrainShardKeys {
   auto operator()(ResourceDeps& deps) {
-    StatsTimer timer(registryGet<Stats>(deps), "terrain_shard_keys");
+    StatsTimer timer(deps.get<WorldStats>(), "terrain_shard_keys");
 
     // Terrains shards are one-to-one with voxel array indices.
     auto octree = deps.get<WorldOctree>();
@@ -415,7 +415,7 @@ struct TerrainShardKeys {
 
 struct TerrainShader {
   auto operator()(ResourceDeps& deps) {
-    return registryGet<OpenGLContextExecutor>(deps)->manage([&] {
+    return deps.get<OpenGLExecutor>()->manage([&] {
       return new ShaderProgram(std::vector<ShaderSource>{
           makeVertexShader(loadFile("shaders/terrain.vert.glsl")),
           makeFragmentShader(loadFile("shaders/terrain.frag.glsl")),
