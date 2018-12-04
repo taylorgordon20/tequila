@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "src/common/audio.hpp"
 #include "src/common/camera.hpp"
 #include "src/common/files.hpp"
 #include "src/common/functions.hpp"
@@ -30,6 +31,18 @@ struct ScriptModule {
       std::cout << "Error parsing script: " << name << ".lua" << std::endl;
       throw;
     }
+  }
+};
+
+struct ScriptSound {
+  auto operator()(ResourceDeps& deps, const std::string& sound_file) {
+    return std::make_shared<Sound>(sound_file);
+  }
+};
+
+struct ScriptMusic {
+  auto operator()(ResourceDeps& deps, const std::string& music_file) {
+    return std::make_shared<Music>(music_file);
   }
 };
 
@@ -224,6 +237,18 @@ auto FFI_get_ray_voxels() {
   };
 }
 
+auto FFI_play_sound(std::shared_ptr<Resources>& resources) {
+  return [resources](std::string sound_file) {
+    resources->get<ScriptSound>(sound_file)->play();
+  };
+}
+
+auto FFI_play_music(std::shared_ptr<Resources>& resources) {
+  return [resources](std::string music_file) {
+    resources->get<ScriptMusic>(music_file)->play();
+  };
+}
+
 auto FFI_create_ui_node(std::shared_ptr<Resources>& resources) {
   return [resources](std::string id, std::string kind, const sol::table& attr) {
     ResourceMutation<WorldUI> ui(*resources);
@@ -347,6 +372,8 @@ class ScriptExecutor {
     ctx.set("set_voxel", wrapFFI(FFI_set_voxel(resources_)));
     ctx.set("set_voxels", wrapFFI(FFI_set_voxels(resources_)));
     ctx.set("get_ray_voxels", wrapFFI(FFI_get_ray_voxels()));
+    ctx.set("play_sound", wrapFFI(FFI_play_sound(resources_)));
+    ctx.set("play_music", wrapFFI(FFI_play_music(resources_)));
     ctx.set("create_ui_node", wrapFFI(FFI_create_ui_node(resources_)));
     ctx.set("update_ui_node", wrapFFI(FFI_update_ui_node(resources_)));
     ctx.set("delete_ui_node", wrapFFI(FFI_delete_ui_node(resources_)));

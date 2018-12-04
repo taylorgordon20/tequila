@@ -3,6 +3,7 @@
 #include <thread>
 #include <utility>
 
+#include "src/common/audio.hpp"
 #include "src/common/errors.hpp"
 #include "src/common/lua.hpp"
 #include "src/common/opengl.hpp"

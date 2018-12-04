@@ -7,9 +7,11 @@ static_files(
     "//configs:files",
     "//data:files",
     "//fonts:files",
+    "//images:files",
+    "//music:files",
     "//scripts:files",
     "//shaders:files",
-    "//images:files",
+    "//sounds:files",
   ],
 )
 

@@ -1,5 +1,6 @@
 local module = {}
 
+local motion_control = true
 local orientation_toggle = true
 local orientation_angles = {0, 0}
 
@@ -15,6 +16,10 @@ local physics = {
   extra_jump = true,
   extra_jump_enabled = false,
 }
+
+function module:set_motion_control(enabled)
+  motion_control = enabled
+end
 
 function module:set_extra_jump(enabled)
   physics.extra_jump_enabled = enabled
@@ -198,6 +203,7 @@ function module:on_key(key, scancode, action, mods)
   elseif is_key_pressed(KEYS.space) and action == 1 then
     if physics.velocity[2] == 0 then
       physics.velocity[2] = physics.jump_force
+      play_sound("sounds/jump.flac")
     elseif physics.extra_jump_enabled and physics.extra_jump then
       physics.velocity[2] = physics.jump_force
       physics.extra_jump = false
@@ -206,6 +212,10 @@ function module:on_key(key, scancode, action, mods)
 end
 
 function module:on_update(dt)
+  if not motion_control then
+    return
+  end
+
   local camera_move = switch(
     physics.enabled,
     self:get_physics_movement(dt),

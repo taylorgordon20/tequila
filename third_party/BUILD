@@ -22,13 +22,22 @@ cc_library(
     ":boost-math",
     ":bz2",
     ":chakracore",
+    ":flac",
+    ":flac++",
     ":freetype",
     ":glbinding",
     ":glbinding-aux",
     ":glfw3",
     ":libpng",
     ":lua",
+    ":ogg",
+    ":openal",
+    ":sfml-audio",
+    ":sfml-system",
     ":sqlite3",
+    ":vorbis",
+    ":vorbisenc",
+    ":vorbisfile",
     ":zlib",
     ":zstd",
     "//:system_lib",
@@ -185,6 +194,30 @@ cc_import(
 )
 
 cc_import(
+  name = "flac",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/FLAC.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/FLAC.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "flac++",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/FLAC++.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/FLAC.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
   name = "freetype",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/freetype.lib",
@@ -281,6 +314,54 @@ cc_import(
 )
 
 cc_import(
+  name = "ogg",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/ogg.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/ogg.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "openal",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/OpenAL32.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/OpenAL32.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "sfml-audio",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/sfml-audio.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/sfml-audio-2.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "sfml-system",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/sfml-system.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/sfml-system-2.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
   name = "sqlite3",
   interface_library = select({
     CONDITION_MAP["x64-windows"]: "x64-windows/lib/sqlite3.lib",
@@ -292,6 +373,42 @@ cc_import(
   }),
   static_library = select({
     CONDITION_MAP["x64-osx"]: "x64-osx/lib/libsqlite3.a",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "vorbis",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/vorbis.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/vorbis.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "vorbisenc",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/vorbisenc.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/vorbisenc.dll",
+    "//conditions:default": None,
+  }),
+)
+
+cc_import(
+  name = "vorbisfile",
+  interface_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/lib/vorbisfile.lib",
+    "//conditions:default": None,
+  }),
+  shared_library = select({
+    CONDITION_MAP["x64-windows"]: "x64-windows/bin/vorbisfile.dll",
     "//conditions:default": None,
   }),
 )

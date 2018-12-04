@@ -16,7 +16,9 @@ glfw3
 glm
 libpng
 lua
+openal-soft
 pybind11
+sfml
 sol2
 sqlite-modern-cpp
 zlib
