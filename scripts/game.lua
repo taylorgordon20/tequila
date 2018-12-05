@@ -91,6 +91,7 @@ function module:on_update(dt)
   elseif not secret_2 and self:camera_is_at(299.5, 33.5, 222.5) then 
     secret_2 = true
     self:show_alert("You found the secret!")
+    play_music("music/buble.ogg")
     
     -- Build cannon (23 corresponds to the black brick voxel).
     set_voxels({
